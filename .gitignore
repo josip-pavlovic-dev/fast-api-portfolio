@@ -1,3 +1,4 @@
+# Byte-compiled / optimized / DLL files
 .venv/
 __pycache__/
 *.pyc
@@ -8,3 +9,6 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Scratch folder for temporary files
+scratch/
