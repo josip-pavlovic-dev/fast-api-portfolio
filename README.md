@@ -35,7 +35,7 @@ pytest
 
 ## Roadmap
 
-Vidi [django-portfolio/scratch/roadmap/fastapi_6_month_plan.md](../django-portfolio/scratch/roadmap/fastapi_6_month_plan.md)
+Vidi [docs/fastapi_6_month_plan.md](docs/fastapi_6_month_plan.md)
 
 ## Sprint plan i kursevi
 
