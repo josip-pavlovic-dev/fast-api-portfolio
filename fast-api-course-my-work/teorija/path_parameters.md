@@ -279,9 +279,3 @@ Ako je:
 > to je query parameter.
 
 ---
-
-Ako želiš, mogu odmah da ti napravim i:
-
-1. mini primer sa više ruta,
-2. objašnjenje Query Parameters odmah nakon toga,
-3. ili kratku “karta pojmova” za FastAPI na početku kursa.
