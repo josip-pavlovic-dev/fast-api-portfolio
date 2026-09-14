@@ -70,6 +70,5 @@ async def read_all_books():
 
 
 @app.post("/books/create-book")
-async def create_book(book: Book = Body()):
-    BOOKS.append(book)
-    return book
+async def create_book(book_request=Body(...)):
+    BOOKS.append(book_request)
