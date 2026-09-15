@@ -223,16 +223,3 @@ To je već pravi “početni beginner API” koji ima smisla.
 - 422 = invalid input
 
 ---
-
-## 5) Preporučeni redosled za sledeći korak
-
-Pošto smo ovo prošli, preporuka je:
-
-1. napraviti mali projekat “Books API”
-2. probati Swagger UI
-3. testirati svaki endpoint
-4. tek posle toga ići na baza/SQLite
-
-To je pravi prelaz sa teorije na praksu.
-
----
