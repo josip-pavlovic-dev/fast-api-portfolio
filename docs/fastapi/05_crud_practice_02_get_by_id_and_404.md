@@ -211,10 +211,15 @@ book["id"]
 Napiši odgovor na ova pitanja:
 
 - Šta je `path parameter`?
+- ODGOVOR: `path parameter` je deo URL-a koji se koristi za prosleđivanje vrednosti endpoint-u. U ovom slučaju, `book_id` je `path parameter` koji označava ID knjige koju želimo da dohvatimo.
 - Kako FastAPI zna da je `book_id` broj?
+- ODGOVOR: FastAPI koristi tip podatka definisan u funkciji endpoint-a (`book_id: int`) da automatski validira i konvertuje vrednost path parametra u odgovarajući tip. Ako vrednost nije validan broj, FastAPI vraća grešku.
 - Šta radi `HTTPException`?
+- ODGOVOR: `HTTPException` omogućava da se vrati HTTP greška sa odgovarajućim status kodom i detaljnom porukom. U ovom slučaju, koristi se za vraćanje 404 greške kada knjiga nije pronađena.
 - Zašto se vraća 404 ako nema knjige?
+- ODGOVOR: 404 status kod označava da traženi resurs nije pronađen. Ako knjiga sa datim ID-jem ne postoji, vraćamo 404 da bi klijent znao da resurs ne postoji.
 - Zašto je `book["id"]` ispravno, a `id` nije?
+- ODGOVOR: `book` je rečnik (dict) i da bismo pristupili njegovim vrednostima, moramo koristiti ključ u obliku stringa (`book["id"]`). Samo `id` ne postoji u kontekstu funkcije i izazvalo bi grešku.
 
 ---
 

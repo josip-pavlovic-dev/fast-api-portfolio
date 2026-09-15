@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Path
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -10,13 +10,23 @@ class Book:
     author: str
     description: str
     rating: int
+    published_date: int
 
-    def __init__(self, id: int, title: str, author: str, description: str, rating: int):
+    def __init__(
+        self,
+        id: int,
+        title: str,
+        author: str,
+        description: str,
+        rating: int,
+        published_date: int,
+    ):
         self.id = id
         self.title = title
         self.author = author
         self.description = description
         self.rating = rating
+        self.published_date = published_date
 
 
 class BookRequest(BaseModel):
@@ -27,6 +37,7 @@ class BookRequest(BaseModel):
     author: str = Field(min_length=1)
     description: str = Field(min_length=1, max_length=100)
     rating: int = Field(gt=0, lt=6)
+    published_date: int = Field(gt=1999, lt=2100)
 
     model_config = {
         "json_schema_extra": {
@@ -35,6 +46,7 @@ class BookRequest(BaseModel):
                 "author": "Marko Vidojkovic",
                 "description": "Opis knjige",
                 "rating": 5,
+                "published_date": 2026,
             }
         }
     }
@@ -53,6 +65,7 @@ BOOKS: list[Book] = [
         author="John Doe",
         description="A comprehensive guide to FastAPI.",
         rating=5,
+        published_date=2023,
     ),
     Book(
         id=2,
@@ -60,6 +73,7 @@ BOOKS: list[Book] = [
         author="Jane Smith",
         description="Deep dive into FastAPI features.",
         rating=4,
+        published_date=2024,
     ),
     Book(
         id=3,
@@ -67,6 +81,7 @@ BOOKS: list[Book] = [
         author="Alice Johnson",
         description="Expert techniques for building APIs with FastAPI.",
         rating=5,
+        published_date=2025,
     ),
     Book(
         id=4,
@@ -74,6 +89,7 @@ BOOKS: list[Book] = [
         author="Bob Brown",
         description="Practical guide to building APIs with FastAPI.",
         rating=4,
+        published_date=2026,
     ),
     Book(
         id=5,
@@ -81,6 +97,7 @@ BOOKS: list[Book] = [
         author="Charlie Davis",
         description="Recipes for common FastAPI tasks.",
         rating=5,
+        published_date=2027,
     ),
     Book(
         id=6,
@@ -88,6 +105,7 @@ BOOKS: list[Book] = [
         author="Diana Evans",
         description="Design patterns and best practices for FastAPI.",
         rating=4,
+        published_date=2028,
     ),
 ]
 
@@ -100,12 +118,11 @@ async def read_all_books():
 
 # Čitanje pojedinačne knjige po ID-u:
 @app.get("/books/{book_id}")
-async def read_book(book_id: int):
+async def read_book(book_id: int = Path(gt=0)):
     for book in BOOKS:
         if book.id == book_id:
             return book
     return {"error": "Book not found"}
-
 
 # Čitanje knjige po rejtingu:
 @app.get("/books/")
@@ -114,12 +131,26 @@ async def read_books_by_rating(book_rating: int):
         return {"error": "Rating must be between 1 and 5"}
     # Ako je rejting validan, nastavljamo sa filtriranjem knjiga po rejtingu.
     books_by_rating = [book for book in BOOKS if book.rating == book_rating]
+
     return books_by_rating
+
     # books_to_return = []
     # for book in BOOKS:
     #     if book.rating == book_rating:
     #         books_to_return.append(book)
     # return books_to_return
+
+
+@app.get("/books/publish/")
+async def read_book_by_publish_date(publish_date: int):
+    books_to_return = [book for book in BOOKS if book.published_date == publish_date]
+
+    # books_to_return = []
+    # for book in BOOKS:
+    #     if book.published_date == publish_date:
+    #         books_to_return.append(book)
+
+    return books_to_return
 
 
 # Kreiranje nove knjige:
@@ -150,9 +181,9 @@ def find_book_id(book: Book):
 # 2. `**book_request.model_dump()` raspakuje rečnik u ključne (keyword arguments naprimer `id=1, title="FastAPI for Beginners", ...`) argumente za konstruktor klase Book.
 # 3. `Book(**book_request.model_dump())` kreira novi objekat klase Book sa podacima iz zahteva.
 
-# Šta tačno radi funkcija ‚model_dump()‘:
+# Šta tačno radi funkcija `model_dump()`:
 # `model_dump()` je metoda Pydantic modela koja vraća podatke modela kao rečnik.
-# Ovo omogućava jednostavno kreiranje novih objekata koristeći te podatke.
+# Ovo omogućava jednostavno kreiranje novih `objekata` koristeći te podatke.
 
 
 @app.put("/books/update_book/")
@@ -165,7 +196,7 @@ async def update_book(book: BookRequest):
 
 
 @app.delete("/books/{book_id}")
-async def delete_book(book_id: int):
+async def delete_book(book_id: int = Path(gt=0)):
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             BOOKS.pop(i)
