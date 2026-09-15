@@ -81,7 +81,7 @@ Ovo znači:
 
 - `BookCreate` opisuje što klijent šalje
 - `BookResponse` opisuje što server vraća
-- FastAPI automatski validira i serijalizuje podatke
+- FastAPI automatski validira (proverava tipove i strukturu) i serijalizuje (pretvara u JSON) podatke.
 
 ---
 
