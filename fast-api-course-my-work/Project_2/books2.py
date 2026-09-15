@@ -107,6 +107,21 @@ async def read_book(book_id: int):
     return {"error": "Book not found"}
 
 
+# Čitanje knjige po rejtingu:
+@app.get("/books/")
+async def read_books_by_rating(book_rating: int):
+    if not 1 <= book_rating <= 5:
+        return {"error": "Rating must be between 1 and 5"}
+    # Ako je rejting validan, nastavljamo sa filtriranjem knjiga po rejtingu.
+    books_by_rating = [book for book in BOOKS if book.rating == book_rating]
+    return books_by_rating
+    # books_to_return = []
+    # for book in BOOKS:
+    #     if book.rating == book_rating:
+    #         books_to_return.append(book)
+    # return books_to_return
+
+
 # Kreiranje nove knjige:
 @app.post("/create-book", status_code=201)
 async def create_book(book_request: BookRequest):
@@ -138,3 +153,20 @@ def find_book_id(book: Book):
 # Šta tačno radi funkcija ‚model_dump()‘:
 # `model_dump()` je metoda Pydantic modela koja vraća podatke modela kao rečnik.
 # Ovo omogućava jednostavno kreiranje novih objekata koristeći te podatke.
+
+
+@app.put("/books/update_book/")
+async def update_book(book: BookRequest):
+    for i in range(len(BOOKS)):
+        if BOOKS[i].id == book.id:
+            BOOKS[i] = book  # type: ignore
+            return BOOKS[i]
+    return {"error": "Book not found"}
+
+
+@app.delete("/books/{book_id}")
+async def delete_book(book_id: int):
+    for i in range(len(BOOKS)):
+        if BOOKS[i].id == book_id:
+            BOOKS.pop(i)
+            break
