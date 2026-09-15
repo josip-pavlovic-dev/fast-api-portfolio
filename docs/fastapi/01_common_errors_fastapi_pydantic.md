@@ -177,11 +177,21 @@ Pydantic će pokušati da konvertuje, ali ako ne može — baca grešku.
 
 ## 6) Greška: `Body`/`Form`/`Query` se ne koriste pravilno
 
-U FastAPI-u su najčešći načini:
+Najčešće problema nisu u FastAPI-ju, nego u tome što ne znaš gde se podatak nalazi u HTTP zahtevu.
 
-- `Query` => parametri u URL-u
-- `Path` => path parametri
-- `Body` => JSON telo
+U HTTP-u i FastAPI-u:
+
+- `Path` => deo URL-a koji označava konkretan resurs
+- `Query` => parametri u URL-u posle `?`, za filtere i opcije
+- `Body` => JSON podatak u telu zahteva
+- `Form` => podaci iz HTML forme
+
+### Najvažnija razlika
+
+- `GET /books/5` => `5` je `path`
+- `GET /books?category=python&limit=10` => `category` i `limit` su `query`
+- `POST /books` sa JSON-om => to je `body`
+- `POST /login` sa form podacima => to je `form`
 
 ### Primer
 
@@ -204,6 +214,15 @@ async def get_books(limit: int = Query(10)):
 ### Zašto je ovo važno?
 
 Ako ne znaš da li je podatak u URL-u ili u body-ju, lako napraviš pogrešan endpoint.
+
+### Jednostavno pravilo
+
+- `Path` = “koji objekat?”
+- `Query` = “kako da filtriram / ograničim?”
+- `Body` = “šta šaljem kao JSON?”
+- `Form` = “šta šaljem putem HTML forme?”
+
+> Dublje objašnjenje i vizuelna mapa ovog koncepta je u fajlu [docs/cheatsheets/request_parts_in_fastapi.md](../cheatsheets/request_parts_in_fastapi.md).
 
 ---
 
