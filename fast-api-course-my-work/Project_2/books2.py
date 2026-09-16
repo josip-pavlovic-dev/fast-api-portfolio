@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, Query, HTTPException
 from pydantic import BaseModel, Field
+from starlette import status
 
 app = FastAPI()
 
@@ -111,22 +112,22 @@ BOOKS: list[Book] = [
 
 
 # Čitanje svih knjiga:
-@app.get("/books")
+@app.get("/books", status_code=status.HTTP_200_OK)
 async def read_all_books():
     return BOOKS
 
 
 # Čitanje pojedinačne knjige po ID-u:
-@app.get("/books/{book_id}")
+@app.get("/books/{book_id}", status_code=status.HTTP_200_OK)
 async def read_book(book_id: int = Path(gt=0)):
     for book in BOOKS:
         if book.id == book_id:
             return book
-    return {"error": "Book not found"}
+    raise HTTPException(status_code=404, detail="Knjiga nije pronađena")
 
 # Čitanje knjige po rejtingu:
-@app.get("/books/")
-async def read_books_by_rating(book_rating: int):
+@app.get("/books/", status_code=status.HTTP_200_OK)
+async def read_books_by_rating(book_rating: int = Query(gt=0, le=5)):
     if not 1 <= book_rating <= 5:
         return {"error": "Rating must be between 1 and 5"}
     # Ako je rejting validan, nastavljamo sa filtriranjem knjiga po rejtingu.
@@ -141,8 +142,8 @@ async def read_books_by_rating(book_rating: int):
     # return books_to_return
 
 
-@app.get("/books/publish/")
-async def read_book_by_publish_date(publish_date: int):
+@app.get("/books/publish/", status_code=status.HTTP_200_OK)
+async def read_book_by_publish_date(publish_date: int = Query(gt=1999, lt=2100)):
     books_to_return = [book for book in BOOKS if book.published_date == publish_date]
 
     # books_to_return = []
@@ -154,14 +155,13 @@ async def read_book_by_publish_date(publish_date: int):
 
 
 # Kreiranje nove knjige:
-@app.post("/create-book", status_code=201)
+@app.post("/create-book/", status_code=status.HTTP_201_CREATED)
 async def create_book(book_request: BookRequest):
     new_book = Book(
         **book_request.model_dump()
     )  # konvertuje zahtev u objekat klase Book
     BOOKS.append(find_book_id(new_book))  # type: ignore
-
-    return new_book
+    return status.HTTP_201_CREATED
 
 
 # Funkcija koja omogućava da id knjige ide redom kako ih registrujemo u listi BOOKS
@@ -186,18 +186,25 @@ def find_book_id(book: Book):
 # Ovo omogućava jednostavno kreiranje novih `objekata` koristeći te podatke.
 
 
-@app.put("/books/update_book/")
+@app.put("/books/update_book/", status_code=status.HTTP_204_NO_CONTENT)
 async def update_book(book: BookRequest):
+    book_changed = False
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book.id:
             BOOKS[i] = book  # type: ignore
+            book_changed = True
             return BOOKS[i]
-    return {"error": "Book not found"}
+    if not book_changed:
+        raise HTTPException(status_code=404, detail="Knjiga nije pronađena")
 
 
-@app.delete("/books/{book_id}")
+@app.delete("/books/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(book_id: int = Path(gt=0)):
+    book_deleted = False
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             BOOKS.pop(i)
+            book_deleted = True
             break
+    if not book_deleted:
+        raise HTTPException(status_code=404, detail="Knjiga nije pronađena")
