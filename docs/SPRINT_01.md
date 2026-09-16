@@ -4,14 +4,14 @@ Cilj: Stabilan FastAPI skeleton + osnovni CRUD + testovi.
 
 ## Checklist (uraditi redom)
 
-- [ ] Pokreni app lokalno (`uvicorn app.main:app --reload`)
-- [ ] Proveri `GET /health`
-- [ ] CRUD za `items` radi (POST + GET)
-- [ ] Dodaj `PUT /items/{id}`
-- [ ] Dodaj `DELETE /items/{id}`
-- [ ] Dodaj 6-8 testova (update + delete + not found)
-- [ ] Dokumentuj endpoints u README
-- [ ] Refactor strukturu (`schemas.py` ako zelis)
+- [x] Pokreni app lokalno (`uvicorn app.main:app --reload`)
+- [x] Proveri `GET /health`
+- [x] CRUD za `items` radi (POST + GET)
+- [x] Dodaj `PUT /items/{id}`
+- [x] Dodaj `DELETE /items/{id}`
+- [x] Dodaj 6-8 testova (update + delete + not found)
+- [x] Dokumentuj endpoints u README
+- [x] Refactor strukturu (`schemas.py` ako zelis)
 
 ## Dnevni fokus
 

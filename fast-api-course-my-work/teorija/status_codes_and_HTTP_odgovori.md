@@ -40,7 +40,7 @@ To je dobar odgovor, ali bez status koda ne znaš da li je to:
 
 ### 200 OK
 
-Zahtev je uspešno obrađen.
+Uvek se vraća status `200 OK` kada je sve u redu. Koristi se za GET zahteve kada se vraćaju podaci.
 
 Primer:
 
@@ -54,7 +54,7 @@ Ako postoji lista knjiga, često se vraća `200 OK`.
 
 ### 201 Created
 
-Resurs je uspešno kreiran.
+Kod uspešnog kreiranja resursa, server često vraća `201 Created`. Uvek je dobro proveriti status code kako bi klijent znao da je kreiranje bilo uspešno.
 
 Primer:
 
@@ -68,7 +68,7 @@ Kada dodaješ novu knjigu, često server vraća `201 Created`.
 
 ### 204 No Content
 
-Zahtev je uspešan, ali nema sadržaja za vraćanje.
+Zahtev je uspešan, ali nema sadržaja za vraćanje. Najčešće se koristi kod DELETE i PUT metoda. Kod uspešnog brisanja ili ažuriranja resursa, server može vratiti `204 No Content`, što znači da nema tela odgovora već samo status.
 
 Primer:
 
@@ -82,7 +82,7 @@ Ako je brisanje uspešno i ne želiš da vraćaš telo odgovora, možeš koristi
 
 ### 400 Bad Request
 
-Klijent je poslao loš zahtev.
+Kod kada klijent pošalje loš zahtev (pogrešna `request` metoda, neispravan JSON, nedostajuća polja itd.), server vraća `400 Bad Request`.
 
 Primer:
 
@@ -91,6 +91,10 @@ Primer:
 - neispravan format
 
 ---
+
+### 401 Unauthorized
+
+Kada klijent nije autentifikovan ili nema validne kredencijale za pristup resursu, server vraća `401 Unauthorized`.
 
 ### 404 Not Found
 
@@ -106,7 +110,7 @@ ako knjiga sa tim ID ne postoji.
 
 ---
 
-### 422 Unprocessable Entity
+### 422 Unprocessable Entity (semanticka greska u zahtevu)
 
 Ovo je vrlo važan status za FastAPI.
 
@@ -127,6 +131,12 @@ POST /books
 ```
 
 `title` je trebalo da bude string, ali je integer.
+
+---
+
+### 500 Internal Server Error
+
+Kada server naiđe na neočekivanu grešku, vraća generički error message sa statusom `500 Internal Server Error`. Ovo znači da problem nije u zahtevu klijenta, već u samom serveru.
 
 ---
 
