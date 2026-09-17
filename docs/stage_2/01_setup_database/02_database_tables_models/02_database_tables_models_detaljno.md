@@ -2,31 +2,31 @@
 
 ## Lekcija 02 - Database Tables and Models (SQLAlchemy ORM)
 
-## 0) Sta je cilj ove lekcije
+## 0) Šta je cilj ove lekcije
 
 U prethodnoj lekciji si napravio konekciju sa bazom (`database.py`).
-U ovoj lekciji pravis ORM modele u `models.py`, odnosno Python klase koje predstavljaju SQL tabele.
+U ovoj lekciji pravis ORM modele u `models.py`, odnosno `Python klase` koje predstavljaju `SQL tabele`.
 
 Kratko:
 
-- `database.py` = kako se povezujes na bazu
+- `database.py` = kako se povezuješ na bazu
 - `models.py` = koje tabele i kolone postoje
 
-Bez `models.py` SQLAlchemy ne zna sta treba da kreira u bazi.
+Bez `models.py` SQLAlchemy ne zna tačno šta treba da kreira u bazi.
 
 ---
 
-## 1) Sta transkript pokriva (verno lekciji)
+## 1) Šta transkript pokriva (verno lekciji)
 
 Transkript fokusira jednu glavnu ideju:
 
-1. Kreiras `models.py`
-2. Uvezes `Base` iz `database.py`
-3. Definises klasu (tabelu), npr. `Todos`
-4. Dodas `__tablename__`
-5. Dodas kolone (`id`, `title`, `description`, `priority`, `complete`)
+1. Kreiraš `models.py`
+2. Uvezeš `Base` iz `database.py`
+3. Definišeš klasu (tabelu), npr. `Todos`
+4. Dodaš `__tablename__`
+5. Dodaš kolone (`id`, `title`, `description`, `priority`, `complete`)
 
-To je minimalni ORM setup koji omogucava da se tabela kreira kasnije preko:
+To je minimalni ORM setup koji omogućava da se tabela kreira kasnije preko:
 
 ```python
 models.Base.metadata.create_all(bind=engine)
@@ -36,7 +36,7 @@ models.Base.metadata.create_all(bind=engine)
 
 ## 2) Kako SQLAlchemy "razume" tvoju tabelu
 
-SQLAlchemy ORM cita Python klasu i mapira je na SQL tabelu.
+SQLAlchemy ORM čita Python klasu i mapira je na SQL tabelu.
 
 Primer mentalnog modela:
 
@@ -44,7 +44,7 @@ Primer mentalnog modela:
 - atribut `id = Column(Integer, primary_key=True)` -> kolona `id INTEGER PRIMARY KEY`
 - jedna instanca klase `Todos(...)` -> jedan red u tabeli `todos`
 
-Dakle, ORM je prevodilac izmedju Python objekata i SQL reda/kolona.
+Dakle, ORM je prevodilac između Python objekata i SQL reda/kolona.
 
 ---
 
@@ -55,7 +55,7 @@ Tvoj trenutni fajl u Project 3:
 - ima dve tabele (`Users`, `Todos`)
 - koristi i `ForeignKey` (`owner_id` pokazuje na `users.id`)
 
-To znaci da je tvoj kod vec iznad minimalnog nivoa iz transkripta, sto je odlicno.
+To znači da je tvoj kod već iznad minimalnog nivoa iz transkripta, što je odlično.
 
 ### 3.1 Imports
 
@@ -72,12 +72,12 @@ except ImportError:
     from database import Base  # type: ignore
 ```
 
-Ovo je kompatibilnost za dva nacina pokretanja:
+Ovo je kompatibilnost za dva načina pokretanja python skripti:
 
-- package mode
-- script mode
+- package mode predstavlja pokretanje unutar paketa, npr. `python -m package.module`
+- script mode predstavlja pokretanje direktno skripte, npr. `python script.py`
 
-Za pocetnika je najbitnije da razumes: `Base` je roditelj svih modela.
+Za početnika je najbitnije da razumeš: `Base` je roditelj svih modela.
 
 ### 3.2 Users tabela
 
@@ -107,76 +107,79 @@ class Todos(Base):
 
 Kolone:
 
-- `id`: integer, primarni kljuc
+- `id`: integer, primarni ključ (Primary Key)
 - `title`: string
 - `description`: string
 - `priority`: integer
 - `complete`: boolean, default `False`
-- `owner_id`: integer, strani kljuc ka `users.id`
+- `owner_id`: integer, strani ključ (Foreign Key) ka `users.id`
 
 `owner_id = Column(Integer, ForeignKey("users.id"))` je prva prava relacija.
-Time svaki todo pripada nekom user-u.
+
+Time svaki todo pripada nekom user-u u bazi. Ovo je realizovano kroz `ForeignKey` vezu.
+
+Objasnimo: `ForeignKey` veza osigurava da svaki `owner_id` u tabeli `todos` odgovara nekom `id` u tabeli `users`. To znači da ne može postojati todo bez validnog vlasnika u bazi.
+
+`ForeignKey` je ključni mehanizam za održavanje referencijalnog integriteta u relacijskim bazama podataka.
 
 ---
 
-## 4) Objasnjenje najvaznijih Column opcija
+## 4) Objašnjenje najvažnijih Column opcija
 
-## `primary_key=True`
+### `primary_key=True`
 
-Kazemo SQL-u: ovo je glavni identifikator reda.
+Kažemo SQL-u: ovo je glavni identifikator reda.
 Mora biti jedinstven i stabilan.
 
-## `index=True`
+### `index=True`
 
 Kreira se indeks nad kolonom (zavisi od baze i migracija/kreiranja).
-Pomaze brze pretrage, npr. po `id`.
+Pomaže brze pretrage, npr. po `id`.
 
-## `unique=True`
+### `unique=True`
 
-Sprecava duplikate.
+Sprečava duplikate.
 Primer: dva user-a ne mogu imati isti `email`.
 
-## `default=...`
+### `default=...`
 
-Ako ne posaljes vrednost, uzima se default.
-Primer: `complete=False` znaci da je novi todo po defaultu ne-zavrsen.
+Ako ne pošalješ vrednost, uzima se default.
+Primer: `complete=False` znači da je novi todo po defaultu ne-završen.
 
-## `ForeignKey("users.id")`
+### `ForeignKey("users.id")`
 
-Referencijalni integritet:
-`owner_id` u `todos` mora pokazivati na postojeci `users.id`.
+Referencijalni integritet (referential integrity):
+`owner_id` u `todos` mora pokazivati na postojeći `users.id`.
 
 ---
 
-## 5) Transcript vs tvoj repo: zasto se razlikuju
+## 5) Transcript vs tvoj repo: zašto se razlikuju
 
-U transkriptu lekcija 02 objasnjava pre svega `Todos` tabelu.
-U tvom kodu vec postoje i `Users` + `owner_id` relacija.
+U transkriptu lekcija 02 objašnjava pre svega `Todos` tabelu.
+U tvom kodu već postoje i `Users` + `owner_id` relacija.
 
 To je normalno jer:
 
 - kurs ide progresivno
 - neki fajlovi u repo-u su iz kasnijih koraka
 
-Zato je najbolja praksa da gledas:
+Zato je najbolja praksa da gledaš:
 
-1. sta lekcija uvodi kao koncept
-2. kako je taj koncept prosiren u finalnijem kodu
+1. šta lekcija uvodi kao koncept
+2. kako je taj koncept proširen u finalnom kodu
 
 ---
 
 ## 6) Kako tabele stvarno nastaju u SQLite bazi
 
 Model sam po sebi ne kreira tabelu odmah.
-Tabela nastaje kada se izvrsi:
+Tabela nastaje kada se izvrši:
 
 ```python
 models.Base.metadata.create_all(bind=engine)
 ```
 
-U tvom projektu to je u `main.py`.
-
-Posle toga u sqlite3 mozes proveriti:
+U tvom projektu to je u `main.py` fajlu.
 
 ```sql
 .tables
@@ -184,17 +187,17 @@ Posle toga u sqlite3 mozes proveriti:
 .schema todos
 ```
 
-Ako tabela ne postoji, najcesce su razlozi:
+Ako tabela ne postoji, najčešće su razlozi:
 
 - nisi pokrenuo app ili skriptu koja zove `create_all`
-- otvorio si pogresan `.db` fajl
+- otvorio si pogrešan `.db` fajl
 - modeli nisu importovani pre `create_all`
 
 ---
 
 ## 7) Mini SQL slika iza modela
 
-Priblizno, ORM definicije bi dale SQL ideju slicnu ovoj:
+Priblizno, ORM definicije bi dale SQL ideju sličnu ovoj:
 
 ```sql
 CREATE TABLE users (
@@ -219,11 +222,13 @@ CREATE TABLE todos (
 );
 ```
 
-Napomena: tacan SQL moze blago varirati po dijalektu i verziji.
+Napomena: tačan SQL može blago varirati po dijalektu i verziji.
+
+`VARCHAR` tip u SQL-u se koristi za kolone koje čuvaju tekstualne podatke promenljive dužine. Na primer, `email VARCHAR UNIQUE` znači da kolona `email` može čuvati tekstualne vrednosti i da svaka vrednost mora biti jedinstvena.
 
 ---
 
-## 8) Dobre navike koje su bitne vec sada
+## 8) Dobre navike koje su bitne već sada
 
 1. Razdvajaj odgovornosti
 
@@ -234,90 +239,137 @@ Napomena: tacan SQL moze blago varirati po dijalektu i verziji.
 
 - jedna tabela = jedan jasan entitet
 
-3. Razmisljaj o integritetu od starta
+3. Razmišljaj o integritetu od starta
 
-- `unique`, `foreign key`, `default`, posle i `nullable=False`
+- `unique`, `foreign key`, `default`, posle i `nullable=False` (ne zaboravi na `CHECK` ograničenja ako je potrebno)
 
-4. Cuvaj semantiku imena
+`CHECK` ograničenja se koriste za definisanje uslova koje vrednosti u koloni moraju zadovoljiti. Na primer, možeš koristiti `CHECK(priority >= 0 AND priority <= 5)` da osiguraš da vrednost kolone `priority` bude između 0 i 5.
+
+4. Čuvaj semantiku imena
 
 - tabela plural (`users`, `todos`)
 - kolona koja referencira user-a: `owner_id`
 
 ---
 
-## 9) Ceste pocetnicke greske bas u ovoj lekciji
+## 9) Česte početničke greške baš u ovoj lekciji
 
-1. Mesanje Pydantic modela i SQLAlchemy modela
+1. Mešanje Pydantic modela i SQLAlchemy modela
 
 - Pydantic je za API ulaz/izlaz
 - SQLAlchemy je za bazu
 
-2. Mislis da je `index=True` isto sto i `unique=True`
+2. Misliš da je `index=True` isto što i `unique=True`
 
 - nije isto
-- indeks ubrzava, unique ogranicava duplikate
+- indeks ubrzava, unique ograničava duplikate
 
 3. Zaboravljen `ForeignKey`
 
-- relacija ostaje samo "dogovor" u kodu, bez zastite baze
+- relacija ostaje samo "dogovor" u kodu, bez zaštite baze
 
-4. Pokretanje iz razlicitih foldera
+4. Pokretanje iz različitih foldera
 
-- kreiras drugi `.db` fajl i deluje kao da "nema tabela"
+- kreiraš drugi `.db` fajl i deluje kao da "nema tabela"
 
 ---
 
-## 10) Vezbe (od osnovnog ka srednjem)
+## 10) Vežbe (od osnovnog ka srednjem)
 
-## Vezba 1
+## Vežba 1
 
-Objasni svojim recima razliku:
+Objasni svojim rečima razliku:
 
-- `primary_key`
-- `unique`
-- `index`
+- `primary_key` služi za označavanje primarnog ključa u tabeli. On garantuje jedinstvenost i neophodnost vrednosti u toj koloni. Vrednost u primarnom ključu ne može biti `NULL` i ne može se ponavljati. Obično se ne menja, jer bi promena primarnog ključa mogla narušiti integritet podataka i veze između tabela.
 
-## Vezba 2
+- `unique` označava da vrednosti u toj koloni moraju biti jedinstvene. Ne dozvoljava duplikate, ali ne garantuje da kolona nije `NULL` (osim ako nije kombinovano sa `nullable=False`). U kombinaciji sa `nullable=False`, osigurava da svaka vrednost u koloni bude jedinstvena i ne `NULL`.
+
+Razlika između `primary_key` i `unique` je u tome što `primary_key` automatski podrazumeva `unique` i `not null`, dok `unique` može biti primenjen na kolone koje nisu primarni ključ.
+
+Ovo znači da kolona sa `primary_key` uvek ima jedinstvene i ne `NULL` vrednosti, dok kolona sa `unique` može biti `NULL` ako nije kombinovano sa `nullable=False`.
+
+- `index` kreira indeks na toj koloni, što ubrzava pretrage po toj koloni. Ne garantuje jedinstvenost vrednosti. Ovo je korisno kada često pretražuješ po toj koloni, ali ne želiš da ograničiš duplikate.
+
+Razlika između `index` i `unique` je u tome što `index` samo poboljšava performanse pretrage, dok `unique` dodatno ograničava duplikate. U odnosu na `foreign key`, `index` ne garantuje integritet podataka, dok `foreign key` osigurava da vrednosti u koloni odgovaraju vrednostima u povezanoj tabeli.
+
+---
+
+## Vežba 2
 
 Dodaj u `Todos` novo polje:
 
-- `created_at` (za sada moze `String` da ostane jednostavno)
+- `created_at` (za sada može `String` da ostane jednostavno)
 
-Pitanje: sta treba da uradis da se ta kolona zaista pojavi u bazi?
+```python
+created_at = Column(String)
+```
 
-## Vezba 3
+Pitanje: Šta treba da uradiš da se ta kolona zaista pojavi u bazi?
+
+Da bi se ta kolona zaista pojavila u bazi, potrebno je ili kreirati novu migraciju i primeniti je, ili obrisati postojeću bazu i ponovo je kreirati sa `Base.metadata.create_all(engine)`. Bez ovoga, nova kolona neće biti dodata u postojeću tabelu.
+
+---
+
+## Vežba 3
 
 Napravi mentalni ER odnos:
 
 - jedan `Users`
-- vise `Todos`
+- više `Todos`
 
 Nacrtaj strelicu i objasni gde je `ForeignKey`.
 
-## Vezba 4
+`ForeignKey` se nalazi u tabeli `Todos` i pokazuje na primarni ključ u tabeli `Users`. To znači da svaki `Todo` mora imati validnog vlasnika (`owner_id`) koji postoji u tabeli `Users`.
 
-Nadji 2 mesta u kodu gde `owner_id` treba posebno proveravati zbog bezbednosti (autorizacija).
+Primer:
+```python
+owner_id = Column(Integer, ForeignKey("users.id"))
+```
+---
+
+## Vežba 4
+
+Nađi 2 mesta u kodu gde `owner_id` treba posebno proveravati zbog bezbednosti (autorizacija).
+
+Primeri mesta gde `owner_id` treba posebno proveravati:
+
+1. Kada korisnik pokušava da pristupi ili izmeni `Todo` koji nije njegov. Treba proveriti da li `owner_id` `Todo`-a odgovara `id`-u trenutno prijavljenog korisnika.
+2. Kada korisnik pokušava da obriše `Todo`. Opet, treba proveriti da li `owner_id` `Todo`-a odgovara `id`-u trenutno prijavljenog korisnika.
 
 ---
 
 ## 11) Brza samoprovera razumevanja
 
-Ako mozes tacno da odgovoris na ova pitanja, lekcija je legla:
+Ako možeš tačno da odgovoriš na ova pitanja, lekcija je legla:
 
-1. Zasto `class Todos(Base)` nasledjuje `Base`?
-2. Sta radi `__tablename__`?
+1. Zašto `class Todos(Base)` nasleđuje `Base`?
+
+Nasleđuje `Base` da bi dobio sve funkcionalnosti SQLAlchemy modela, uključujući mapiranje na tabelu u bazi. Ovo omogućava da SQLAlchemy zna kako da interaguje sa tabelom u bazi kada izvršava upite.
+
+2. Šta radi `__tablename__`?
+
+Određuje ime tabele u bazi na koje će SQLAlchemy mapirati ovaj model. Bez ovog atributa, SQLAlchemy bi automatski generisao ime tabele na osnovu imena klase, što možda nije uvek poželjno.
+
 3. Da li model odmah kreira tabelu sam od sebe?
-4. Cemu sluzi `ForeignKey("users.id")`?
-5. Zasto su `email` i `username` cesto `unique=True`?
+
+Ne, model samo definiše strukturu. Tabela se kreira kada pozoveš `Base.metadata.create_all(engine)` ili koristiš migracije.
+
+4. Čemu služi `ForeignKey("users.id")`?
+
+Označava da kolona referencira primarni ključ u drugoj tabeli (`users.id`), čime se uspostavlja veza između tabela i omogućava integritet podataka. Ovo znači da baza neće dozvoliti unos vrednosti u `owner_id` koja ne postoji u tabeli `users`.
+
+5. Zašto su `email` i `username` često `unique=True`?
+
+Da bi se osiguralo da ne postoje duplikati u bazi, što je važno za identifikaciju korisnika i integritet podataka. Na primer, dva korisnika ne mogu imati isti email ili username.
 
 ---
 
-## 12) Zakljucak
+## 12) Zaključak
 
-Lekcija 02 deluje kratko, ali je kljucna.
-Ovde prvi put formalno definises strukturu podataka aplikacije.
+Lekcija 02 deluje kratko, ali je ključna.
+Ovde prvi put formalno definišeš strukturu podataka aplikacije.
 
-Kad razumes `models.py`, sledeci koraci (CRUD, auth, filtering, migracije) postaju logicni jer svi zavise od dobrog modela.
+Kad razumeš `models.py`, sledeći koraci (CRUD, auth, filtering, migracije) postaju logični jer svi zavise od dobrog modela.
 
-U jednoj recenici:
+U jednoj rečenici:
 `database.py` otvara vrata baze, a `models.py` crta mapu kako baza izgleda.
