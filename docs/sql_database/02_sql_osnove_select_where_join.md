@@ -2,11 +2,11 @@
 
 ## Uvod
 
-SQL je jezik kojim pricas sa bazom.
+SQL je jezik kojim pričaš sa bazom.
 Ako je API spolja, SQL je unutra.
 
-U FastAPI projektu SQL znanje je korisno i kada koristis ORM,
-zato sto ORM ipak generise SQL ispod haube.
+U FastAPI projektu SQL znanje je korisno i kada koristiš ORM,
+zato što ORM ipak generiše SQL ispod haube.
 
 ## Kreiranje primera tabela
 
@@ -83,8 +83,8 @@ SET price = 59.99
 WHERE id = 1;
 ```
 
-Bez WHERE mozes nehotice promeniti sve redove.
-To je jedna od najopasnijih pocetnickih gresaka.
+Bez WHERE možeš nehotice promeniti sve redove.
+To je jedna od najopasnijih početničkih grešaka.
 
 ## DELETE
 
@@ -93,15 +93,15 @@ DELETE FROM items
 WHERE id = 1;
 ```
 
-Isto pravilo: bez WHERE brises sve redove.
+Isto pravilo: bez WHERE brišeš sve redove.
 
 ## JOIN
 
-JOIN spaja podatke iz vise tabela.
+JOIN spaja podatke iz više tabela.
 
 ### INNER JOIN
 
-Vraca samo redove koji imaju poklapanje u obe tabele.
+Vraća samo redove koji imaju poklapanje u obe tabele.
 
 ```sql
 SELECT i.id, i.title, u.username
@@ -111,7 +111,7 @@ INNER JOIN users u ON i.owner_id = u.id;
 
 ### LEFT JOIN
 
-Vraca sve redove iz leve tabele i poklapanja iz desne.
+Vraća sve redove iz leve tabele i poklapanja iz desne.
 
 ```sql
 SELECT u.id, u.username, i.title
@@ -148,10 +148,10 @@ HAVING COUNT(*) >= 2;
 
 ## NULL i tri-vrednosna logika
 
-U SQL svetu NULL znaci nepoznato.
+U SQL svetu NULL znači nepoznato.
 
-- price = NULL nije ispravno
-- koristi se IS NULL ili IS NOT NULL
+- price = NULL nije ispravno.
+- koristi se IS NULL ili IS NOT NULL.
 
 ```sql
 SELECT * FROM items WHERE price IS NULL;
@@ -159,9 +159,9 @@ SELECT * FROM items WHERE price IS NULL;
 
 ## Bezbednost: SQL Injection
 
-Nikada ne spajaj korisnicki input direktno u SQL string.
+Nikada ne spajaj korisnički input direktno u SQL string.
 
-Lose:
+Loše:
 
 ```python
 query = f"SELECT * FROM users WHERE username = '{username}'"
@@ -179,12 +179,37 @@ Bolje: parametrizovani upiti (SQLAlchemy ovo radi umesto tebe kada koristis ORM/
 
 ## Zadaci
 
-1. Napisi upit koji vraca 10 najnovijih items.
-2. Napisi upit koji vraca sve users i broj njihovih items.
-3. Napisi upit koji vraca items sa cenom izmedju 100 i 500 sortirano rastuce.
-4. Napisi primer UPDATE sa dva polja i sigurnim WHERE.
+1. Napiši upit koji vraća 10 najnovijih items.
 
-## Zakljucak
+```sql
+SELECT * FROM items
+ORDER BY created_at DESC
+LIMIT 10;
+```
+2. Napiši upit koji vraća sve users i broj njihovih items.
 
-Ako razumes SELECT/WHERE/JOIN, vec imas bazu za SQLAlchemy ORM.
-ORM ce ti skratiti kod, ali SQL logika ostaje ista.
+```sql
+SELECT u.id, u.username, COUNT(i.id) AS total_items
+FROM users u
+LEFT JOIN items i ON i.owner_id = u.id
+GROUP BY u.id, u.username;
+```
+3. Napiši upit koji vraća items sa cenom između 100 i 500 sortirano rastuće.
+
+```sql
+SELECT * FROM items
+WHERE price BETWEEN 100 AND 500
+ORDER BY price ASC;
+```
+4. Napiši primer UPDATE sa dva polja i sigurnim WHERE.
+
+```sql
+UPDATE items
+SET price = 199.99, title = 'Updated Title'
+WHERE id = 1;
+```
+
+## Zaključak
+
+Ako razumeš SELECT/WHERE/JOIN, već imaš bazu za SQLAlchemy ORM.
+ORM će ti skratiti kod, ali SQL logika ostaje ista.
