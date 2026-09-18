@@ -1,7 +1,7 @@
 # FastAPI Stage 1: Field, Path, model_dump i naprednije pretrage
 
 Ovaj materijal je nastavak tvog trenutnog rada u fajlu `books2.py`.
-Fokus je na 3 kljucne teme:
+Fokus je na 3 ključne teme:
 
 1. `Field(...)` validacije u Pydantic modelu
 2. `Path(...)` validacije path parametara
@@ -11,22 +11,22 @@ Na kraju imas i naprednije endpoint primere za pretragu (string metode, kombinov
 
 ---
 
-## 1) Gde si trenutno i sta je dobro
+## 1) Gde si trenutno i šta je dobro
 
-Po tvom kodu vec radis veoma bitne stvari:
+Po tvom kodu već radiš veoma bitne stvari:
 
-- koristis `BookRequest(BaseModel)` kao ulaznu semu
-- validiras ulaz sa `Field(...)`
-- koristis `Path(gt=0)` za `book_id`
-- kreiras novi objekat sa `Book(**book_request.model_dump())`
+- koristiš `BookRequest(BaseModel)` kao ulaznu semu
+- validiraš ulaz sa `Field(...)`
+- koristiš `Path(gt=0)` za `book_id`
+- kreiraš novi objekat sa `Book(**book_request.model_dump())`
 
-To je odlican temelj za sledeci korak: vise kontrole nad podacima i napredniji endpoint-i.
+To je odličan temelj za sledeći korak: više kontrole nad podacima i napredniji endpoint-i.
 
 ---
 
 ## 2) `Field(...)` detaljno
 
-`Field(...)` sluzi da:
+`Field(...)` služi da:
 
 - validira vrednost
 - dokumentuje API (Swagger)
@@ -55,20 +55,20 @@ class BookRequest(BaseModel):
 - `gt`, `ge`, `lt`, `le` za brojeve
 - `examples` ili `json_schema_extra` za Swagger primer
 
-### Brzo poredjenje
+### Brzo poređenje
 
-- `gt=0` znaci strogo vece od 0
-- `ge=0` znaci vece ili jednako 0
-- `lt=6` znaci strogo manje od 6
-- `le=6` znaci manje ili jednako 6
+- `gt=0` znači strogo veće od 0
+- `ge=0` znači veće ili jednako 0
+- `lt=6` znači strogo manje od 6
+- `le=6` znači manje ili jednako 6
 
-Ako korisnik posalje los payload, FastAPI automatski vraca `422 Unprocessable Entity`.
+Ako korisnik pošalje loš payload, FastAPI automatski vraća `422 Unprocessable Entity`.
 
 ---
 
 ## 3) `Path(...)` detaljno
 
-`Path(...)` koristis za validaciju parametra koji dolazi iz URL putanje.
+`Path(...)` koristiš za validaciju parametra koji dolazi iz URL putanje. U suštini, omogućava ti da definišeš ograničenja i dokumentaciju za path parametre.
 
 Primer:
 
@@ -80,9 +80,9 @@ async def read_book(book_id: int = Path(gt=0, description="ID knjige mora biti >
     ...
 ```
 
-Ovim postizes:
+Ovim postižeš:
 
-- jasnije API ponasanje
+- jasnije API ponašanje
 - automatsku validaciju
 - bolju dokumentaciju u Swagger-u
 
@@ -102,9 +102,9 @@ async def read_book(
 
 ---
 
-## 4) `model_dump()` detaljno: zasto i kako
+## 4) `model_dump()` detaljno: zašto i kako
 
-U Pydantic v2, `model_dump()` je standardni nacin da model pretvoris u `dict`.
+U Pydantic v2, `model_dump()` je standardni način da model pretvoriš u `dict`.
 
 Tvoj obrazac:
 
@@ -112,11 +112,11 @@ Tvoj obrazac:
 new_book = Book(**book_request.model_dump())
 ```
 
-Sta se desava:
+Šta se dešava:
 
 1. `book_request` je Pydantic objekat (`BookRequest`)
-2. `book_request.model_dump()` vraca recnik
-3. `**` raspakuje recnik u argumente konstruktora `Book(...)`
+2. `book_request.model_dump()` vraća rečnik
+3. `**` raspakuje rečnik u argumente konstruktora `Book(...)`
 
 Primer:
 
@@ -134,38 +134,38 @@ payload_dict = book_request.model_dump()
 new_book = Book(**payload_dict)
 ```
 
-### Cesta prakticna varijanta
+### Česta praktična varijanta
 
-Kada ne zelis da `None` vrednosti idu dalje:
+Kada ne želiš da `None` vrednosti idu dalje:
 
 ```python
 data = book_request.model_dump(exclude_none=True)
 new_book = Book(**data)
 ```
 
-### Napomena za tvoj slucaj
+### Napomena za tvoj slučaj
 
 Kod tebe je `id` opciono polje (default `None`) pri kreiranju. To je okej jer posle dodeljujes ID kroz `find_book_id(...)`.
 
 ---
 
-## 5) Vazna razlika: klasa `Book` vs `BookRequest`
+## 5) Važna razlika: klasa `Book` vs `BookRequest`
 
 U tvom kodu:
 
 - `BookRequest` je ulazni DTO (validacija request-a)
-- `Book` je interni objekat koji cuvas u listi
+- `Book` je interni objekat koji čuvaš u listi
 
 To je dobra praksa jer odvajas:
 
-- kako korisnik salje podatke
-- kako tvoja aplikacija interno cuva podatke
+- kako korisnik šalje podatke
+- kako tvoja aplikacija interno čuva podatke
 
 ---
 
-## 6) Poboljsan endpoint za kreiranje knjige
+## 6) Poboljšan endpoint za kreiranje knjige
 
-Ovde je varijanta bliska tvom stilu, ali sa malo jacom kontrolom:
+Ovde je varijanta bliska tvom stilu, ali sa malo jačom kontrolom:
 
 ```python
 from fastapi import HTTPException, status
@@ -205,13 +205,13 @@ async def create_book(book_request: BookRequest):
 
 ## 7) Naprednije pretrage: string metode i kombinovani filteri
 
-U realnim API-jevima pretraga cesto ukljucuje:
+U realnim API-jevima pretraga često uključuje:
 
-- `contains` (sadrzi tekst)
-- `startswith` (pocinje sa)
-- `endswith` (zavrsava se na)
-- case-insensitive poredjenje
-- vise filtera odjednom
+- `contains` (sadrži tekst)
+- `startswith` (počinje sa)
+- `endswith` (završava se na)
+- case-insensitive poređenje
+- više filtera odjednom
 - sortiranje i paginaciju
 
 ## 7.1 Pretraga po naslovu i autoru (case-insensitive)
@@ -316,7 +316,7 @@ async def advanced_books(
     }
 ```
 
-## 7.5 Pretraga sa tokenima (svaka rec mora da postoji)
+## 7.5 Pretraga sa tokenima (svaka reč mora da postoji)
 
 ```python
 @app.get("/books/search/fulltext-lite")
@@ -330,7 +330,7 @@ async def search_fulltext_lite(q: str = Query(min_length=2)):
     return [b for b in BOOKS if matches(b)]
 ```
 
-Ovaj pristup je odlican prelaz ka pravom full-text search-u u bazi kasnije.
+Ovaj pristup je odličan prelaz ka pravom full-text search-u u bazi kasnije.
 
 ---
 
@@ -339,45 +339,45 @@ Ovaj pristup je odlican prelaz ka pravom full-text search-u u bazi kasnije.
 - `Path`: deo URL putanje (npr. `/books/{book_id}`)
 - `Query`: opcioni ili filter parametri (npr. `/books/search?title=fastapi`)
 
-Tipican obrazac:
+Tipičan obrazac:
 
 - identifikator resursa (`book_id`) ide u `Path`
 - kriterijumi pretrage idu u `Query`
 
 ---
 
-## 9) Ceste greske u ovoj fazi
+## 9) Česte greške u ovoj fazi
 
-1. Mesanje tipova u listi `BOOKS`:
-   Kod tebe `BOOKS` cuva `Book` objekte. Zato u update/delete logici pazi da ne upises dict ili Pydantic model direktno.
+1. Mešanje tipova u listi `BOOKS`:
+   Kod tebe `BOOKS` čuva `Book` objekte. Zato u update/delete logici pazi da ne upišeš dict ili Pydantic model direktno.
 
-2. Nepostojeci zapis:
+2. Nepostojeći zapis:
    Za "not found" je bolje `HTTPException(404)` nego `{"error": ...}` jer daje standardan HTTP odgovor.
 
 3. Konflikt ruta:
-   Istovremeno koriscenje `/books` i `/books/` moze da unese zabunu. Drzi jedan jasan stil ruta.
+   Istovremeno korišćenje `/books` i `/books/` može da unese zabunu. Drži jedan jasan stil ruta.
 
 4. Validation boundaries:
    Ako je `rating` od 1 do 5, koristi svuda isti opseg (`ge=1, le=5`) radi konzistentnosti.
 
 ---
 
-## 10) Mini zadaci za vezbu
+## 10) Mini zadaci za vežbu
 
-1. Napravi endpoint `/books/search/author-prefix` koji vraca knjige gde autor pocinje zadatim stringom.
-2. Napravi endpoint `/books/search/title-or-description` koji trazi token u naslovu ILI opisu.
-3. Dodaj `published_from` i `published_to` u postojeci rating endpoint.
-4. Napravi endpoint koji vraca samo top N knjiga po rating-u, pa po godini objave.
-5. Za svaki endpoint koji trazi jedan zapis po ID-u uvedi `HTTPException(404)`.
+1. Napravi endpoint `/books/search/author-prefix` koji vraća knjige gde autor počinje zadatim stringom.
+2. Napravi endpoint `/books/search/title-or-description` koji traži token u naslovu ILI opisu.
+3. Dodaj `published_from` i `published_to` u postojeći rating endpoint.
+4. Napravi endpoint koji vraća samo top N knjiga po rating-u, pa po godini objave.
+5. Za svaki endpoint koji traži jedan zapis po ID-u uvedi `HTTPException(404)`.
 
 ---
 
-## 11) Sledeci korak posle ovog materijala
+## 11) Sledeći korak posle ovog materijala
 
-Kada savladas ove pretrage u listi, sledeca prirodna etapa je SQLAlchemy + baza:
+Kada savladaš ove pretrage u listi, sledeća prirodna etapa je SQLAlchemy + baza:
 
-- iste filtere prebacujes na DB upite
-- dobijas efikasnost na velikim skupovima podataka
-- lakse radis paginaciju i sortiranje
+- iste filtere prebacuješ na DB upite
+- dobijaš efikasnost na velikim skupovima podataka
+- lakše radiš paginaciju i sortiranje
 
-Do tada je ovaj nivo vise nego dovoljan da postavis jaku logiku endpoint-a i validacije u FastAPI.
+Do tada je ovaj nivo više nego dovoljan da postaviš jaku logiku endpoint-a i validacije u FastAPI.
