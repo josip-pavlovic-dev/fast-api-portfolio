@@ -14,9 +14,17 @@ To je dovoljno za prvi dan. Bez toga ne treba ići u naprednije stvari.
 
 Naravno — i to je najbolji način da počneš. Ne moraš odmah da razumeš sve u FastAPI-ju. Prvo treba da razumeš 3 stvari:
 
-1. šta je ruta
-2. šta je decorator
-3. šta radi funkcija ispod njega
+1. Šta je ruta?
+
+Ruta je URL adresa koja vodi do određenog dela aplikacije. Ona definiše gde korisnik može da pristupi određenoj funkcionalnosti u FastAPI aplikaciji.
+
+2. Šta je decorator?
+
+Decorator je posebna funkcija koja “omotava” drugu funkciju i menja njen ponašanje ili dodaje dodatne informacije. U kontekstu FastAPI-ja, decorator povezuje URL rutu sa funkcijom koja će obraditi zahtev. On omogućava FastAPI-ju da zna koja funkcija treba da se pozove kada korisnik pristupi određenoj ruti.
+
+3. Šta radi funkcija ispod njega?
+
+Funkcija ispod dekoratora je funkcija koja se poziva kada korisnik pristupi određenoj ruti. Ona obrađuje zahtev i vraća odgovor. Ovo je suštinski deo endpointa u FastAPI-ju.
 
 ---
 
@@ -83,7 +91,7 @@ Ovo znači:
 - FastAPI uviđa da postoji ruta `/items`
 - pozove funkciju `read_items()`
 - funkcija vraća rezultat
-- FastAPI to pretvara u HTTP response
+- FastAPI to pretvara u HTTP response koji se šalje klijentu
 
 ---
 
@@ -572,7 +580,7 @@ Najčešće koristiš:
 - `str`
 - `float`
 
-Primer:
+Sledeći primer pokazuje kako se koristi path parameter sa tipom `int`:
 
 ```python
 @app.get("/items/{item_id}")
@@ -585,7 +593,15 @@ Ovo znači:
 - `item_id` mora biti integer
 - ako korisnik pošalje `/items/abc`, FastAPI će vratiti grešku
 
-To je divno, jer FastAPI automatski validira podatke.
+Sledeći primer pokazuje kako se koristi path parameter sa tipom `str`:
+
+```python
+@app.get("/items/{item_name}")
+def read_item(item_name: str):
+    return {"item_name": item_name}
+```
+
+Zaključak je da FastAPI automatski validira tipove path parametara i vraća grešku ako korisnik pošalje neodgovarajući tip.
 
 ---
 
@@ -673,7 +689,7 @@ Koriste se za filtere, pretragu, opcije:
 GET /users?role=admin
 ```
 
-Ovdje je `role=admin` dodatni parametar.
+Ovde je `role=admin` dodatni parametar pa se ne koristi za identifikaciju konkretnog resursa već za filtriranje rezultata.
 
 ---
 
@@ -683,7 +699,9 @@ Pitaj se:
 
 > “Da li je ovo identifikator konkretnog resursa?”
 
-Ako jeste, to je path parameter.
+Imaj na umu da se pod konkretnim resursom podrazumeva jedinstveni identifikator koji omogućava pristup tom resursu.
+
+Na primer, `/users/5` identifikuje korisnika sa ID 5, dok `/products/12` identifikuje proizvod sa ID 12. Ako je to slučaj, to je path parameter.
 
 Primer:
 
@@ -692,10 +710,10 @@ Primer:
 
 Ako je:
 
-- filter
-- pretraga
-- sorting
-- opcije
+- filter (npr. `?role=admin`)
+- pretraga (npr. `?search=keyword`)
+- sorting (npr. `?sort=asc`)
+- opcije (npr. `?limit=10`)
 
 onda je query parameter.
 
@@ -705,7 +723,7 @@ onda je query parameter.
 
 - Path parameter je deo URL-a
 - Piše se kao `{ime}`
-- Koristi se za konkretan resurs
+- Koristi se za konkretan resurs (jedinstveni identifikator)
 - Mora da ima isto ime u ruti i u funkciji
 - FastAPI automatski pokušava da ga konvertuje u tip koji si naveo
 - Ako nije validno, vratiće grešku

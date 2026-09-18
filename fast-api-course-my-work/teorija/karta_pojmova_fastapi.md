@@ -14,6 +14,8 @@ FastAPI je Python framework za pravljenje API-ja.
 - pravi JSON odgovore
 - vrlo pogodan za REST API
 
+- REST API = API koji koristi HTTP metode (GET, POST, PUT, DELETE) za rad sa resursima u aplikaciji na standardizovan način (Representational State Transfer).
+
 ---
 
 ### 2. API
@@ -196,7 +198,7 @@ Primer:
 /users?role=admin&active=true
 ```
 
-Ovdje su:
+Ovde su:
 
 - `role=admin`
 - `active=true`
@@ -265,7 +267,7 @@ Primer:
 item_id: int
 ```
 
-Ako se posalje string umesto broja, FastAPI može vratiti grešku.
+Ako se pošalje string umesto broja, FastAPI može vratiti grešku.
 
 ---
 

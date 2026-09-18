@@ -28,7 +28,7 @@ class BookResponse(BaseModel):
 # In-memory baza podataka.
 # U realnom projektu ovo bi bila baza podataka (SQLite, PostgreSQL...),
 # ali za učenje je dovoljno da koristimo Python listu.
-books = [
+books: list[dict[str, str | int | None]] = [
     {
         "id": 1,
         "title": "Python za početnike",
@@ -71,7 +71,7 @@ def get_book(book_id: int):
 # book: BookCreate prihvata JSON telo i validira ga prema modelu.
 @app.post("/books", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
 def create_book(book: BookCreate):
-    new_book = {
+    new_book: dict[str, str | int | None] = {
         "id": len(books) + 1,
         "title": book.title,
         "author": book.author,
@@ -87,7 +87,7 @@ def create_book(book: BookCreate):
 def update_book(book_id: int, book: BookCreate):
     for index, existing_book in enumerate(books):
         if existing_book["id"] == book_id:
-            updated_book = {
+            updated_book: dict[str, int | str | None] = {
                 "id": book_id,
                 "title": book.title,
                 "author": book.author,
