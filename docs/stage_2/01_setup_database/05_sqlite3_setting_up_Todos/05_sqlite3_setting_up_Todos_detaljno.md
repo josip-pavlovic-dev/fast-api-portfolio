@@ -4,26 +4,27 @@
 
 ## 0) Cilj lekcije
 
-Ovo je zavrsna vezba u oblasti setup baze.
-Cilj je da naucis kako da direktno kroz sqlite3 terminal:
+Ovo je završna vežba u oblasti setup baze.
+Cilj je da naučiš kako da direktno kroz sqlite3 terminal:
 
-- otvoris bazu
-- proveris tabele i schema
-- uneses prve zapise
-- obrises zapis bezbedno
-- citas podatke u preglednom formatu
+- Otvoriš bazu (npr. `sqlite3 todosapp.db`)
+- Proveriš tabele i schema (`.tables` i `.schema`)
+- Uneseš prve zapise (`INSERT INTO todos ...`)
+- Obrišeš zapis bezbedno (`DELETE FROM todos WHERE id = ...`)
+- Pročitaš podatke u preglednom formatu (`SELECT * FROM todos;`)
+- Menjaš prikaz rezultata (`.mode ...`)
 
-Ova vezba je veoma bitna jer ti gradi intuiciju sta ORM radi "iza scene".
+Ova vežba je veoma bitna jer ti gradi intuiciju kako tačno ORM radi "iza scene".
 
 ---
 
-## 1) Sta transkript pokriva (verno lekciji)
+## 1) Šta transkript pokriva (verno lekciji)
 
-Transkript prolazi sledeci tok:
+Transkript prolazi sledeći tok:
 
 1. Ulazak u TodoApp folder
 2. Otvaranje baze komandnom linijom (`sqlite3 todosapp.db`)
-3. Provera schema (`.schema`)
+3. Provera schema i tabela (`.schema` i `.tables`)
 4. `INSERT` vise todo redova
 5. `SELECT * FROM todos;`
 6. Menjanje prikaza preko `.mode` (column, markdown, box, table)
@@ -36,23 +37,23 @@ Core poruka lekcije:
 
 ---
 
-## 2) Pre starta: najvaznija priprema
+## 2) Pre starta: najvažnija priprema
 
 Da bi sqlite3 video tabele, baza mora biti prethodno kreirana kroz app startup (`create_all`).
 
-To prakticno znaci:
+To praktično znači:
 
-1. pokrenes FastAPI aplikaciju barem jednom
-2. proveris da je nastao `todosapp.db`
-3. tek onda ulazis u sqlite3
+1. pokreneš FastAPI aplikaciju barem jednom (npr. `uvicorn main:app --reload`)
+2. proveriš da je nastao `todosapp.db`
+3. tek onda ulaziš u sqlite3
 
-Ako ne uradis korak 1, `.schema` moze biti prazan.
+Ako ne uradiš korak 1, `.schema` može biti prazan.
 
 ---
 
 ## 3) Otvaranje sqlite3 baze
 
-Iz odgovarajuceg foldera pokreni:
+Iz odgovarajućeg foldera pokreni:
 
 ```bash
 sqlite3 todosapp.db
@@ -60,11 +61,11 @@ sqlite3 todosapp.db
 
 Ako je fajl na drugoj putanji, koristi apsolutnu putanju.
 
-Kada udjes u shell, videces sqlite prompt.
+Kada uđeš u shell, videćeš sqlite prompt.
 
 ---
 
-## 4) Komande koje moras znati u sqlite3 shell-u
+## 4) Komande koje moraš znati u sqlite3 shell-u
 
 ## 4.1 Pregled schema i tabela
 
@@ -82,17 +83,17 @@ Za konkretnu tabelu:
 .schema todos
 ```
 
-## 4.2 Pomoc
+## 4.2 Pomoć
 
 ```sql
 .help
 ```
 
-Ako zaboravis sqlite komandu, `.help` je prvi spas.
+Ako zaboraviš sqlite komandu, `.help` je prvi spas.
 
 ---
 
-## 5) INSERT u praksu
+## 5) INSERT u praksi
 
 Primer iz transkripta (forma):
 
@@ -101,17 +102,17 @@ INSERT INTO todos (title, description, priority, complete)
 VALUES ('Go to the store', 'Pick up eggs', 5, 0);
 ```
 
-Bitno za pocetnika:
+Bitno za početnika:
 
-- `id` se ne navodi jer ga baza dodeljuje
-- `0` znaci `False`, `1` znaci `True` (u SQLite boolean je numericki predstavljen)
-- svaka SQL komanda treba da se zavrsi sa `;`
+- `id` se ne navodi jer ga baza dodeljuje automatski
+- `0` znači `False`, `1` znači `True` (u SQLite boolean je numericki predstavljen)
+- svaka SQL komanda treba da se završi sa `;`
 
-Ako zaboravis `;`, sqlite ce cekati nastavak i videces nastavak prompta.
+Ako zaboraviš `;`, sqlite će čekati nastavak i videćeš nastavak prompta.
 
 ---
 
-## 6) SELECT i citanje podataka
+## 6) SELECT i čitanje podataka
 
 Posle inserta:
 
@@ -119,21 +120,21 @@ Posle inserta:
 SELECT * FROM todos;
 ```
 
-Dobijes sve kolone i sve redove.
+Dobiješ sve kolone i sve redove.
 
-Ako hoces samo deo:
+Ako hoćeš samo deo:
 
 ```sql
 SELECT id, title, priority, complete FROM todos;
 ```
 
-Ovo je preglednije od `*` kada tabela poraste.
+Ovo je preglednije od `*` kada tabela poraste u broj redova.
 
 ---
 
 ## 7) Prikaz rezultata: .mode
 
-Transkript je odlican ovde, jer pokazuje da sqlite output moze biti citljiviji.
+Transkript je odličan ovde, jer pokazuje da sqlite output može biti čitljiviji.
 
 Primeri:
 
@@ -144,7 +145,7 @@ Primeri:
 .mode table
 ```
 
-Prakticna preporuka:
+Praktična preporuka:
 
 - za svakodnevni terminal rad: `.mode table` ili `.mode box`
 - za copy u dokumentaciju: `.mode markdown`
@@ -155,7 +156,12 @@ Dodatni trik:
 .headers on
 ```
 
-Ukljucuje imena kolona u outputu (korisno sa `column` i `table`).
+Uključuje imena kolona u outputu (korisno sa `column` i `table`).
+
+```sqlite3
+.mode column
+.headers on
+```
 
 ---
 
@@ -173,63 +179,63 @@ Posle toga odmah proveri:
 SELECT * FROM todos;
 ```
 
-Zasto po id:
+Zašto po id:
 
 - `id` je jedinstven
-- izbegavas slucajno brisanje vise redova
+- izbegavaš slučajno brisanje više redova
 
-Rizican primer:
+Rizičan primer:
 
 ```sql
 DELETE FROM todos WHERE complete = 0;
 ```
 
-Ako je vecina redova incomplete, obrisaces skoro sve.
+Ako je većina redova incomplete, obrišaćeš skoro sve.
 
 ---
 
-## 9) Napomena o id "ponovnoj upotrebi" (vazna nijansa)
+## 9) Napomena o id "ponovnoj upotrebi" (važna nijansa)
 
 U transkriptu deluje kao da SQLite "ponovo koristi" obrisan id.
 U praksi, kod `INTEGER PRIMARY KEY` bez `AUTOINCREMENT` pravilo je:
 
-- sledeci id je obicno `max(id) + 1`
-- zbog toga moze izgledati kao reuse kada obrises poslednji red pa ponovo uneses novi
+- sledeći id je obično `max(id) + 1`
+- zbog toga može izgledati kao reuse kada obriseš poslednji red pa ponovo uneseš novi
 
 Primer:
 
-- imas id 1,2,3,4
-- obrises 4
-- sledeci insert dobije 4 (jer je `max(id)` opet 3)
+- imaš id 1,2,3,4
+- obrišeš 4
+- sledeći insert dobije 4 (jer je `max(id)` opet 3)
 
-Ali to nije garancija da ce SQLite "reciklirati" bilo koji obrisan id iz sredine.
+Ali to nije garancija da će SQLite "reciklirati" bilo koji obrisan `id` iz sredine.
 
-Ako zelis striktno da se id nikad ne ponavlja, onda schema treba `AUTOINCREMENT` strategiju.
+Ako želiš striktno da se `id` nikad ne ponavlja, onda schema treba `AUTOINCREMENT` strategiju.
 
 ---
 
-## 10) Najcesce greske u ovoj vezbi
+## 10) Najčešće greške u ovoj vežbi
 
-1. Otvaras pogresan `todosapp.db` fajl
-   Simptom: nema tabela i podataka
+1. Otvaraš pogrešan `todosapp.db` fajl
+   Simptom: nema tabela i podataka u bazi
 
 2. Zaboravljen `;`
-   Simptom: sqlite prompt ceka nastavak unosa
+   Simptom: sqlite prompt čeka nastavak unosa
 
 3. `DELETE` bez preciznog `WHERE`
-   Simptom: obrisano vise redova nego sto si hteo
+   Simptom: obrisano više redova nego što si hteo
 
-4. Mesanje stringova i brojeva
+4. Mešanje stringova i brojeva
    Primer: `priority` treba broj, ne tekst
 
-5. Ocekivanje da sqlite shell "sam cuva" greske
-   Nema rollback discipline kao u app kodu bez eksplicitnog transaction rada
+5. Čekivanje da sqlite shell "sam čuva" greške
+   Nema rollback discipline kao u app kodu bez eksplicitnog `transaction` rada
 
 ---
 
 ## 11) Veza sa FastAPI i SQLAlchemy
 
-Sve sto ovde radis rucno, u app-u kasnije ide kroz SQLAlchemy:
+Sve što ovde radiš ručno, u app-u kasnije ide kroz SQLAlchemy:
 
 - `INSERT` -> `db.add(model)` + `db.commit()`
 - `SELECT` -> `db.query(Model)...`
@@ -239,38 +245,52 @@ Zato je ova lekcija dragocena: daje ti baznu SQL intuiciju pre ORM sloja.
 
 ---
 
-## 12) Prakticna mini-rutina za samostalni rad
+## 12) Praktična mini-rutina za samostalni rad
 
-Uradi sledece redom:
+Uradi sledeće redom:
 
 1. `.tables`
 2. `.schema todos`
-3. ubaci 3 nova todo reda
-4. prikazi `.mode table`
+3. ubaci 3 nova todo reda u tabelu
+4. prikaži `.mode table`
 5. `SELECT id, title, priority, complete FROM todos;`
-6. obrisi jedan red po `id`
-7. ponovo `SELECT` da potvrdis
+6. obriši jedan red po `id`
+7. ponovo `SELECT` da potvrdiš
 
-Ako ovo uradis bez greske, spreman si za sledeci nivo CRUD rada.
+Ako ovo uradiš bez greške, spreman si za sledeći nivo CRUD rada.
 
 ---
 
 ## 13) Samoprovera razumevanja
 
-1. Zasto je `id` bolji od `title` za delete/update?
-2. Kako proveravas da li uopste gledas pravu bazu?
-3. Cemu sluzi `.schema`, a cemu `.tables`?
-4. Sta znaci `complete = 0` u SQLite?
-5. Zasto je opasan `DELETE` koji ne cilja jedinstven zapis?
+1. Zašto je `id` bolji od `title` za delete/update?
+
+Zato što je `id` jedinstven za svaki red u tabeli i ne menja se, dok `title` može biti duplikat ili se može promeniti. To znači da korišćenje `id` za `DELETE` ili `UPDATE` operacije smanjuje rizik od nenamernog brisanja ili ažuriranja više redova.
+
+2. Kako proveravaš da li uopšte gledaš pravu bazu?
+
+Tako što proverim da li su tabele i podaci koje očekujem prisutni u bazi. To uključuje korišćenje `.tables` i `.schema` komandi da se uverim da radim sa pravom bazom. Takođe, mogu proveriti putanju do fajla baze da budem siguran da gledam pravu bazu.
+
+`.` ispred komandi (kao što su `.tables` i `.schema`) označava da su to specijalne SQLite komande, a ne SQL upiti. Razlika je u tome što SQL upiti rade sa podacima u tabelama (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), dok specijalne komande upravljaju samim SQLite okruženjem (npr. prikazuju tabele, šemu, putanju do baze itd.).
+
+3. Čemu služi `.schema`, a čemu `.tables`?
+
+`.schema` prikazuje strukturu tabele, tj. `SQL kod` koji definiše tabelu, dok `.tables` prikazuje listu svih tabela u bazi. Ovo je korisno za brzo proveravanje da li tabela postoji i kako je definisana.
+
+4. Šta znači `complete = 0` u SQLite?
+
+`complete = 0` znači da zadatak nije završen. U SQLite, `0` obično predstavlja `False`, dok `1` predstavlja `True`. Ovo je uobičajen način predstavljanja boolean vrednosti u SQLite. Boolean vrednosti se često koriste u tabelama koje prate status zadataka ili slične binarne informacije (npr. da li je zadatak završen ili ne).
+
+5. Zašto je opasan `DELETE` koji ne cilja jedinstven zapis?
+
+Takav `DELETE` može obrisati više redova nego što je namera, što može dovesti do gubitka podataka. Uvek je preporučljivo koristiti `WHERE` uslov koji cilja jedinstveni zapis, obično po `id`.
 
 ---
 
-## 14) Zakljucak
+## 14) Zaključak
 
-Ovom lekcijom zatvaras setup fazu baze na praktican nacin.
+Ovom lekcijom zatvaraš setup fazu baze na praktičan način.
 
-Sada ne samo da znas kako se modeli i tabele kreiraju,
-nego i kako da direktno proveris i manipulis podacima u samoj bazi.
+Sada ne samo da znaš kako se modeli i tabele kreiraju, nego i kako da direktno proveriš i manipulišeš podacima u samoj bazi.
 
-To je odlican temelj za naredne lekcije gde SQLAlchemy i FastAPI preuzimaju operacije,
-a ti razumes tacno sta se desava ispod haube.
+To je odličan temelj za naredne lekcije gde SQLAlchemy i FastAPI preuzimaju operacije, a ti razumeš tačno šta se dešava ispod haube.

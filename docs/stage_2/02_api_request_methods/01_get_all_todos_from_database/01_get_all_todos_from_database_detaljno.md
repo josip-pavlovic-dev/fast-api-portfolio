@@ -9,7 +9,7 @@ Završio si setup baze:
 - `database.py` (engine, SessionLocal, Base)
 - `models.py` (Users, Todos)
 - `main.py` (create_all)
-- sqlite3 osnove
+- `sqlite3` osnove
 
 Sada prelazimo na novu oblast: API request methods.
 Prvi korak je da kroz endpoint vratiš sve todo zapise iz baze.
