@@ -70,8 +70,8 @@ class UserResponse(BaseModel):
 ```python
 @app.get("/users", response_model=list[UserResponse])
 def get_users(
-    role: Optional[str] = Query(default=None, description="Filter korisnika po roli."),
-    is_active: Optional[bool] = Query(default=None, description="Filter po aktivnom statusu."),
+    role: str | None = Query(default=None, description="Filter korisnika po roli."),
+    is_active: bool | None = Query(default=None, description="Filter po aktivnom statusu."),
 ):
 ```
 

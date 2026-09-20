@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import FastAPI, HTTPException, Query, status
 from pydantic import BaseModel
 
@@ -30,7 +28,7 @@ class UserResponse(BaseModel):
 
 
 # In-memory lista korisnika.
-users = [
+users: list[dict[str, str | int | bool]] = [
     {
         "id": 1,
         "name": "Marko",
@@ -61,13 +59,14 @@ users = [
 # Na primer: /users?role=admin&is_active=true
 @app.get("/users", response_model=list[UserResponse])
 def get_users(
-    role: Optional[str] = Query(default=None, description="Filter korisnika po roli."),
-    is_active: Optional[bool] = Query(
+    role: str | None = Query(default=None, description="Filter korisnika po roli."),
+    is_active: bool | None = Query(
         default=None, description="Filter po aktivnom statusu."
     ),
 ):
     filtered_users = users
 
+    # Filtriranje korisnika po query parametrima role i is_active
     if role is not None:
         filtered_users = [user for user in filtered_users if user["role"] == role]
 
@@ -94,7 +93,7 @@ def get_user(user_id: int):
 # Kreira novog korisnika.
 @app.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate):
-    new_user = {
+    new_user: dict[str, str | int | bool] = {
         "id": len(users) + 1,
         "name": user.name,
         "email": user.email,
@@ -111,7 +110,7 @@ def create_user(user: UserCreate):
 def update_user(user_id: int, user: UserCreate):
     for index, existing_user in enumerate(users):
         if existing_user["id"] == user_id:
-            updated_user = {
+            updated_user: dict[str, str | int | bool] = {
                 "id": user_id,
                 "name": user.name,
                 "email": user.email,
