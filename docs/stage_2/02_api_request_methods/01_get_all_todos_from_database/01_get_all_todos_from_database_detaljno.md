@@ -51,7 +51,7 @@ Bitna razlika u odnosu na najraniju verziju iz transkripta:
 - ne vraća se više bukvalno sve iz tabele
 - vraćaju se samo todos za ulogovanog korisnika
 
-Prakticno:
+Praktično:
 
 ```python
 return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
@@ -59,10 +59,10 @@ return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
 
 Ovo je naprednija i bezbednija varijanta.
 
-Zasto je bolje:
+Zašto je bolje:
 
 - korisnik vidi samo svoje podatke
-- nema curenja tudjih todo zapisa
+- nema curenja tuđih todo zapisa
 - endpoint je spremniji za realnu aplikaciju
 
 ---
@@ -73,41 +73,47 @@ Klasičan obrazac:
 
 ```python
 def get_db():
-    db = SessionLocal()
+    db = SessionLocal() # otvara novu DB (database) sesiju
     try:
-        yield db
+        yield db # pošalji DB sesiju endpoint funkciji
     finally:
         db.close()
 ```
 
 Šta se dešava po koracima:
 
-1. FastAPI pozove dependency pre endpoint logike
+1. FastAPI pozove dependency pre endpoint logike, što znači da se `get_db` izvršava pre nego što se endpoint funkcija pozove.
 2. `SessionLocal()` otvara DB sesiju
-3. `yield db` prosleđuje sesiju endpoint funkciji
-4. endpoint vrati response klijentu
-5. posle response-a radi se `finally: db.close()`
+3. `yield db` prosleđuje sesiju endpoint funkciji i omogućava joj da koristi bazu podataka. Koristimo `yield` umesto `return` da bismo osigurali da se `finally` blok izvrši nakon što endpoint završi sa radom. Kada naiđe kraj endpoint funkcije, kontrola se vraća nazad u `get_db` funkciju i izvršava se `finally` blok.
+4. endpoint vrati response klijentu u obliku HTTP odgovora.
+5. posle response-a radi se `finally: db.close()` i konekcija se zatvara.
 
 Ključna prednost:
 
-- konekcija je otvorena samo dok treba
-- smanjuješ rizik curenja konekcija
-- obrazac je skalabilan i standardan
+- Konekcija je otvorena samo dok treba, što smanjuje opterećenje na bazu i rizik od curenja konekcija.
+- Obrazac je skalabilan i standardan, i preporučuje se za većinu FastAPI aplikacija.
 
 ---
 
 ## 5) Annotated + Depends bez magije
 
-Primer:
+Sintaksa za definisanje dependency-ja sa Annotated i Depends je sledeća:
 
 ```python
+from typing import Annotated
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from ...database import get_db
+
+# Primer:
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
 Ovo čitaj ovako:
 
 - `db` parametar treba da bude `Session`
-- FastAPI će ga popuniti preko `get_db`
+- FastAPI će ga popuniti preko `get_db` kada se endpoint funkcija pozove.
 
 U endpointu:
 
@@ -116,7 +122,7 @@ async def read_all(db: db_dependency):
     ...
 ```
 
-Zasto je korisno:
+Zašto je ovo korisno:
 
 - ne ponavljaš dugi tip u svakom endpointu
 - kod je čitljiviji
@@ -200,8 +206,8 @@ Tok izgleda ovako:
 1. HTTP zahtev pogodi rutu po kojoj je definisan endpoint.
 2. FastAPI razreši dependency-je od endpointa od kojih zavisi (npr. `get_db`).
 3. `get_db` otvori sesiju za bazu podataka.
-4. endpoint izvrsi query nad bazom podataka.
-5. SQLAlchemy prevede query u SQL koji se izvršava nad bazom podataka.
+4. endpoint izvrsi query (ORM izraz) nad bazom podataka.
+5. SQLAlchemy prevede query (ORM izraz) u SQL koji se izvršava nad bazom podataka.
 6. baza vrati redove koji odgovaraju SQL upitu.
 7. FastAPI serijalizuje response u JSON format.
 8. `finally` zatvori sesiju za bazu podataka.
@@ -236,13 +242,55 @@ To je bezbednije od konkatenacije (concatenating) stringova. Ovo smanjuje rizik 
 ## 11) Praktična mini vežba (20-30 min)
 
 1. Napiši endpoint koji vraća sve todos (bez filtera).
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Todos
+
+router = APIRouter()
+
+@router.get("/todos", response_model=list[Todos])
+def get_all_todos(db: Session = Depends(get_db)):
+    return db.query(Todos).order_by(Todos.id).all()
+```
 2. Zatim dodaj auth i filter po `owner_id`.
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Todos
+
+router = APIRouter()
+
+@router.get("/todos/{user_id}", response_model=list[Todos])
+def get_all_todos(user_id: int, db: Session = Depends(get_db)):
+    # Dodaj filter po owner_id
+    return db.query(Todos).filter(Todos.owner_id == user_id).order_by(Todos.id).all()
+```
 3. Uoči razliku u rezultatima.
+
+Razlika je u tome što prvi endpoint vraća sve todos bez obzira na vlasnika, dok drugi endpoint vraća samo todos koji pripadaju korisniku sa datim `user_id`.
+
 4. Testiraj 2 korisnika i potvrdi da svaki vidi samo svoje podatke.
 
+```bash
+# Testiranje prvog endpointa (svi todos)
+curl -X GET "http://127.0.0.1:8000/todos"
+
+# Testiranje drugog endpointa (samo todos za korisnika sa user_id=1)
+curl -X GET "http://127.0.0.1:8000/todos/1"
+```
+Testiranje treba da pokaže da prvi endpoint vraća sve todos, dok drugi endpoint vraća samo todos za korisnika sa datim `user_id`.
 Bonus:
 
-- Dodaj sortiranje po `id` od najmanjeg ka najvećem.
+- Dodaj sortiranje po `id` od najmanjeg ka najvećem u oba endpointa.
+
+Dodato sortiranje po `id` od najmanjeg ka najvećem u oba endpointa. Pogledaj kako se koristi `order_by(Todos.id)` u oba primera.
 
 ---
 
