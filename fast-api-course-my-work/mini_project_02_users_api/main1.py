@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field
 app = FastAPI(
     title="Users API",
     version="1.0.0",
-    description="API za korisnike sa filtriranjem po query parametrima.",
+    description="API za upravljanje korisnicima.",
 )
 
 
 # Pydantic modeli za kreiranje i prikaz korisnika.
-# Statički tipovi i validacija polja koristeći Pydantic Field i Literal su obavezni za UserCreate model. Definišu se default vrednosti za role i is_active polja kako bi se sprečila greška prilikom kreiranja korisnika kada ta polja nisu prosleđena.
+# Statički tipovi i validacija polja koristeći Pydantic Field i Literal su obavezni za UserCreate model. Definišu se default vrednosti za role i is_active polja kako bi se sprečila greška prilikom kreiranja korisnika kada ta polja nisu prosleđena od strane klijenta.
 class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=50)
     email: str = Field(min_length=5, max_length=100)
@@ -27,7 +27,7 @@ class UserCreate(BaseModel):
                 "name": "Marko",
                 "email": "marko@example.com",
                 "role": "user",
-                "is_active": True
+                "is_active": True,
             }
         }
     }

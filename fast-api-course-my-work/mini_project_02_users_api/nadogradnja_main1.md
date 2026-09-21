@@ -98,13 +98,13 @@ Napravi fajl analogan `database.py`:
 
 **Pitanje za proveru razumevanja:** zašto je `check_same_thread=False` potrebno samo za SQLite, a ne za PostgreSQL?
 
-`check_same_thread=False` je potrebno samo za SQLite jer SQLite ne podržava višestruke niti koje pristupaju istoj bazi podataka istovremeno. PostgreSQL i druge baze podataka imaju sopstvene mehanizme za upravljanje konkurentnim pristupom, pa im ovo podešavanje nije potrebno.
+`{"check_same_thread": False` je potrebno samo za SQLite jer SQLite ne podržava višestruke niti koje pristupaju istoj bazi podataka istovremeno. PostgreSQL i druge baze podataka imaju sopstvene mehanizme za upravljanje konkurentnim pristupom, pa im ovo podešavanje nije potrebno.
 
 ---
 
 ### Korak 2 — ORM model `User`
 
-Napravi `models.py` sa klasom `User(Base)`, po uzoru na `models.py`:
+Napravi `models.py` sa klasom `User(Base)`, po uzoru na `models.py` iz `app` foldera.
 
 ```python
 class User(Base):
