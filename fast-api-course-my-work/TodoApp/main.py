@@ -1,11 +1,9 @@
-from typing import Annotated
-from collections.abc import Generator
-from fastapi import Depends, FastAPI
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 
 from . import models  # noqa: F401 - potrebno da Base zna za Todos tabelu
 from .db.base import Base
-from .db.database import SessionLocal, engine
+from .db.database import engine
+from .db.session import db_dependency
 from .models import Todos
 
 app = FastAPI(
@@ -17,17 +15,6 @@ app = FastAPI(
 )
 
 Base.metadata.create_all(bind=engine)
-
-
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @app.get("/")
