@@ -265,9 +265,178 @@ main.py         -> FastAPI app, create_all, endpoint-i (sastavljanje aplikacije)
 Pre nego što predjes na sledeću temu, proveri da li umeš da odgovoriš:
 
 1. Zašto je `Base` uvezen direktno iz `db/base.py`, umesto preko `models.Base`?
+
+Zato što želimo da `Base` bude jedinstvena roditeljska klasa za sve ORM modele i da se tabele kreiraju na osnovu te klase, a ne direktno iz `models.py`. Ovo omogućava centralizovano upravljanje metapodacima i olakšava migracije i kreiranje tabela.
+
 2. Šta tačno radi `from . import models` ako se `models` nigde direktno ne koristi u telu funkcija?
+
+Ovo osigurava da su svi ORM modeli registrovani pri pokretanju aplikacije. Bez ovog importa, `Base` možda ne bi znao za sve modele, što bi moglo dovesti do toga da tabele ne budu kreirane. Zato je važno da se import `models` izvrši čak i ako se direktno ne koristi u kodu.
+
 3. Zašto je `get_db()` premešten iz `main.py` u `db/session.py`?
+
+Zato što želimo da logika za dobijanje sesije baze bude centralizovana i ponovo upotrebljiva. Na taj način `main.py` ostaje tanak i fokusiran samo na orkestraciju aplikacije, dok detalji o sesiji baze ostaju u `db/session.py`. Ovo takođe olakšava testiranje i održavanje koda.
+
 4. Zašto `main.py` više ne uvozi `SessionLocal`, ali i dalje uvozi `engine`?
+
+Zato što `SessionLocal` više nije potreban u `main.py` jer se sesija baze sada dobija preko `db_dependency`. `engine` je i dalje potreban za kreiranje tabela (`Base.metadata.create_all(bind=engine)`) i eventualno za druge operacije koje zahtevaju direktan pristup engine-u.
+
 5. Šta bi se pokvarilo kada bi neki budući router fajl pokušao da uveze `db_dependency` direktno iz `main.py`?
 
+Ako bi neki budući router fajl pokušao da uveze `db_dependency` direktno iz `main.py`, došlo bi do kružnog importa i potencijalno greške pri pokretanju aplikacije. `main.py` treba da ostane centralno mesto za orkestraciju aplikacije, dok se specifične zavisnosti, kao što je `db_dependency`, uvoze iz svojih odgovarajućih modula (`db/session.py`).
+
 Ako na sva pitanja možeš da odgovoriš svojim rečima, ova lekcija je usvojena i možeš nastaviti na sledeću temu (routers u tvom aktivnom projektu).
+
+---
+
+## 8) Pitanja i odgovori
+
+### Pitanje 1
+
+PITANJE: Da li treba u `fast-api-course-my-work/TodoApp/main.py` da kreiram:
+
+```python
+class TodoRequest(BaseModel):
+    title: str = Field(min_length=3, description="Naslov todo zadatka mora imati najmanje 3 karaktera")
+    description: str = Field(min_length=3, max_length=100, description="Opis todo zadatka mora imati najmanje 3 karaktera i najviše 100 karaktera")
+    priority: int = Field(gt=0, lt=6, description="Prioritet todo zadatka mora biti veći od 0 i manji od 6")
+    completed: bool = Field(description="Status završenosti todo zadatka") # Nema dodatnih ograničenja zato što je boolean i može biti samo True ili False (0 ili 1)
+```
+
+ili u nekom drugom folderu?
+
+Problem je što je u kursu drugačiji raspored foldera (working tree) tj. sve je smešteno u `scratch/fast-api-course/Project_3` a u rasporedu foldera kod mene odvojeno imam foldere `db`, `core`, `api`. Poslao sam ti moj `TodoApp` da vidiš raspored foldera u projektu.
+
+---
+
+### Odgovor 1
+
+ODGOVOR: Ne treba da stavljaš `TodoRequest` direktno u `main.py`. U tvojoj strukturi najbolje je da napraviš:
+
+```text
+fast-api-course-my-work/
+└── TodoApp/
+    ├── main.py
+    ├── models.py
+    ├── schemas.py       <- ovde
+    ├── db/
+    ├── core/
+    └── api/
+```
+
+Razlog:
+
+- `models.py` sadrži SQLAlchemy modele i opis tabela baze.
+- `schemas.py` sadrži Pydantic modele za `request/response` podatke API-ja.
+- `main.py` povezuje aplikaciju i endpoint-e.
+
+U `TodoApp/schemas.py`:
+
+```python
+from pydantic import BaseModel, Field
+
+
+class TodoRequest(BaseModel):
+    title: str = Field(min_length=3)
+    description: str = Field(min_length=3, max_length=100)
+    priority: int = Field(gt=0, lt=6)
+    complete: bool = False
+```
+
+Obrati pažnju na pravilno pisanje:
+
+```python
+Field(min_length=3, max_length=100)
+```
+
+Ne:
+
+```python
+Field(min_lenght=3, max_lenght=100)
+```
+
+U `main.py` bi kasnije koristio:
+
+```python
+from .schemas import TodoRequest
+```
+
+Na primer za `POST`:
+
+```python
+@app.post("/todo", status_code=status.HTTP_201_CREATED)
+async def create_todo(
+    todo_request: TodoRequest,
+    db: db_dependency,
+):
+    todo_model = Todos(**todo_request.model_dump())
+
+    db.add(todo_model)
+    db.commit()
+    db.refresh(todo_model)
+
+    return todo_model
+```
+
+Za sada, dok radiš samo `GET`, `TodoRequest` ti još nije potreban. Biće ti potreban u sledećem koraku kada počneš da primaš JSON body kroz `POST`i kroz `PUT` a kasnije i kroz `PATCH`.
+
+Najvažnije pravilo:
+
+```text
+models.py  -> struktura baze
+schemas.py -> struktura HTTP podataka
+main.py    -> aplikacija i endpoint registracija
+```
+
+U tvom slučaju preporučujem `TodoApp/schemas.py`, jer se to najviše poklapa sa rasporedom glavnog projekta u root-u repozitorijuma.
+
+---
+
+### Pitanje 2
+
+PITANJE: Da li na kraju posle `db.commit()` treba da koristim i `db.refresh(todo_model)` i u `main.py` za `POST` i `PUT` zahteve?
+
+---
+
+### Odgovor 2
+
+ODGOVOR: Da, preporučuje se koristiti `db.refresh(todo_model)` nakon `db.commit()` i za `POST` i za `PUT` zahteve. Razlog je što `db.commit()` upisuje promene u bazu, ali ne osvežava instancu modela sa generisanim vrednostima iz baze (npr. automatski generisani `id`). `db.refresh(todo_model)` osigurava da instanca modela sadrži najnovije podatke iz baze.
+
+ZAKLJUČAK: Da, u ovom `POST` endpointu je preporučljivo da posle `db.commit()` pozoveš `db.refresh(todo_model)`, naročito zato što baza tada generiše `id`. Dodaću ga odmah na pravo mesto i proveriti fajl.
+
+Preporučljivo je:
+
+```python
+db.add(todo_model)
+db.commit()
+db.refresh(todo_model)
+
+return todo_model
+```
+
+Razlika:
+
+- `db.commit()` trajno upisuje podatke u bazu.
+
+- `db.refresh(todo_model)` ponovo učitava objekat iz baze, uključujući automatski generisan `id`.
+
+Bez `refresh(todo_model)` zapis može biti sačuvan, ali objekat koji vraćaš klijentu ne mora pouzdano sadržati sve vrednosti koje je baza generisala ili izmenila.
+
+---
+
+### Pitanje 3
+
+PITANJE: Šta znači u anotaciji `Generator(Session, None, None)`?
+
+---
+
+### Odgovor 3
+
+ODGOVOR: U Python-u, `Generator` je tip koji opisuje generator funkciju. Anotacija `Generator(Session, None, None)` znači da generator:
+
+- `yield`-uje vrednosti tipa `Session`
+- ne očekuje nikakve vrednosti koje se šalju nazad u generator (`None`)
+- ne vraća nikakvu vrednost kada se završi (`None`)
+
+U kontekstu `FastAPI`-ja i `SQLAlchemy`-ja, ovo se obično koristi za `dependency` koji pruža SQLAlchemy sesiju.
+
+`Generator` yield-uje sesiju, a nakon što se završi, sesija se zatvara.

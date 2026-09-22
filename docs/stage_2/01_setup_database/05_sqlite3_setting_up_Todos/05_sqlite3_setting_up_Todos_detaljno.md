@@ -25,7 +25,7 @@ Transkript prolazi sledeći tok:
 1. Ulazak u TodoApp folder
 2. Otvaranje baze komandnom linijom (`sqlite3 todosapp.db`)
 3. Provera schema i tabela (`.schema` i `.tables`)
-4. `INSERT` vise todo redova
+4. `INSERT` više todo redova
 5. `SELECT * FROM todos;`
 6. Menjanje prikaza preko `.mode` (column, markdown, box, table)
 7. `DELETE` po `id`
@@ -33,13 +33,13 @@ Transkript prolazi sledeći tok:
 
 Core poruka lekcije:
 
-- za update/delete najbezbednije je koristiti primary key (`id`)
+- za `update/delete` najbezbednije je koristiti primary key (`id`)
 
 ---
 
 ## 2) Pre starta: najvažnija priprema
 
-Da bi sqlite3 video tabele, baza mora biti prethodno kreirana kroz app startup (`create_all`).
+Da bi `sqlite3` video tabele, baza mora biti prethodno kreirana kroz app startup (`create_all`).
 
 To praktično znači:
 
@@ -105,7 +105,7 @@ VALUES ('Go to the store', 'Pick up eggs', 5, 0);
 Bitno za početnika:
 
 - `id` se ne navodi jer ga baza dodeljuje automatski
-- `0` znači `False`, `1` znači `True` (u SQLite boolean je numericki predstavljen)
+- `0` znači `False`, `1` znači `True` (u SQLite `boolean` je numerički predstavljen)
 - svaka SQL komanda treba da se završi sa `;`
 
 Ako zaboraviš `;`, sqlite će čekati nastavak i videćeš nastavak prompta.
@@ -210,7 +210,7 @@ Primer:
 
 Ali to nije garancija da će SQLite "reciklirati" bilo koji obrisan `id` iz sredine.
 
-Ako želiš striktno da se `id` nikad ne ponavlja, onda schema treba `AUTOINCREMENT` strategiju.
+Ako želiš striktno da se `id` nikad ne ponavlja, onda `schema` treba `AUTOINCREMENT` strategiju.
 
 ---
 
@@ -220,7 +220,7 @@ Ako želiš striktno da se `id` nikad ne ponavlja, onda schema treba `AUTOINCREM
    Simptom: nema tabela i podataka u bazi
 
 2. Zaboravljen `;`
-   Simptom: sqlite prompt čeka nastavak unosa
+   Simptom: `sqlite` prompt čeka nastavak unosa
 
 3. `DELETE` bez preciznog `WHERE`
    Simptom: obrisano više redova nego što si hteo
@@ -228,7 +228,7 @@ Ako želiš striktno da se `id` nikad ne ponavlja, onda schema treba `AUTOINCREM
 4. Mešanje stringova i brojeva
    Primer: `priority` treba broj, ne tekst
 
-5. Čekivanje da sqlite shell "sam čuva" greške
+5. Očekivanje da `sqlite shell` "sam čuva" greške
    Nema rollback discipline kao u app kodu bez eksplicitnog `transaction` rada
 
 ---
