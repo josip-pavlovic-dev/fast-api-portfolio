@@ -79,6 +79,8 @@ Ovo je kompatibilnost za dva načina pokretanja python skripti:
 
 Za početnika je najbitnije da razumeš: `Base` je roditelj svih modela.
 
+---
+
 ### 3.2 Users tabela
 
 ```python
@@ -97,6 +99,8 @@ Kolone:
 - `hashed_password`: string
 - `is_active`: boolean, default `True`
 - `role`: string
+
+---
 
 ### 3.3 Todos tabela
 
@@ -118,7 +122,7 @@ Kolone:
 
 Time svaki todo pripada nekom user-u u bazi. Ovo je realizovano kroz `ForeignKey` vezu.
 
-Objasnimo: `ForeignKey` veza osigurava da svaki `owner_id` u tabeli `todos` odgovara nekom `id` u tabeli `users`. To znači da ne može postojati todo bez validnog vlasnika u bazi.
+Objasnimo: `ForeignKey` veza osigurava da svaki `owner_id` u tabeli `todos` odgovara nekom `id` u tabeli `users`. To znači da ne može postojati `todo` bez validnog vlasnika u bazi. Pošto je `id` unikatan (nema duplikata), svaki `owner_id` će uvek pokazivati na tačno jednog korisnika u tabeli `users`. Time se omogućava referencijalni integritet između tabela.(slično kao `PRIMARY KEY` za pojedinačne tabele)
 
 `ForeignKey` je ključni mehanizam za održavanje referencijalnog integriteta u relacijskim bazama podataka.
 
@@ -133,7 +137,7 @@ Mora biti jedinstven i stabilan.
 
 ### `index=True`
 
-Kreira se indeks nad kolonom (zavisi od baze i migracija/kreiranja).
+Kreira se `indeks` nad kolonom (zavisi od baze i migracija/kreiranja).
 Pomaže brze pretrage, npr. po `id`.
 
 ### `unique=True`
@@ -256,8 +260,8 @@ Napomena: tačan SQL može blago varirati po dijalektu i verziji.
 
 1. Mešanje Pydantic modela i SQLAlchemy modela
 
-- Pydantic je za API ulaz/izlaz
-- SQLAlchemy je za bazu
+- `Pydantic` je za API ulaz/izlaz
+- `SQLAlchemy` je za bazu
 
 2. Misliš da je `index=True` isto što i `unique=True`
 
@@ -288,9 +292,9 @@ Razlika između `primary_key` i `unique` je u tome što `primary_key` automatski
 
 Ovo znači da kolona sa `primary_key` uvek ima jedinstvene i ne `NULL` vrednosti, dok kolona sa `unique` može biti `NULL` ako nije kombinovano sa `nullable=False`.
 
-- `index` kreira indeks na toj koloni, što ubrzava pretrage po toj koloni. Ne garantuje jedinstvenost vrednosti. Ovo je korisno kada često pretražuješ po toj koloni, ali ne želiš da ograničiš duplikate.
+- `index` kreira indeks na toj koloni, što ubrzava pretrage po toj koloni. Ne garantuje jedinstvenost vrednosti u smislu `unique`.To znači da možeš imati duplikate u toj koloni, ali pretrage po njoj će biti brže. Ako pretražujemo `duplikate`, `indeks` će omogućiti `brže` pronalaženje svih odgovarajućih redova i vratiti sve duplikate brže. Zaključak je da `index` za razliku od `unique` ne ograničava duplikate, već samo poboljšava performanse pretrage.
 
-Razlika između `index` i `unique` je u tome što `index` samo poboljšava performanse pretrage, dok `unique` dodatno ograničava duplikate. U odnosu na `foreign key`, `index` ne garantuje integritet podataka, dok `foreign key` osigurava da vrednosti u koloni odgovaraju vrednostima u povezanoj tabeli.
+Razlika između `index` i `unique` je u tome što `index` samo poboljšava performanse pretrage, dok `unique` dodatno ograničava duplikate. U odnosu na `foreign key`, `index` ne garantuje integritet (pod integritetom podataka se podrazumeva da su vrednosti u koloni validne i konzistentne/tačne), dok `foreign key` osigurava da vrednosti u koloni odgovaraju vrednostima u povezanoj tabeli.
 
 ---
 
@@ -322,9 +326,73 @@ Nacrtaj strelicu i objasni gde je `ForeignKey`.
 `ForeignKey` se nalazi u tabeli `Todos` i pokazuje na primarni ključ u tabeli `Users`. To znači da svaki `Todo` mora imati validnog vlasnika (`owner_id`) koji postoji u tabeli `Users`.
 
 Primer:
+
 ```python
 owner_id = Column(Integer, ForeignKey("users.id"))
 ```
+
+### Dijagram odnosa (jedan Users -> više Todos)
+
+```mermaid
+erDiagram
+    USERS ||--o{ TODOS : "owns"
+    USERS {
+        int id PK
+        string email
+        string username
+    }
+    TODOS {
+        int id PK
+        string title
+        int owner_id FK
+    }
+```
+
+Čitanje dijagrama:
+
+- `USERS ||--o{ TODOS` znači "jedan user prema nula-ili-više todos"
+- `PK` pored `id` znači primarni ključ te tabele
+- `FK` pored `owner_id` znači da ta kolona referencira primarni ključ druge tabele
+
+### Kako `ForeignKey` povezuje `owner_id` sa `id` u `Users`
+
+`owner_id` u tabeli `Todos` nije nezavisna vrednost, nego kopija postojećeg `id`-a iz tabele `Users`:
+
+```python
+class Users(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+
+
+class Todos(Base):
+    __tablename__ = "todos"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+```
+
+Mehanizam:
+
+1. `Users.id` je `primary_key=True`, što bazu obavezuje da ta vrednost bude jedinstvena i ne-`NULL` za svaki red.
+2. `ForeignKey("users.id")` na koloni `owner_id` govori bazi: "svaka vrednost ovde mora tačno odgovarati nekoj postojećoj vrednosti u `users.id`".
+3. Zato je odnos "jedan naspram jedan" na nivou pojedinačnog para `(owner_id, users.id)` — jedan `owner_id` uvek pokazuje na tačno jednog korisnika, jer `users.id` ne može imati duplikate.
+4. Kada se to ponovi za više redova u `Todos` sa istim `owner_id`, dobija se odnos "jedan naspram više" na nivou tabela: jedan `User` može imati više `Todos`, ali svaki `Todo` ima tačno jednog vlasnika.
+
+Baza ovo aktivno štiti: pokušaj da upišeš `owner_id` koji ne postoji u `users.id` bude odbijen (referencijalni integritet).
+
+### Uloga `id` kao primarnog ključa u `Todos`
+
+Bitno je razlikovati dve različite kolone u `Todos`:
+
+- `id` (primarni ključ `Todos`): identifikuje **red u tabeli `Todos`**, tj. konkretan todo zapis. Ne govori ništa o vlasništvu.
+- `owner_id` (strani ključ ka `Users`): identifikuje **kome taj todo pripada**, tj. povezuje red iz `Todos` sa redom iz `Users`.
+
+Drugim rečima:
+
+- `Todos.id` odgovara na pitanje: "koji je ovo tačno todo?"
+- `Todos.owner_id` odgovara na pitanje: "čiji je ovaj todo?"
+
+Ove dve kolone su nezavisne jedna od druge: `id` raste/postoji za svaki novi red bez obzira na vlasnika, dok `owner_id` može biti isti za više različitih `Todos` redova (jedan korisnik ima više zadataka), ali svaki od tih redova i dalje ima svoj jedinstveni `id`.
+
 ---
 
 ## Vežba 4
