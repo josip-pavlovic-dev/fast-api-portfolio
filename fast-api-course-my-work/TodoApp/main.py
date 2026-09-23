@@ -51,19 +51,21 @@ async def create_todo(
         todo_model
     )  # Priprema model za dodavanje u bazu, ali još uvek nije upisan u bazu. Instanca modela je sada u "pending" stanju.
     db.commit()  # Upisuje promenu u bazu i završava transakciju.
-    db.refresh(todo_model)  # Učitava iz baze generisane i potvrđene vrednosti, npr. id.
+    db.refresh(
+        todo_model
+    )  # Učitava/ osvežava iz baze generisane i potvrđene vrednosti, npr. id.
 
     return todo_model
 
 
 @app.put("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-def update_todo(db: db_dependency,
+def update_todo(
+    db: db_dependency,
     todo_request: TodoRequest,
     # todo_request mora biti pre todo_id jer todo_id ima podrazumevanu vrednost Path(...).
     # Python zahteva da parametri bez podrazumevane (default) vrednosti budu pre parametara sa podrazumevanom vrednošću.
     todo_id: int = Path(gt=0, description="ID todo zadatka mora biti veći od 0"),
-    ) -> None:
-
+) -> None:
     todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
 
     if todo_model is None:
@@ -87,6 +89,7 @@ def update_todo(db: db_dependency,
 
     db.add(todo_model)  # Priprema model za ažuriranje u bazi.
     db.commit()  # Upisuje promene u bazu i završava transakciju.
+
 
 @app.delete("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_todo(
