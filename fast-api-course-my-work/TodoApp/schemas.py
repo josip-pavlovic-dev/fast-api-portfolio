@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TodoRequest(BaseModel):
@@ -14,3 +14,13 @@ class TodoRequest(BaseModel):
         description="Prioritet todo zadatka mora biti veći od 0 i manji od 6",
     )
     complete: bool = Field(description="Status završenosti todo zadatka")
+
+
+class TodoResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    priority: int
+    complete: bool
+
+    model_config = ConfigDict(from_attributes=True)

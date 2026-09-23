@@ -49,7 +49,7 @@ async def read_all(db: db_dependency):
 Šta je ovde bilo tačno:
 
 - `main.py` je radio sve odjednom: kreiranje FastAPI aplikacije, `create_all`, definisanje `get_db` dependency-ja, definisanje `db_dependency` tipa, i sam endpoint.
-- Funkcionalno je ispravno, ali je odgovornosti pomešalo u jednom fajlu.
+- Funkcionalno je ispravno, ali su odgovornosti pomešane u jednom fajlu.
 
 ---
 
@@ -61,13 +61,13 @@ Ranije (u prethodnom koraku, van ovog fajla) postojao je komentar-pitanje pored 
 from .db.base import Base # Zašto nije iskorišćen direktno i sta koristi models.Base? Koju Base klasu SQLAlchemy koristi?
 ```
 
-i poziv:
+Poziv `create_all` je ranije išao preko `models.Base.metadata.create_all(bind=engine)`, a sada je direktno preko `Base.metadata.create_all(bind=engine)`. Klasa `Base` je sada uzeta direktno iz `db/base.py`, što je izvor istine za definiciju svih tabela. Ranije je `Base` dolazila indirektno kroz `models`, što je bilo manje jasno, i važilo je pravilo:
 
 ```python
 models.Base.metadata.create_all(bind=engine)
 ```
 
-Promenjeno u:
+Sada je promenjeno u:
 
 ```python
 from .db.base import Base
@@ -83,7 +83,9 @@ Zašto:
 - `models.Base.metadata.create_all(...)` bi funkcionisalo isto (jer `models.py` importuje isti `Base`), ali direktan import je jasniji: odmah se vidi odakle `Base` dolazi, bez zaobilaznog puta preko `models` modula.
 - Komentar-pitanje je uklonjen jer je bio radna beleška, ne trajna dokumentacija koda.
 
-Napomena: `from . import models` je i dalje ostao u fajlu, jer je taj import nužan da SQLAlchemy registruje `Todos` tabelu u `Base.metadata` pre poziva `create_all()`. To je "side effect" import - ne koristi se direktno `models.nesto`, ali mora postojati.
+Napomena: `from . import models` je i dalje ostao u fajlu, jer je taj import nužan da SQLAlchemy registruje `Todos` tabelu u `Base.metadata` pre poziva `create_all()`. Nužno je da se importuje `models`, čak i ako se direktno ne koristi u kodu, zbog `"side effect" registracije tabela`.
+
+`side effect` registracija tabela znači da se importovanjem `models` fajla automatski registruju sve tabele definisane u njemu u `Base.metadata`, što je neophodno pre poziva `create_all()`. Ovo je česta praksa u SQLAlchemy projektima kako bi se osiguralo da su sve tabele registrovane pre nego što se pokuša njihovo kreiranje u bazi.
 
 ---
 
@@ -440,3 +442,226 @@ ODGOVOR: U Python-u, `Generator` je tip koji opisuje generator funkciju. Anotaci
 U kontekstu `FastAPI`-ja i `SQLAlchemy`-ja, ovo se obično koristi za `dependency` koji pruža SQLAlchemy sesiju.
 
 `Generator` yield-uje sesiju, a nakon što se završi, sesija se zatvara.
+
+---
+
+### Pitanje 4
+
+PITANJE: Zbog čega tačno u `main.py` fajlu koji sam ti poslao `update_todo` funkcija zahteva da parametar `todo_request: TodoRequest` mora biti iznad `Path` parametra u definiciji funkcije. Da li je to zato što posle default (podrazumevanih) parametara ne možemo imati pozicioni parametar `todo_request` pa on mora ići na početak?
+
+---
+
+### Odgovor 4
+
+ODGOVOR:
+
+U tvojoj funkciji u `fast-api-course-my-work/TodoApp/main.py` fajlu:
+
+```python
+@app.put("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def update_todo(
+    db: db_dependency,
+    todo_request: TodoRequest,
+    todo_id: int = Path(gt=0),
+):
+```
+
+`todo_request` nema podrazumevanu vrednost, pa mora doći pre:
+
+```python
+todo_id: int = Path(...)
+```
+
+`Path(...)` se u Python sintaksi ponaša kao podrazumevana vrednost. Zato bi ovo bilo neispravno:
+
+```python
+def update_todo(
+    db: db_dependency,
+    todo_id: int = Path(gt=0),
+    todo_request: TodoRequest,
+):
+    ...
+```
+
+Python bi prijavio:
+
+```text
+SyntaxError: non-default argument follows default argument
+```
+
+FastAPI zatim na osnovu `tipova` i `anotacija` zaključuje:
+
+- `db: db_dependency` je dependency
+- `todo_request: TodoRequest` je request body
+- `todo_id: int = Path(...)` je path parameter
+
+Redosled u URL-u određuje ruta:
+
+```python
+@app.put("/todo/{todo_id}")
+```
+
+a ne redosled parametara u funkciji.
+
+Dakle, komentar u tvom kodu treba preciznije da glasi:
+
+```python
+# todo_request mora biti pre todo_id jer todo_id ima podrazumevanu vrednost Path(...).
+# Python zahteva da parametri bez podrazumevane vrednosti budu pre parametara sa podrazumevanom vrednošću.
+```
+
+---
+
+### Pitanje 5
+
+PITANJE: Koji način za `delete` je bolji?
+
+```python
+db.query(Todos).filter(Todos.id == todo_id).delete()
+```
+
+ili
+
+```python
+db.delete(todo_model)
+```
+
+---
+
+### Odgovor 5
+
+U tvom konkretnom kodu (`fast-api-course-my-work/TodoApp/main.py`)bolji je ovaj način:
+
+```python
+db.delete(todo_model)
+db.commit()
+```
+
+Zato što si već prethodno pronašao objekat:
+
+```python
+todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+```
+
+Kompletan endpoint:
+
+```python
+@app.delete("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_todo(
+    db: db_dependency,
+    todo_id: int = Path(gt=0),
+) -> None:
+    todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+
+    if todo_model is None:
+        raise HTTPException(status_code=404, detail="Todo nije pronađen.")
+
+    db.delete(todo_model)
+    db.commit()
+```
+
+#### Razlika
+
+```python
+db.delete(todo_model)
+```
+
+- briše već učitan `ORM` objekat
+- čitljivije je za početnika
+- `SQLAlchemy` prati stanje tog objekta
+- pogodnije je kada kasnije dodaš `odnose`, `validacije` ili `dodatnu logiku`
+
+```python
+db.query(Todos).filter(Todos.id == todo_id).delete()
+```
+
+- izvršava direktno SQL `DELETE` upit
+- ne mora prethodno da učita objekat
+- može biti efikasnije za brisanje velikog broja zapisa
+- spada u `bulk` operacije i zahteva više pažnje oko sinhronizacije `ORM` sesije i povezanih objekata
+
+U tvom trenutnom kodu druga varijanta je nepotrebno ponavljanje `query`-ja (upita `SELECT`), jer si zapis već pronašao. Zato koristi:
+
+```python
+db.delete(todo_model)
+db.commit()
+```
+
+Za početak i učenje ORM načina rada, ovo je jasniji i bolji izbor.
+
+---
+
+### Pitanje 6
+
+PITANJE: Da li je potreban `first()` kod `todo_model = db.query(Todos).filter(Todos.id == todo_id).first()`. Upitanju je pretraga po `id`-u a on je jedinstven zar ne? Zato mi `first()` nema logike.
+
+ODGOVOR: `first()` je tehnički nepotreban kada pretražuješ po `id`-u jer je `id` jedinstven. Možeš koristiti `one()` ili `one_or_none()` umesto `first()`. Međutim, `first()` je često korišćen jer je jednostavan i ne baca izuzetak ako zapis ne postoji, već vraća `None`.
+
+Tako da si delimično upravu: `id` je jedinstven, ali `first()` je ipak potreban zato što:
+
+```python
+db.query(Todos).filter(Todos.id == todo_id)
+```
+
+još uvek samo pravi SQLAlchemy `Query` objekat. Upit nije izvršen i nemaš konkretan `Todo` objekat.
+
+`first()`:
+
+- izvršava upit
+- vraća jedan `ORM objekat` ili `None`
+- dodaje ograničenje da se vrati najviše jedan rezultat
+
+```python
+todo_model = (
+    db.query(Todos)
+    .filter(Todos.id == todo_id)
+    .first()
+)
+```
+
+Zato ovaj kod ima smisla čak i kada je `id` jedinstven.
+
+Još bolji način za pretragu po primarnom ključu je:
+
+```python
+todo_model = db.get(Todos, todo_id)
+```
+
+To direktno znači: pronađi objekat `Todos` čiji je primarni ključ `todo_id`.
+
+Tvoj endpoint može biti:
+
+```python
+todo_model = db.get(Todos, todo_id)
+
+if todo_model is None:
+    raise HTTPException(status_code=404, detail="Todo nije pronađen.")
+```
+
+Razlike:
+
+```python
+.first()
+```
+
+Vraća objekat ili `None`.
+
+```python
+.one()
+```
+
+Očekuje tačno jedan rezultat, ali baca grešku ako rezultat ne postoji.
+
+```python
+db.get(Todos, todo_id)
+```
+
+Najjasniji je izbor kada tražiš baš po primarnom ključu.
+
+Za tvoj slučaj preporučujem:
+
+```python
+todo_model = db.get(Todos, todo_id)
+```
+
+---
