@@ -1,4 +1,4 @@
-# Oblast 03 - Autentifikacija i Autorizacija
+# Oblast 01 - Autentifikacija i Autorizacija
 
 ## Lekcija 01 - Početak autentifikacije i autorizacije
 

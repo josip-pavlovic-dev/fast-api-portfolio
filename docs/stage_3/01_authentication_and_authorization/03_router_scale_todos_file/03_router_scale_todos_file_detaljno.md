@@ -1,8 +1,8 @@
-# Oblast 03 - Authentication and Authorization
+# Oblast 01 - Authentication and Authorization
 
 ## Lekcija 03 - Izdvajanje Todo ruta u router
 
-Prethodna lekcija je pokazala kako se auth rute izdvajaju u poseban router. Ova lekcija pravi sledeci korak: postojece todo endpoint-e premesta iz `main.py` u poseban `todos.py` router modul.
+Prethodna lekcija je pokazala kako se auth rute izdvajaju u poseban router. Ova lekcija pravi sledeći korak: postojeće todo endpoint-e premešta iz `main.py` u poseban `todos.py` router modul.
 
 Kurs koristi folder `routers/`, dok tvoj aktivni projekat koristi:
 
@@ -20,13 +20,13 @@ fast-api-course-my-work/
         db/
 ```
 
-Zato ce kursni `routers/todos.py` kod tebe biti smesten u:
+Zato ce kursni `routers/todos.py` kod tebe biti smešten u:
 
 ```text
 fast-api-course-my-work/TodoApp/api/routes/todos.py
 ```
 
-Cilj nije da se napravi druga FastAPI aplikacija. Cilj je da jedna glavna aplikacija ukljuci vise routera:
+Cilj nije da se napravi druga FastAPI aplikacija. Cilj je da jedna glavna aplikacija uključi više routera:
 
 ```text
 TodoApp/main.py
@@ -36,7 +36,7 @@ TodoApp/main.py
 
 ---
 
-## 1) Sta je stanje pre ove refaktorizacije
+## 1) Šta je stanje pre ove refaktorizacije
 
 Trenutno se u tvom projektu glavna aplikacija i Todo CRUD nalaze u istom fajlu:
 
@@ -57,17 +57,17 @@ U njemu se nalaze:
 
 Ovakav raspored je prihvatljiv dok ucis osnovni CRUD. Kada se dodaju auth, users i admin rute, `main.py` postaje previse veliki.
 
-Ova lekcija uvodi sledecu podelu:
+Ova lekcija uvodi sledeću podelu:
 
 ```text
 main.py
-    konfigurise glavnu FastAPI aplikaciju
+    konfiguriše glavnu FastAPI aplikaciju
 
 auth.py
-    sadrzi auth endpoint-e
+    sadrži auth endpoint-e
 
 todos.py
-    sadrzi todo endpoint-e
+    sadrži todo endpoint-e
 ```
 
 ---
