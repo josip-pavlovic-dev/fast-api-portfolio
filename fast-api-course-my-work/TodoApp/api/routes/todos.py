@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 
 from ...db.session import db_dependency
 from ...models import Todos
-from ...schemas import TodoRequest
+from ...schemas import TodoRequest, TodoResponse
 
 router = APIRouter(
     prefix="/todos",
@@ -10,29 +10,42 @@ router = APIRouter(
 )
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
-async def get_all(db: db_dependency) -> list[Todos]:
-    return db.query(Todos).all()
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+)
+async def get_all(db: db_dependency) -> list[TodoResponse]:
+    todo_models = db.query(Todos).all()
+    return [TodoResponse.model_validate(todo) for todo in todo_models]
 
 
-@router.get("/{todo_id}", status_code=status.HTTP_200_OK)
+@router.get(
+    "/{todo_id}",
+    status_code=status.HTTP_200_OK,
+)
 async def read_todo(
     db: db_dependency,
     todo_id: int = Path(gt=0, description="ID todo zatatka mora biti veći od nule."),
-) -> Todos:
+) -> TodoResponse:
 
     todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
 
     if todo_model is not None:
-        return todo_model
+        return TodoResponse.model_validate(todo_model)
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail="Todo nije pronađen."
     )
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_todo(db: db_dependency, todo_request: TodoRequest) -> Todos:
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_todo(
+    db: db_dependency,
+    todo_request: TodoRequest,
+) -> TodoResponse:
     todo_model = Todos(**todo_request.model_dump())
 
     db.add(todo_model)
@@ -41,7 +54,7 @@ async def create_todo(db: db_dependency, todo_request: TodoRequest) -> Todos:
 
     db.refresh(todo_model)
 
-    return todo_model
+    return TodoResponse.model_validate(todo_model)
 
 
 @router.put("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)

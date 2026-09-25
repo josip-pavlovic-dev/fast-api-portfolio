@@ -1,14 +1,16 @@
 # SQL Database putanja ucenja za FastAPI
 
 Ovaj folder je nova etapa posle osnovnog FastAPI CRUD nivoa.
-Cilj je prelaz sa in-memory liste na pravu SQL bazu uz cistu arhitekturu.
+Cilj je prelaz sa in-memory liste na pravu SQL bazu uz čistu arhitekturu.
 
-## Kako da koristis ovaj materijal
+## Kako da koristiš ovaj materijal
 
-1. Uci redom, bez preskakanja.
+1. Uči redom, bez preskakanja.
 2. Posle svake lekcije napravi mini implementaciju.
-3. Testiraj i normalne i pogresne ulaze.
-4. Vodi kratke beleske: sta je novo, sta je bilo tesko, sta je postalo jasno.
+3. Testiraj i normalne i pogrešne ulaze.
+4. Vodi kratke beleške: šta je novo, šta je bilo teško, šta je postalo jasno.
+
+---
 
 ## Redosled lekcija
 
@@ -22,14 +24,38 @@ Cilj je prelaz sa in-memory liste na pravu SQL bazu uz cistu arhitekturu.
 8. [08_migracije_alembic_i_napredne_teme.md](08_migracije_alembic_i_napredne_teme.md)
 9. [09_plan_vezbe_i_mini_projekat.md](09_plan_vezbe_i_mini_projekat.md)
 
-## Ocekivani ishod
+---
 
-Posle ove serije treba da mozes da:
+## Očekivani ishod
 
-- dizajniras tabele i odnose
-- pises i citas SQL upite sa sigurnosnim navikama
-- razumes transakcije i indeksiranje
-- povezes FastAPI sa SQLite bazom
-- organizujes kod kroz database.py, models.py, schemas.py
-- napravis stabilan CRUD sa pravilnim status kodovima i greskama
-- uvedes migracije i pripremis aplikaciju za rast
+Posle ove serije treba da možeš da:
+
+- dizajniraš tabele i odnose
+- pišeš i čitaš SQL upite sa sigurnosnim navikama
+- razumeš transakcije i indeksiranje
+- povežeš FastAPI sa SQLite bazom
+- organizuješ kod kroz database.py, models.py, schemas.py
+- napraviš stabilan CRUD sa pravilnim status kodovima i greškama
+- uvedeš migracije i pripremiš aplikaciju za rast
+
+---
+
+## Šta posle
+
+Nakon što savladaš ovu seriju lekcija, možeš da:
+
+- istražuješ napredne SQL tehnike i optimizacije
+- koristiš druge baze podataka kao što su PostgreSQL ili MySQL
+- integrišeš FastAPI sa drugim servisima i alatima
+- razvijaš složenije aplikacije sa više modela i relacija
+- primenjuješ najbolje prakse u razvoju i održavanju aplikacija sa bazom podataka
+
+---
+
+## Kursevi sa Udemy-ja:
+
+- [FastAPI: The Complete Guide](https://www.udemy.com/course/fastapi-the-complete-guide/)
+- [SQL for Beginners](https://www.udemy.com/course/sql-for-beginners/)
+- [Mastering SQLAlchemy](https://www.udemy.com/course/mastering-sqlalchemy/)
+
+---

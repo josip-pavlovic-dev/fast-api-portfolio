@@ -24,3 +24,23 @@ class TodoResponse(BaseModel):
     complete: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserRequest(BaseModel):
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    is_active: bool
+    role: str
+
+    model_config = ConfigDict(from_attributes=True)
