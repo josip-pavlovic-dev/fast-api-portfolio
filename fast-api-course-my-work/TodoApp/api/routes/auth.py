@@ -3,7 +3,10 @@ from fastapi import APIRouter, status
 from ...models import Users
 from ...schemas import CreateUserRequest, UserResponse
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
