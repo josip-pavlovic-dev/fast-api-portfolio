@@ -685,6 +685,118 @@ Dakle:
 
 ---
 
+## Pitanje 7
+
+PITANJE: Kada radim `pip install passlib` da li je bitno iz kog foldera pokrećem komandu u terminalu?
+
+---
+
+## Odgovor 7
+
+ODGOVOR: Nije bitno iz kog foldera pokrećete komandu `pip install passlib`. Bitno je da imate aktivno odgovarajuće Python okruženje (virtual environment) u kojem želite da instalirate paket.
+
+### Detaljno objašnjenje
+
+Ne, nije bitno iz kog foldera pokrećeš:
+
+```bash
+pip install passlib
+```
+
+Paket se instalira u trenutno aktivno Python okruženje, a ne u folder iz kog si pokrenuo komandu.
+
+Bitno je da koristiš isti interpreter/virtualno okruženje koje koristi tvoj projekat. Preporučeno:
+
+```bash
+python -m pip install passlib
+```
+
+Ako koristiš virtuelno okruženje, prvo ga aktiviraj:
+
+```bash
+source .venv/bin/activate
+python -m pip install passlib
+```
+
+Provera:
+
+```bash
+python -c "import passlib; print(passlib.__version__)"
+```
+
+Dakle: folder nije važan; aktivno Python okruženje jeste.
+
+---
+
+## Pitanje 8
+
+PITANJE: Da li i ja u ovoj fazi mogu da pređem na moderniji `pwdlib` ili da sačekam kada budem refaktorisao ceo `TodosApp` u `SQLALCHEMY 2.0`.? Koliko je kursna verzija zastarela i amaterska?
+
+---
+## Odgovor 8
+
+ODGOVOR: U ovoj fazi je preporučljivo držati se kursne verzije (`passlib` i `bcrypt`) kako bi se pratila logika lekcija. Moderniji `pwdlib` može se koristiti kasnije prilikom refaktorisanja projekta, ali za sada nije neophodno menjati kursnu implementaciju.
+
+### Detaljno objašnjenje
+
+Da, možeš preći na `pwdlib` već sada. Ne moraš čekati refaktorisanje celog `TodosApp` na SQLAlchemy 2.0, jer password hashing nije direktno vezan za SQLAlchemy verziju.
+
+Moja preporuka:
+
+- **Za razumevanje kursa:** nauči `Passlib + CryptContext`, jer je to koncept koji kurs objašnjava.
+- **Za stvarnu implementaciju projekta:** koristi `pwdlib`, najverovatnije sa preporučenim `Argon2` algoritmom.
+- **Ne menjaj sada teorijski fajl**, jer on ispravno opisuje kursni korak. Promenu napravi kada počneš praktičnu implementaciju authentication-a.
+
+Kursna verzija nije „amaterska“ u smislu koncepta. Koncepti su i dalje ispravni:
+
+```text
+hash pri registraciji
+verify pri login-u
+salt
+password hash se ne vraća kroz response
+```
+
+Zastareo je pre svega izbor biblioteke i konkretne kombinacije:
+
+```text
+passlib
+bcrypt==4.0.1
+```
+
+`Passlib` je starija biblioteka čije održavanje nije na nivou modernih projekata, dok se u novijem FastAPI pristupu često koristi:
+
+```bash
+pip install "pwdlib[argon2]"
+```
+
+Primer moderne zamene:
+
+```python
+from pwdlib import PasswordHash
+
+password_hash = PasswordHash.recommended()
+
+hashed_password = password_hash.hash(plain_password)
+
+is_correct = password_hash.verify(
+    plain_password,
+    hashed_password,
+)
+```
+
+SQLAlchemy 2.0 refaktorisanje možeš uraditi kasnije nezavisno. Hashing helper može ostati isti dok menjaš modele, session i query-je.
+
+Najpraktičniji put za tebe je:
+
+1. završi teoriju ove lekcije uz `Passlib` kao kursni primer;
+2. prilikom praktičnog rada uvedi `pwdlib`;
+3. kasnije refaktoriši bazni deo na SQLAlchemy 2.0;
+4. testiraj da registracija čuva hash, a login koristi `verify()`.
+
+Dakle: **ne moraš čekati SQLAlchemy 2.0; samo nemoj mešati modernu implementaciju sa kursnim teorijskim primerom.**
+
+---
+
 ## SQLAlchemy query i Pydantic model_validation (objašnjeno)
 
 ### Objašnjenje 1: Šta vraća SQLAlchemy query
