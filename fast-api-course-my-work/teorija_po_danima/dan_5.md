@@ -491,6 +491,200 @@ Ne menjaš SQLAlchemy model niti podatke u bazi. Menjaš samo način na koji Pyd
 
 ---
 
+## Pitanje 4
+
+PITANJE: Šta je bolje koristiti (sintaksno) -> `class UserRequest` ili `class CreateUserRequest`?
+
+ODGOVOR: Sintaksno je bolje koristiti `class CreateUserRequest` jer jasno označava da se radi o requestu za kreiranje korisnika, dok `class UserRequest` može biti nejasno da li se odnosi na kreiranje, ažuriranje ili neki drugi tip operacije nad korisnikom.
+
+### Detaljno objašnjenje
+
+Sintaksno su oba validna:
+
+```python
+class UserRequest:
+```
+
+i
+
+```python
+class CreateUserRequest:
+```
+
+Ali semantički nisu potpuno ista:
+
+- `UserRequest` je opšti naziv i može se koristiti za više operacija.
+- `CreateUserRequest` jasno označava podatke za kreiranje korisnika, najčešće `POST`.
+- Za izmene se često koriste `UpdateUserRequest` ili `UserPatchRequest`.
+
+Dakle, ako schema služi samo za `POST`, `CreateUserRequest` je precizniji naziv. `Create` ne bi trebalo da implicira `PUT` i `PATCH`; bolje ih je odvojeno imenovati.
+
+---
+
+## Pitanje 5
+
+PITANJE: Da li `create_users_model` (instanca klase `Users` kreirana iz `CreateUserRequest`) mora imati isti raspored argumenata kao i `Users` iz `models.py`? Da li je raspored bitan pri kreiranju novog korisnika?
+
+ODGOVOR: Ne, raspored **nije bitan** u tvom primeru zato što koristiš imenovane argumente:
+
+```python
+Users(
+    email=...,
+    username=...,
+    first_name=...,
+)
+```
+
+Python povezuje vrednosti prema imenu (`email`, `username` itd.), a ne prema redosledu.
+
+Raspored bi bio bitan kada bi koristio pozicione argumente:
+
+```python
+Users("email@example.com", "marko", "Marko")
+```
+
+Tada vrednosti moraju pratiti tačan redosled parametara konstruktora.
+
+Dakle, kod SQLAlchemy modela je uobičajeno i preporučljivo koristiti imenovane argumente, kao što već radiš. `create_user_model` je samo naziv promenljive i ne mora imati isti raspored kao `Users` model.
+
+---
+
+## Pitanje 6
+
+PITANJE: Zog čega se korisnik kreira preko atributa zahteva koji je poslat za kreiranje a ne preko `Users(**create_user_request.model_dump())`?
+Da li je do kursa ili se ne može primeniti `create_user_request.model_dump()`?
+
+---
+
+## Odgovor 6
+
+ODGOVOR: Može se koristiti i `create_user_request.model_dump()`, ali u kursu se koristi eksplicitno navođenje atributa radi bolje preglednosti i kontrole nad podacima koji se prosleđuju modelu `Users`. Korišćenje `model_dump()` je praktično kada želiš da automatski mapiraš sve atribute iz Pydantic modela u SQLAlchemy model, ali može biti manje fleksibilno ako želiš da manipulišeš podacima pre kreiranja SQLAlchemy instance.
+
+### Detaljno objašnjenje
+
+U ovom primeru, `CreateUserRequest` i `Users` modeli imaju slična polja, ali se ne poklapaju potpuno. Zato direktno korišćenje `model_dump()` može izazvati greške. Tako da ->`Da`, možeš koristiti `model_dump()`, ali ne direktno ovako:
+
+```python
+Users(**create_user_request.model_dump())
+```
+
+Razlog je što se polja u tvoja dva modela ne poklapaju potpuno.
+
+**Pydantic model za zahtev:**
+
+```python
+class CreateUserRequest(BaseModel):
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    password: str
+    role: str
+```
+
+`model_dump()` bi proizveo:
+
+```python
+{
+    "email": "...",
+    "username": "...",
+    "first_name": "...",
+    "last_name": "...",
+    "password": "...",
+    "role": "..."
+}
+```
+
+**SQLAlchemy model `Users` očekuje:**
+
+```python
+email
+username
+first_name
+last_name
+hashed_password
+is_active
+role
+```
+
+Najvažnija razlika je:
+
+```python
+password
+```
+
+naspram:
+
+```python
+hashed_password
+```
+
+SQLAlchemy model nema atribut `password`, pa bi ovo izazvalo grešku:
+
+```python
+Users(**create_user_request.model_dump())
+```
+
+Praktično bi Python pokušao:
+
+```python
+Users(
+    email="...",
+    username="...",
+    password="...",  # Users nema ovaj atribut
+    role="...",
+)
+```
+
+Zato se trenutno koristi eksplicitno mapiranje:
+
+```python
+create_user_model = Users(
+    email=create_user_request.email,
+    username=create_user_request.username,
+    first_name=create_user_request.first_name,
+    last_name=create_user_request.last_name,
+    role=create_user_request.role,
+    hashed_password=create_user_request.password,
+    is_active=True,
+)
+```
+
+Ovde se ne radi samo prosleđivanje podataka, već i transformacija:
+
+```python
+password -> hashed_password
+```
+
+Kasnije će biti:
+
+```python
+hashed_password=hash_password(create_user_request.password)
+```
+
+`model_dump()` se može koristiti uz prethodnu izmenu rečnika:
+
+```python
+user_data = create_user_request.model_dump()
+
+user_data["hashed_password"] = user_data.pop("password")
+user_data["is_active"] = True
+
+create_user_model = Users(**user_data)
+```
+
+Ali za ovakav slučaj je eksplicitno mapiranje bolje jer je jasnije, sigurnije i odmah pokazuje šta se događa sa lozinkom.
+
+Dakle:
+
+- `model_dump()` je dozvoljen i može se primeniti.
+- On samo pretvara Pydantic objekat u Python rečnik.
+- Ne pretvara automatski `CreateUserRequest` u `Users`.
+- `Users(**...)` radi samo ako se ključevi rečnika podudaraju sa atributima SQLAlchemy modela.
+- U tvom slučaju eksplicitno mapiranje je bolje zbog `password` → `hashed_password` i server-side polja `is_active`.
+
+---
+
 ## SQLAlchemy query i Pydantic model_validation (objašnjeno)
 
 ### Objašnjenje 1: Šta vraća SQLAlchemy query

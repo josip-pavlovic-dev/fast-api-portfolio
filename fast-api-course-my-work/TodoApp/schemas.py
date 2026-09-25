@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class TodoRequest(BaseModel):
+class CreateTodoRequest(BaseModel):
     title: str = Field(
         min_length=3, description="Naslov todo zadatka mora imati najmanje 3 karaktera"
     )
@@ -26,12 +26,13 @@ class TodoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserRequest(BaseModel):
+class CreateUserRequest(BaseModel):
     email: str
     username: str
     first_name: str
     last_name: str
     password: str
+    role: str
 
 
 class UserResponse(BaseModel):

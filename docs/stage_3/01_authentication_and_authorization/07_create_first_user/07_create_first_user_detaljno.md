@@ -14,15 +14,17 @@ GET test ruta
                 -> privremeni povratak modela
 ```
 
-U ovoj lekciji se jos ne radi potpuno bezbedno cuvanje korisnika. Password se namerno prikazuje kao privremeni plain-text korak da bi se u sledecoj lekciji zamenio password hash-om.
-
-### Pravilo za trenutnu fazu rada
-
-Ovo je teorijski materijal. Ne menjamo jos aktivne skripte u `TodoApp` projektu i ne dodajemo stvarnog korisnika u bazu.
+U ovoj lekciji se jos ne radi potpuno bezbedno čuvanje korisnika. Password se namerno prikazuje kao privremeni plain-text korak da bi se u sledećoj lekciji zamenio password hash-om.
 
 ---
 
-## 1) Gde se buduci kod smesta
+### Pravilo za trenutnu fazu rada
+
+Ovo je teorijski materijal. Ne menjamo još aktivne skripte u `TodoApp` projektu i ne dodajemo stvarnog korisnika u bazu.
+
+---
+
+## 1) Gde se budući kod smešta
 
 U kursnom primeru auth kod se nalazi u `auth.py` fajlu. U tvom projektu njegova lokacija je:
 
@@ -48,10 +50,10 @@ TodoApp/db/session.py
     db_dependency
 
 TodoApp/main.py
-    ukljucivanje auth routera
+    uključivanje auth routera
 ```
 
-Transkript privremeno definise `CreateUserRequest` direktno u `auth.py`. To je razumljivo za mali kursni primer. U tvom organizovanijem rasporedu kasnije mozemo schema izdvojiti u `schemas.py`, kada budemo radili prakticnu implementaciju.
+Transkript privremeno definise `CreateUserRequest` direktno u `auth.py`. To je razumljivo za mali kursni primer. U tvom organizovanijem rasporedu kasnije možemo schema izdvojiti u `schemas.py`, kada budemo radili praktičnu i bezbednu implementaciju.
 
 ---
 
@@ -65,7 +67,7 @@ async def get_user():
     return {"message": "user authenticated"}
 ```
 
-Ona samo vraca poruku i ne kreira korisnika.
+Ona samo vraća poruku i ne kreira korisnika.
 
 Za kreiranje resursa koristi se POST:
 
@@ -75,7 +77,7 @@ async def create_user():
     ...
 ```
 
-POST je odgovarajuci HTTP metod kada klijent salje podatke za kreiranje novog zapisa.
+POST je odgovarajuci HTTP metod kada klijent šalje podatke za kreiranje novog zapisa.
 
 U tvom rasporedu router je u:
 
@@ -91,7 +93,7 @@ TodoApp/main.py
 
 ### Napomena o URL putanji
 
-U kasnijoj organizaciji mozemo koristiti:
+U kasnijoj organizaciji možemo koristiti:
 
 ```python
 router = APIRouter(

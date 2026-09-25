@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 
 from ...db.session import db_dependency
 from ...models import Todos
-from ...schemas import TodoRequest, TodoResponse
+from ...schemas import CreateTodoRequest, TodoResponse
 
 router = APIRouter(
     prefix="/todos",
@@ -44,7 +44,7 @@ async def read_todo(
 )
 async def create_todo(
     db: db_dependency,
-    todo_request: TodoRequest,
+    todo_request: CreateTodoRequest,
 ) -> TodoResponse:
     todo_model = Todos(**todo_request.model_dump())
 
@@ -60,7 +60,7 @@ async def create_todo(
 @router.put("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def update_todo(
     db: db_dependency,
-    todo_request: TodoRequest,
+    todo_request: CreateTodoRequest,
     todo_id: int = Path(gt=0, description="ID todo zatatka mora biti veći od nule"),
 ) -> None:
     todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
@@ -82,7 +82,7 @@ async def delete_todo(
     db: db_dependency,
     todo_id: int = Path(
         gt=0,
-        description="ID mora biti veći od nule",
+        description="ID todo zadatka mora biti veći od nule",
     ),
 ) -> None:
     # todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
