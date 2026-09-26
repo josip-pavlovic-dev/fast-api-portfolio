@@ -1,8 +1,4 @@
-Updated todo list
-
-I’ll continue with the next concept in the same beginner-friendly format: Response Models, with a simple example and the exact reason they matter in FastAPI.
-
-## Response Models u FastAPI
+# Response Models u FastAPI-ju
 
 Response model je model koji kaže FastAPI-ju:
 “Ovo je oblik odgovora koji vraćam klijentu.”

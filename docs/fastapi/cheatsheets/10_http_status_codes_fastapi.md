@@ -182,6 +182,8 @@ Znači:
 - skup konstanti
 - npr. `status.HTTP_201_CREATED`
 
+---
+
 ### `status_code`
 
 - parametar koji se prosleđuje endpointu

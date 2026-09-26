@@ -1,9 +1,5 @@
 # FastAPI - POST, PUT i DELETE Requests
 
-Updated todo list
-
-I’ll write the next lesson as a focused, beginner-friendly deep dive into POST with Request Body, and keep it clear enough to build on naturally for PUT and DELETE afterward.
-
 ## Dan 3 — Request Body i POST u FastAPI
 
 Ovo je sledeći logičan korak. Do sada si radio sa:

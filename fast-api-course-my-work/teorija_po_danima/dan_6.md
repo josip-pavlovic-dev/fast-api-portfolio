@@ -1649,6 +1649,8 @@ Bitna polja za lekciju 10 su:
 POST /auth/token
 ```
 
+---
+
 ### Zašto se dešava `422` za `grant_type`
 
 Ako Swagger pošalje prazan `grant_type`, možeš dobiti:
@@ -1671,6 +1673,8 @@ grant_type=password
 - `401` znači da je forma validna, ali `username/password` nisu ispravni.
 
 Ako dobiješ `401`, endpoint radi i stigao je do autentifikacije.
+
+---
 
 ### Obavezni praktični korak
 
