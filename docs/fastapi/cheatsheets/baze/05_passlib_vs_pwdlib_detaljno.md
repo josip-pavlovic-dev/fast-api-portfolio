@@ -4,17 +4,17 @@
 
 Da. Odabrani redosled je dobar:
 
-1. prvo prati kursni primer sa `Passlib` i `CryptContext`
-2. razumi tok `hash()` pri registraciji i `verify()` pri login-u
-3. zavrsi teoriju lekcija 08-14
-4. uradi kursnu prakticnu implementaciju
-5. zatim izdvoji password logiku i zameni implementaciju sa `pwdlib`
+1. Prvo prati kursni primer sa `Passlib` i `CryptContext`
+2. Razumi tok `hash()` pri registraciji i `verify()` pri login-u
+3. Završi teoriju lekcija 08-14
+4. Uradi kursnu prakticnu implementaciju
+5. Zatim izdvoji password logiku i zameni implementaciju sa `pwdlib`
 
-Ne moras cekati SQLAlchemy 2.0 refaktorisanje da bi presao na `pwdlib`. Ove dve promene su uglavnom nezavisne. Ipak, za ucenje je korisno da prvo zavrsis jednu konzistentnu kursnu verziju, umesto da istovremeno menjas ORM, auth tok i password biblioteku.
+Ne moraš čekati SQLAlchemy 2.0 refaktorisanje da bi prešao na `pwdlib`. Ove dve promene su uglavnom nezavisne. Ipak, za učenje je korisno da prvo završiš jednu konzistentnu kursnu verziju, umesto da istovremeno menjaš ORM, auth tok i password biblioteku.
 
-Ovaj fajl objasnjava:
+Ovaj fajl objašnjava:
 
-- sta je zajednicko za `Passlib` i `pwdlib`
+- šta je zajedničko za `Passlib` i `pwdlib`
 - koje razlike postoje u API-ju i algoritmu
 - koliko kursni primer zavisi od izabrane biblioteke
 - kako se naredne lekcije 09-14 oslanjaju na password hashing
@@ -22,9 +22,9 @@ Ovaj fajl objasnjava:
 
 ---
 
-## 1) Najvaznija podela: koncept naspram implementacije
+## 1) Najvažnija podela: koncept naspram implementacije
 
-Kurs uci konceptualni tok:
+Kurs uči konceptualni tok:
 
 ```text
 plain password pri registraciji
@@ -36,11 +36,11 @@ plain password pri login-u + saved hash
 		-> True ili False
 ```
 
-Ovaj tok nije vlasnistvo `Passlib` biblioteke. Isti princip vazi za `pwdlib` i za druge proverene password hashing interfejse.
+Ovaj tok nije vlasništvo `Passlib` biblioteke. Isti princip važi za `pwdlib` i za druge proverene password hashing interfejse.
 
-### Zajednicki koncept
+### Zajednički koncept
 
-Obe biblioteke treba da omoguce:
+Obe biblioteke treba da omoguće:
 
 ```python
 hashed_password = hash(plain_password)
@@ -49,21 +49,21 @@ is_valid = verify(plain_password, hashed_password)
 
 Aplikacija treba da:
 
-- nikada ne cuva plain password
-- nikada ne vraca password ili hash u javnom response-u
-- koristi `verify()` umesto ponovnog hashovanja i poredjenja stringova
-- cuva hash u koloni kao sto je `Users.hashed_password`
+- nikada ne čuva plain password
+- nikada ne vraća password ili hash u javnom response-u
+- koristi `verify()` umesto ponovnog hashovanja i poređenja stringova
+- čuva hash u koloni kao što je `Users.hashed_password`
 - koristi isti interfejs za proveru pri svakom login-u
 
 ### Konkretna implementacija
 
-Biblioteka odredjuje:
+Biblioteka određuje:
 
 - naziv klase koju importujemo
-- nacin konfiguracije algoritma
+- način konfiguracije algoritma
 - algoritam i njegove podrazumevane parametre
 - format novog hash stringa
-- nacin provere i eventualne migracije hash-a
+- način provere i eventualne migracije hash-a
 
 Zato se poslovna logika ne sme rasuti po endpointima. Najbolje je da endpoint poziva male helper funkcije:
 
@@ -72,13 +72,13 @@ hashed_password = hash_password(plain_password)
 is_valid = verify_password(plain_password, saved_hash)
 ```
 
-Tada se biblioteka moze zameniti unutar security sloja, dok `auth.py` zadrzava isti tok.
+Tada se biblioteka može zameniti unutar security sloja, dok `auth.py` zadržava isti tok.
 
 ---
 
-## 2) Sta je `Passlib`
+## 2) Šta je `Passlib`
 
-`Passlib` je biblioteka koja daje zajednicki interfejs za vise password hashing shema. Kurs koristi njen objekat `CryptContext`:
+`Passlib` je biblioteka koja daje zajednički interfejs za više password hashing shema. Kurs koristi njen objekat `CryptContext`:
 
 ```python
 from passlib.context import CryptContext
@@ -100,7 +100,9 @@ is_valid = bcrypt_context.verify(
 )
 ```
 
-### Zasto je `CryptContext` koristan
+---
+
+### Zašto je `CryptContext` koristan
 
 `CryptContext` centralizuje password hashing konfiguraciju. On zna:
 
@@ -111,6 +113,8 @@ is_valid = bcrypt_context.verify(
 - koje scheme su zastarele
 
 To je dobar edukativni model jer jasno pokazuje da endpoint ne treba da zna detalje bcrypt algoritma.
+
+---
 
 ### Da li je `Passlib` amaterski izbor
 
@@ -127,9 +131,9 @@ Dakle, zastarelost se odnosi prvenstveno na biblioteku, verzioni pin i ekosistem
 
 ---
 
-## 3) Sta je `pwdlib`
+## 3) Šta je `pwdlib`
 
-`pwdlib` je moderniji password hashing interfejs koji se uklapa u isti konceptualni tok. U modernom FastAPI primeru moze se koristiti ovako:
+`pwdlib` je moderniji password hashing interfejs koji se uklapa u isti konceptualni tok. U modernom FastAPI primeru može se koristiti ovako:
 
 ```bash
 pip install "pwdlib[argon2]"
@@ -152,50 +156,52 @@ is_valid = password_hash.verify(
 
 `PasswordHash.recommended()` bira preporucenu konfiguraciju za podrzani password hashing backend. U prikazanom modernom FastAPI obrascu koristi se Argon2 backend, ali konkretan izbor i verzije treba proveriti u dokumentaciji i okruzenju projekta.
 
-### Zasto se cesto pominje Argon2
+---
 
-Password hashing algoritam treba da bude projektovan tako da masovno pogadjanje bude skupo. Argon2 je memory-hard algoritam i cesto se bira u novim projektima kada nema zahteva za kompatibilnost sa starim bcrypt hash-ovima.
+### Zašto se često pominje Argon2
 
-To ipak ne znaci:
+Password hashing algoritam treba da bude projektovan tako da masovno pogađanje bude skupo. Argon2 je memory-hard algoritam i često se bira u novim projektima kada nema zahteva za kompatibilnost sa starim bcrypt hash-ovima.
 
-- da svaki projekat mora odmah menjati bcrypt
+To ipak ne znači:
+
+- da svaki projekat mora odmah menjati bcrypt-a
 - da sama biblioteka automatski resava sve security probleme
 - da algoritam treba birati bez provere zahteva projekta
 
-Bezbednost zavisi i od jacine password-a, secret konfiguracije, zastite endpointa, rate limiting-a, logovanja i pravilnog cuvanja podataka.
+Bezbednost zavisi i od jačine password-a, secret konfiguracije, zaštite endpointa, rate limiting-a, logovanja i pravilnog čuvanja podataka.
 
 ---
 
-## 4) Direktno poredjenje
+## 4) Direktno poređenje
 
-| Tema                             | Passlib + bcrypt                      | pwdlib + preporuceni backend                             |
+| Tema                             | Passlib + bcrypt                      | pwdlib + preporučeni backend                             |
 | -------------------------------- | ------------------------------------- | -------------------------------------------------------- |
 | Glavna uloga                     | Password hashing interfejs            | Password hashing interfejs                               |
 | Kursni API                       | `CryptContext`                        | `PasswordHash`                                           |
 | Kreiranje hash-a                 | `context.hash(password)`              | `password_hash.hash(password)`                           |
 | Provera                          | `context.verify(password, hash)`      | `password_hash.verify(password, hash)`                   |
-| Algoritam u kursu                | bcrypt                                | moderni preporuceni backend, cesto Argon2                |
+| Algoritam u kursu                | bcrypt                                | moderni preporučeni backend, često Argon2                |
 | Format hash-a                    | bcrypt format, npr. `$2b$...`         | format koji pripada izabranom backend-u                  |
 | Zajednicki princip               | hash + verify                         | hash + verify                                            |
 | Direktna kompatibilnost hash-eva | Samo sa podrzanim Passlib scheme-ama  | Ne treba pretpostaviti bcrypt kompatibilnost bez provere |
 | Pogodno za razumevanje kursa     | Da                                    | Da, ali odstupa od transkripta                           |
 | Pogodno za novi kod              | Proveriti odrzavanje i kompatibilnost | Cesto jednostavniji moderni izbor                        |
 
-Najvaznija posledica je da hash napravljen bcrypt algoritmom nije samo obican tekst koji mozemo automatski tretirati kao Argon2 hash. Format nosi informaciju o algoritmu.
+Najvažnija posledica je da hash napravljen bcrypt algoritmom nije samo običan tekst koji možemo automatski tretirati kao Argon2 hash. Format nosi informaciju o algoritmu.
 
 ---
 
 ## 5) Da li se menja baza
 
-Ne menja se SQLAlchemy model samo zato sto se menja password hashing biblioteka.
+Ne menja se SQLAlchemy model samo zato što se menja password hashing biblioteka.
 
-Kolona moze ostati:
+Kolona može ostati:
 
 ```python
 hashed_password = Column(String)
 ```
 
-ili odgovarajuca SQLAlchemy 2.0 deklaracija.
+ili odgovarajuća SQLAlchemy 2.0 deklaracija.
 
 U oba slucaja u koloni se cuva tekstualni hash:
 
@@ -204,14 +210,14 @@ bcrypt hash  -> jedan tekstualni format
 Argon2 hash  -> drugi tekstualni format
 ```
 
-Pre prelaska proveri samo da kolona ima dovoljno prostora za format koji koristis. U praksi je `String` bez suvise malog ogranicenja uobicajen izbor, ali konkretan model i baza projekta imaju poslednju rec.
+Pre prelaska proveri samo da kolona ima dovoljno prostora za format koji koristiš. U praksi je `String` bez suviše malog ograničenja uobičajen izbor, ali konkretan model i baza projekta imaju poslednju reč.
 
 Ne treba:
 
-- cuvati algoritam u posebnoj koloni bez razloga
-- rucno seci hash string
+- čuvati algoritam u posebnoj koloni bez razloga
+- ručno seći hash string
 - menjati `hashed_password` u `password`
-- pokusavati da de-hashujes stare vrednosti
+- pokušavati da de-hashuješ stare vrednosti
 
 Hash se ne dekriptuje. Ako se algoritam menja, stari hash se verifikuje starim algoritmom, a novi se pravi novim algoritmom.
 
@@ -219,7 +225,7 @@ Hash se ne dekriptuje. Ako se algoritam menja, stari hash se verifikuje starim a
 
 ## 6) Da li se menjaju sheme
 
-Uobicajeno ne.
+Uobičajeno ne.
 
 Request schema pri registraciji i login formi i dalje imaju plain password samo u memoriji tokom obrade zahteva:
 
@@ -240,13 +246,13 @@ class UserResponse(BaseModel):
 	is_active: bool
 ```
 
-Promena iz `Passlib` u `pwdlib` ne menja javni API ugovor. Menja se samo unutrasnja implementacija hashovanja.
+Promena iz `Passlib` u `pwdlib` ne menja javni API ugovor. Menja se samo unutrašnja implementacija hashovanja.
 
 ---
 
 ## 7) Zavisnost po lekcijama 09-14
 
-### Lekcija 09 - Cuvanje korisnika u bazu
+### Lekcija 09 - čuvanje korisnika u bazi
 
 Zavisi od password biblioteke samo u jednom koraku:
 
@@ -260,7 +266,9 @@ CreateUserRequest.password
 
 Razlika u kodu je samo u helperu ili importu. Ostatak endpointa ostaje isti.
 
-### Lekcija 10 - Autentifikacija korisnika
+---
+
+### Lekcija 10 - autentifikacija korisnika
 
 Ova lekcija direktno koristi password biblioteku:
 
@@ -274,11 +282,13 @@ verify_password(
 Ako se promeni biblioteka, mora se promeniti implementacija `verify_password()`. Tok lekcije ostaje isti:
 
 ```text
-pronadji user
-	-> procitaj user.hashed_password
+pronađi user
+	-> pročitaj user.hashed_password
 		-> verify
-			-> user ili neuspesna autentifikacija
+			-> user ili neuspešna autentifikacija
 ```
+
+---
 
 ### Lekcija 11 - JWT
 
@@ -298,6 +308,8 @@ JWT lekcija ima svoje zasebne teme:
 - claims
 - expiration
 - `python-jose` ili druga JWT biblioteka
+
+---
 
 ### Lekcija 12 - Encoding JWT-a
 
@@ -332,7 +344,7 @@ Jedina indirektna veza je sto neuspesan `verify()` treba da vodi ka standardnom 
 
 ## 8) Kako da pratiš kursnu verziju bez zakljucavanja za buducnost
 
-U teoriji mozes uciti kursni oblik:
+U teoriji mozes ući kursni oblik:
 
 ```python
 bcrypt_context = CryptContext(
@@ -341,7 +353,7 @@ bcrypt_context = CryptContext(
 )
 ```
 
-U prakticnom kodu je korisno odmah imati jedan mali sloj pomocnih funkcija:
+U praktičnom kodu je korisno odmah imati jedan mali sloj pomoćnih funkcija:
 
 ```python
 def hash_password(password: str) -> str:
@@ -370,37 +382,39 @@ def verify_password(password: str, saved_hash: str) -> bool:
 	return password_hash.verify(password, saved_hash)
 ```
 
-Registracioni endpoint i login endpoint zadrzavaju pozive:
+Registracioni endpoint i login endpoint zadržavaju pozive:
 
 ```python
 hash_password(create_user_request.password)
 verify_password(form_data.password, user.hashed_password)
 ```
 
-To je razlog zasto se password logika izdvaja iz routera.
+To je razlog zašto se password logika izdvaja iz routera.
 
 ---
 
-## 9) Vazna migraciona zamka: stari hash-evi
+## 9) Važna migraciona zamka: stari hash-evi
 
-Ako si korisnike vec kreirao pomocu bcrypt-a, ne smes samo promeniti biblioteku i pretpostaviti da ce novi backend razumeti sve stare hash-eve.
+Ako si korisnike već kreirao pomoću bcrypt-a, ne smeš samo promeniti biblioteku i pretpostaviti da će novi backend razumeti sve stare hash-eve.
 
-Postoje tri moguca pristupa.
+Postoje tri moguća pristupa.
 
 ### Pristup A - obrisati razvojne korisnike
 
-Ako je projekat jos ucenicki i baza nema vazne podatke:
+Ako je projekat još učenički i baza nema važne podatke:
 
-1. promenis security biblioteku
-2. napravis novu praznu razvojnu bazu ili obrises test korisnike
-3. registrujes korisnike ponovo
-4. proveris novi format hash-a
+1. promeniš security biblioteku
+2. napraviš novu praznu razvojnu bazu ili obrišeš test korisnike
+3. registruješ korisnike ponovo
+4. proveriš novi format hash-a
 
 Ovo je najjednostavniji pristup za tvoj trenutni portfolio projekat, pod uslovom da baza nema podatke koje moras sacuvati.
 
-### Pristup B - podrzati oba formata tokom migracije
+---
 
-Ako postoje korisnici koje moras sacuvati:
+### Pristup B - podržati oba formata tokom migracije
+
+Ako postoje korisnici koje moraš sačuvati:
 
 ```text
 login
@@ -412,23 +426,25 @@ login
 
 Ovo se zove postupna migracija pri login-u. Zahteva da aplikacija privremeno zna i stari i novi backend.
 
-### Pristup C - reset password-a
+---
 
-Korisnicima se posalje tok za postavljanje novog password-a. Nakon uspesnog resetovanja cuva se samo novi format.
+### Pristup C - reset password-a (ponovno postavljanje lozinke)
 
-Ne treba pokusavati konverziju bez plain password-a:
+Korisnicima se pošalje tok za postavljanje novog password-a. Nakon uspešnog resetovanja čuva se samo novi format.
+
+Ne treba pokušavati konverziju bez plain password-a:
 
 ```text
 bcrypt hash -> Argon2 hash
 ```
 
-To nije moguce direktno jer bcrypt hash nije originalni password. Potrebno je da korisnik ponovo unese password ili da se uspešno autentifikuje.
+To nije moguće direktno jer bcrypt hash nije originalni password. Potrebno je da korisnik ponovo unese password ili da se uspešno autentifikuje.
 
 ---
 
-## 10) Sta se ne menja pri prelasku na `pwdlib`
+## 10) Šta se ne menja pri prelasku na `pwdlib`
 
-Sledece ideje ostaju potpuno iste:
+Sledeće ideje ostaju potpuno iste:
 
 ```text
 password nije enkriptovan u bazi
@@ -436,10 +452,10 @@ hash je jednosmeran rezultat
 salt pravi razlicite hash-eve za isti password
 verify prima plain password i saved hash
 hash se ne vraca u javnom response-u
-JWT ne treba da sadrzi password ili hashed_password
+JWT ne treba da sadrži password ili hashed_password
 ```
 
-Takodje ostaju iste odgovornosti modula:
+Takođe ostaju iste odgovornosti modula:
 
 ```text
 auth.py
@@ -460,7 +476,7 @@ db/session.py
 
 ---
 
-## 11) Sta se menja pri prelasku na `pwdlib`
+## 11) Šta se menja pri prelasku na `pwdlib`
 
 Menja se uglavnom:
 
@@ -482,9 +498,9 @@ Ne treba menjati:
 
 ---
 
-## 12) Razlika izmedju password hashing-a i JWT potpisa
+## 12) Razlika između password hashing-a i JWT potpisa
 
-Ove dve teme se cesto pomesaju jer se obe koriste u authentication sistemu.
+Ove dve teme se često pomešaju jer se obe koriste u authentication sistemu.
 
 ### Password hashing
 
@@ -505,7 +521,7 @@ claims + secret key
 
 Koristi se da server moze da proveri da token nije promenjen.
 
-Password hash i JWT signature nisu ista stvar:
+Password hash i JWT potpis (signature) nisu ista stvar:
 
 - password hash nije token
 - JWT nije password hash
@@ -514,11 +530,11 @@ Password hash i JWT signature nisu ista stvar:
 
 ---
 
-## 13) Preporuceni redosled rada za tvoj `TodosApp`
+## 13) Preporučeni redosled rada za tvoj `TodosApp`
 
 ### Faza 1 - kursno razumevanje
 
-Uciti i zapisati:
+Učiti i zapisati:
 
 ```text
 CryptContext
@@ -530,6 +546,8 @@ authenticate_user()
 ```
 
 U ovoj fazi je normalno da kod prati transkript.
+
+---
 
 ### Faza 2 - kursna implementacija
 
@@ -550,6 +568,8 @@ login
 
 Testirati da se plain password ne pojavljuje u bazi i response-u.
 
+---
+
 ### Faza 3 - izolovanje security logike
 
 Izdvojiti:
@@ -567,31 +587,35 @@ create_access_token()
 decode_access_token()
 ```
 
+---
+
 ### Faza 4 - migracija na `pwdlib`
 
 Tek kada kursni tok radi:
 
-1. dodaj odgovarajuci `pwdlib` dependency
-2. zameni implementaciju helpera
-3. proveri nove registracije
-4. proveri login sa novim hash-evima
-5. odluci sta radis sa starim bcrypt korisnicima
-6. ukloni `Passlib` tek kada vise nije potreban
+1. Dodaj odgovarajući `pwdlib` dependency
+2. Zameni implementaciju helpera
+3. Proveri nove registracije
+4. Proveri login sa novim hash-evima
+5. Odluči sta radiš sa starim bcrypt korisnicima
+6. Ukloni `Passlib` tek kada više nije potreban
+
+---
 
 ### Faza 5 - SQLAlchemy 2.0 refaktorisanje
 
-SQLAlchemy 2.0 mozes raditi pre ili posle `pwdlib` migracije. Prakticno je da promene budu odvojene:
+SQLAlchemy 2.0 može raditi pre ili posle `pwdlib` migracije. Praktično je da promene budu odvojene:
 
 ```text
 promena A: password backend
 promena B: SQLAlchemy query/model stil
 ```
 
-Ako se obe rade istovremeno, teze je utvrditi da li je greska u auth logici, hash biblioteci ili ORM kodu.
+Ako se obe rade istovremeno, teže je utvrditi da li je greška u auth logici, hash biblioteci ili ORM kodu.
 
 ---
 
-## 14) Minimalni testovi koji vaze za obe biblioteke
+## 14) Minimalni testovi koji važe za obe biblioteke
 
 Ovi testovi proveravaju koncept, a ne naziv biblioteke:
 
@@ -625,37 +649,47 @@ def test_same_password_does_not_require_equal_hash_strings():
 	assert verify_password("Test1234!", second_hash) is True
 ```
 
-Ne treba testirati implementaciju ovako:
+Ne treba testirati implementaciju ovako (jer zavisi od konkretne biblioteke):
 
 ```python
 assert saved_hash.startswith("$2b$")
 ```
 
-osim ako je cilj bas kursna bcrypt konfiguracija. Takav test ce se ocekivano promeniti pri prelasku na `pwdlib` i Argon2.
+osim ako je cilj bas kursna bcrypt konfiguracija. Takav test će se očekivano promeniti pri prelasku na `pwdlib` i Argon2.
 
 ---
 
-## 15) Cesta pitanja
+## 15) Česta pitanja
 
 ### Da li moram ponovo menjati podatke u bazi kada promenim biblioteku?
 
-Ne automatski. Postojeci bcrypt hash-evi ostaju validni za bcrypt proveru. Problem nastaje samo ako novi backend ne zna da ih proveri. Tada biras brisanje razvojnih podataka, dvostruku podrsku ili reset password-a.
+Ne automatski. Postojeći bcrypt hash-evi ostaju validni za bcrypt proveru. Problem nastaje samo ako novi backend ne zna da ih proveri. Tada biraš brisanje razvojnih podataka, dvostruku podršku ili reset password-a.
+
+---
 
 ### Da li `pwdlib` menja SQLAlchemy model?
 
 Ne. Menja se vrednost koja se upisuje u `hashed_password`, ne uloga ORM modela.
 
+---
+
 ### Da li se menja JWT?
 
 Ne. JWT se kreira tek nakon uspesne provere password-a i ima zasebnu biblioteku i konfiguraciju.
 
-### Da li `Passlib` znaci da je ceo kurs los?
+---
 
-Ne. Kursni primer je koristan za ucenje auth toka, ali konkretne dependency izbore treba osveziti za novi projekat. Dobro je uciti stabilan koncept, a zatim proveriti aktuelni alat.
+### Da li `Passlib` znači da je ceo kurs loš?
 
-### Da li mogu odmah koristiti `pwdlib` i preskociti Passlib?
+Ne. Kursni primer je koristan za učenje auth toka, ali konkretne dependency izbore treba osvežiti za novi projekat. Dobro je učiti stabilan koncept, a zatim proveriti aktuelni alat.
 
-Tehnicki da, ali za tvoj plan nije potrebno. Ako pratis transkript, `Passlib` ce ti olaksati razumevanje njegovog koda. Posle toga `pwdlib` moze biti mali, jasan refaktorisuci korak.
+---
+
+### Da li mogu odmah koristiti `pwdlib` i preskočiti Passlib?
+
+Tehnički da, ali za tvoj plan nije potrebno. Ako pratiš transkript, `Passlib` će ti olakšati razumevanje njegovog koda. Posle toga `pwdlib` može biti mali, jasan refaktorisajući korak.
+
+---
 
 ### Da li je `bcrypt==4.0.1` univerzalno bezbedna verzija?
 
@@ -665,9 +699,9 @@ Ne. To je konkretan kursni pin koji je izabran zbog kompatibilnosti okruzenja. V
 
 ## 16) Zadaci za proveru razumevanja
 
-### Zadatak 1 - Oznaci odgovornost
+### Zadatak 1 - Označi odgovornost
 
-Za svaku stavku napisi da li pripada password hashing-u ili JWT-u:
+Za svaku stavku napiši da li pripada password hashing-u ili JWT-u:
 
 ```text
 salt
@@ -678,6 +712,8 @@ exp claim
 verify(password, saved_hash)
 Bearer token
 ```
+
+---
 
 ### Zadatak 2 - Uporedi pozive
 
@@ -690,9 +726,11 @@ bcrypt_context.verify(password, saved_hash)
 password_hash.verify(password, saved_hash)
 ```
 
-### Zadatak 3 - Pronadji granicu
+---
 
-Objasni koji deo sledeceg toka zavisi od password biblioteke:
+### Zadatak 3 - Pronađi granicu
+
+Objasni koji deo sledećeg toka zavisi od password biblioteke:
 
 ```text
 form data
@@ -703,9 +741,13 @@ form data
 					-> JWT
 ```
 
+---
+
 ### Zadatak 4 - Plan migracije
 
-Napravi plan za slucaj u kome baza vec ima bcrypt korisnike, a novi kod treba da koristi Argon2. Navedi najmanje dve moguce strategije i njihove posledice.
+Napravi plan za slučaj u kome baza već ima bcrypt korisnike, a novi kod treba da koristi Argon2. Navedi najmanje dve moguće strategije i njihove posledice.
+
+---
 
 ### Zadatak 5 - Razdvoji promene
 
@@ -716,13 +758,13 @@ commit A: password backend migracija
 commit B: SQLAlchemy 2.0 refaktorisanje
 ```
 
-Za svaki napisi koje fajlove bi ocekivao da menjas i koje testove bi pokrenuo.
+Za svaki napiši koje fajlove bi očekivao da menjaš i koje testove bi pokrenuo.
 
 ---
 
-## 17) Zakljucak
+## 17) Zaključak
 
-Za naredne lekcije mozes bez problema nastaviti sa kursnom kombinacijom `Passlib + bcrypt`, jer je cilj da razumes ceo auth tok. Sledece lekcije ne postaju neupotrebljive ako kasnije predjes na `pwdlib`.
+Za naredne lekcije možeš bez problema nastaviti sa kursnom kombinacijom `Passlib + bcrypt`, jer je cilj da razumes ceo auth tok. Sledeće lekcije ne postaju neupotrebljive ako kasnije predješ na `pwdlib`.
 
 Direktno su vezane za password biblioteku samo:
 
@@ -744,4 +786,4 @@ kursni koncept
 					-> odvojeni SQLAlchemy 2.0 refaktorisanje
 ```
 
-Kursni izbor nije amaterski u osnovnom konceptu, ali je tehnicki stariji. Nauci ga kao mapu problema, a `pwdlib` uvedi kao svesnu modernizaciju kada zavrsis kursni tok.
+Kursni izbor nije amaterski u osnovnom konceptu, ali je tehnički stariji. Nauči ga kao mapu problema, a `pwdlib` uvedi kao svesnu modernizaciju kada završiš kursni tok.

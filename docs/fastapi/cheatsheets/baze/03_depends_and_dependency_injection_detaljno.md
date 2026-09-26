@@ -2,7 +2,7 @@
 
 ## 1. Osnovna ideja
 
-U FastAPI kodu cesto vidimo:
+U FastAPI kodu često vidimo:
 
 ```python
 @router.post("/token")
@@ -13,45 +13,36 @@ async def login_for_access_token(
 	...
 ```
 
-Ovde endpoint ne pravi sam `form_data` i `db`. On samo opisuje sta mu je potrebno. FastAPI zatim cita potpis funkcije, pronalazi dependency-je, poziva njihove funkcije ili konstruktore, prosledjuje rezultate endpointu i izvrsava cleanup kada je potreban.
+Ovde endpoint ne pravi sam `form_data` i `db`. On samo opisuje šta mu je potrebno. FastAPI zatim čita potpis funkcije, pronalazi dependency-je, poziva njihove funkcije ili konstruktore, prosleđuje rezultate endpointu i izvršava cleanup kada je potreban.
 
 To je **Dependency Injection**, odnosno **ubacivanje zavisnosti**.
 
 ```text
-endpoint kaze sta mu treba
-FastAPI dobavlja tu vrednost
-FastAPI je ubacuje u endpoint
+endpoint kaže tačno šta mu treba kroz parametre
+FastAPI dobavlja te vrednosti pre nego što pozove endpoint
+Zatim FastAPI ubacuje te vrednosti u odgovarajuće parametre endpoint funkcije
 ```
 
-## 2. Sta je dependency
+---
 
-Dependency je vrednost, objekat, resurs ili servis koji je potreban drugom delu aplikacije.
+## 2. Šta je dependency
 
-Endpoint za todo aplikaciju moze zavisiti od:
+Dependency je `vrednost`, `objekat`, `resurs` ili `servis` koji je potreban drugom delu aplikacije.
+
+Endpoint za `todo` aplikaciju može zavisiti od:
 
 ```text
-database session
-trenutno prijavljenog korisnika
-JWT tokena
-provere admin role
-request parametara
-application settings objekta
-email servisa
-payment servisa
+	database session (db: Session = Depends(get_db))
+	trenutno prijavljenog korisnika (current_user: Users = Depends(get_current_user))
+	JWT tokena (token: str = Depends(get_jwt_token))
+	provere admin role (is_admin: bool = Depends(get_is_admin))
+	request parametara (params: dict = Depends(get_request_params))
+	application settings objekta (settings: Settings = Depends(get_settings))
+	email servisa (email_service: EmailService = Depends(get_email_service))
+	payment servisa (payment_service: PaymentService = Depends(get_payment_service))
 ```
 
-Bez dependency injection-a endpoint bi morao sam da pravi sve:
-
-```python
-@router.get("/todos")
-async def get_todos():
-	db = SessionLocal()
-	settings = Settings()
-	current_user = ...
-	...
-```
-
-Sa dependency injection-om endpoint samo prima ono sto mu treba:
+Sa dependency injection-om endpoint samo prima ono što mu treba:
 
 ```python
 @router.get("/todos")
@@ -64,7 +55,9 @@ async def get_todos(
 
 Endpoint se tada fokusira na poslovnu logiku, a dependency funkcije na pripremu resursa i provere.
 
-## 3. Sta radi `Depends`
+---
+
+## 3. Šta radi `Depends`
 
 `Depends` je FastAPI instrukcija koja opisuje kako treba dobaviti dependency.
 
@@ -72,13 +65,13 @@ Endpoint se tada fokusira na poslovnu logiku, a dependency funkcije na pripremu 
 Depends(get_db)
 ```
 
-znaci:
+znači:
 
 ```text
-FastAPI, kada resavas ovaj request, pozovi get_db
+FastAPI, kada rešavaš ovaj request, pozovi get_db
 ```
 
-Ovo nije isto sto i:
+Ovo nije isto što i:
 
 ```python
 get_db()
@@ -91,13 +84,15 @@ Depends(get_db)  # funkcija kao instrukcija
 get_db()         # funkcija se odmah poziva
 ```
 
-U endpoint parametru zelimo prvi oblik. FastAPI treba da upravlja trenutkom pozivanja, rezultatom i cleanup-om.
+U endpoint parametru želimo prvi oblik. FastAPI treba da upravlja trenutkom pozivanja, rezultatom i cleanup-om.
 
-`Depends` nije konkretna database session i nije korisnicki objekat. On je opis nacina na koji FastAPI moze da dobije takvu vrednost.
+`Depends` nije konkretna database session i nije korisnički objekat. On je opis načina na koji FastAPI može da dobije takvu vrednost.
 
-## 4. Dependency Injection u obicnom i FastAPI kodu
+---
 
-Obicna Python funkcija:
+## 4. Dependency Injection u običnom i FastAPI kodu
+
+Obična Python funkcija:
 
 ```python
 def get_todos(db: Session):
@@ -108,7 +103,7 @@ db = SessionLocal()
 get_todos(db)
 ```
 
-Programer rucno pravi `db` i prosledjuje ga.
+Programer ručno pravi `db` i prosleđuje ga.
 
 U FastAPI-ju to radi framework:
 
@@ -130,6 +125,17 @@ HTTP request
 				-> poziva get_todos(db)
 ```
 
+Ovde je:
+
+1. `Session` tip rezultata koji endpoint očekuje.
+2. `get_db` je dependency funkcija koja pravi konkretnu instancu `Session`
+3. `Depends(get_db)` govori FastAPI-ju da tu funkciju koristi za dobavljanje vrednosti.
+4. `db` je konkretna instanca `Session` koja se prosleđuje endpointu.
+
+Ovo omogućava FastAPI-ju da upravlja životnim ciklusom database session-a. Za programera, endpoint parametar `db` je jednostavno instanca `Session` koju može koristiti u svom kodu.
+
+---
+
 ## 5. Prvi obrazac: `OAuth2PasswordRequestForm`
 
 Do sada si koristio:
@@ -150,12 +156,12 @@ async def login_for_access_token(
 	...
 ```
 
-Ovde je `OAuth2PasswordRequestForm` dependency klasa. `Depends()` nema eksplicitni argument zato sto FastAPI koristi tip iz `Annotated` izraza.
+Ovde je `OAuth2PasswordRequestForm` klasa koja može da se koristi kao dependency callable. `Depends()` nema eksplicitni argument zato što FastAPI, kada je dependency `None`, koristi tip iz `Annotated` izraza kao dependency (u ovom slučaju `OAuth2PasswordRequestForm`).
 
-Tok login request-a:
+Tok `login request`-a:
 
 ```text
-klijent salje form data
+klijent šalje form data
 	-> username=ana
 	-> password=Test1234
 
@@ -166,9 +172,9 @@ FastAPI pravi OAuth2PasswordRequestForm objekat
 FastAPI poziva login_for_access_token(form_data)
 ```
 
-Endpoint zato ne cita rucno body i ne parsira formu.
+Endpoint zato ne čita ručno body i ne parsira formu.
 
-Ovaj oblik je slican starijem obliku:
+Ovaj oblik je sličan starijem obliku:
 
 ```python
 form_data: OAuth2PasswordRequestForm = Depends()
@@ -178,10 +184,12 @@ Moderni `Annotated` oblik odvaja Python tip od FastAPI metadata:
 
 ```python
 Annotated[
-	OAuth2PasswordRequestForm,  # tip
-	Depends(),                  # FastAPI instrukcija
+	OAuth2PasswordRequestForm,  # tip koji FastAPI treba da instancira i koji sadrzi podatke iz form data
+	Depends(), # FastAPI instrukcija kako se dobija instanca tipa iz Annotated
 ]
 ```
+
+---
 
 ## 6. Drugi obrazac: database session
 
@@ -201,11 +209,11 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 `get_db` je dependency funkcija. Ona:
 
-1. pravi SQLAlchemy session
-2. predaje session endpointu preko `yield`
-3. zatvara session u `finally` bloku
+1. pravi SQLAlchemy session (`db= SessionLocal()`)
+2. predaje session endpointu preko `yield` (FastAPI uzima vrednost iz `yield` i prosleđuje je parametru `db` endpoint funkcije)
+3. zatvara session u `finally` bloku (Tada se vrši cleanup tj. oslobađanje resursa koji su korišćeni tokom session-a i osigurava da se session pravilno zatvori bez obzira na to da li je došlo do greške)
 
-Endpoint koristi alias:
+Endpoint koristi alias `db_dependency` umesto da direktno koristi `Annotated[Session, Depends(get_db)]`
 
 ```python
 @router.get("/todos")
@@ -223,9 +231,11 @@ async def get_todos(
 	return db.query(Todo).all()
 ```
 
-Oba oblika imaju isto ponasanje. Alias samo izbegava ponavljanje.
+Oba oblika imaju isto ponašanje. Alias samo izbegava ponavljanje.
 
-## 7. Razlika izmedju `get_db`, `db_dependency` i `db`
+---
+
+## 7. Razlika između `get_db`, `db_dependency` i `db`
 
 ```python
 def get_db():
@@ -238,7 +248,7 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
-`db_dependency` je reusable opis dependency-ja. To nije konkretna session.
+`db_dependency` je reusable opis dependency-ja (`typing/dependency alias`). To nije konkretna session instanca.
 
 ```python
 async def endpoint(db: db_dependency):
@@ -250,19 +260,21 @@ async def endpoint(db: db_dependency):
 | Ime             | Sta je                  | Kada se dobija konkretna vrednost |
 | --------------- | ----------------------- | --------------------------------- |
 | `get_db`        | dependency funkcija     | kada je FastAPI pozove            |
-| `db_dependency` | typing/dependency alias | pri ucitavanju modula kao opis    |
-| `db`            | endpoint parametar      | tokom izvrsavanja request-a       |
+| `db_dependency` | typing/dependency alias | pri učitavanju modula kao opis    |
+| `db`            | endpoint parametar      | tokom izvršavanja request-a       |
 
-## 8. Zasto `get_db` koristi `yield`
+---
 
-Obican dependency bez posebnog cleanup-a moze koristiti `return`:
+## 8. Zašto `get_db` koristi `yield`
+
+Običan dependency bez posebnog cleanup-a može koristiti `return`:
 
 ```python
 def get_settings():
 	return Settings()
 ```
 
-Baza je resurs koji treba zatvoriti:
+Baza je resurs koji treba zatvoriti (`cleanup` je neophodan):
 
 ```python
 def get_db():
@@ -276,20 +288,242 @@ def get_db():
 `yield` deli funkciju na tri konceptualne faze:
 
 ```text
-pre yield-a    -> priprema resursa
+pre yield-a    -> priprema resursa za izvršavanje endpoint-a
+
 yield db       -> resurs se ubacuje u endpoint
-posle yield-a  -> cleanup
+               -> koristi se tokom izvršavanja request-a
+
+posle yield-a  -> cleanup resursa i zatvaranje session-a (u finally bloku)
 ```
 
-Ako endpoint podigne exception, `finally` se i dalje izvrsava. Zato se session zatvara i u slucaju greske.
+Ako endpoint podigne exception, `finally` se i dalje izvršava. Zato se session zatvara i u slučaju greške.
 
-## 9. Kako se cita `Annotated`
+---
 
-Opsti oblik je:
+## 9. Kako se čita `Annotated`
+
+Opšti oblik je:
 
 ```python
 Annotated[tip, metadata]
 ```
+
+`Annotated` ima najmanje dva važna dela:
+
+```text
+prvi deo  -> tip vrednosti
+drugi deo -> metadata, odnosno dodatna informacija za framework
+```
+
+Na primer:
+
+```python
+Annotated[Session, Depends(get_db)]
+```
+
+znači:
+
+```text
+Session          -> endpoint očekuje SQLAlchemy Session
+Depends(get_db)  -> FastAPI zna kako da dobavi tu Session vrednost
+```
+
+### 9.1. Koji objekti mogu biti tip
+
+Prvi deo može biti bilo koji odgovarajući Python tip, na primer:
+
+```text
+Session                     -> SQLAlchemy session (instanca klase Session)
+str                         -> string, na primer token (instanca klase str)
+int                         -> celobrojna vrednost (instanca klase int)
+float                       -> decimalna vrednost (instanca klase float)
+bool                        -> True ili False (instanca klase bool)
+datetime                    -> datum i vreme (instanca klase datetime)
+list                        -> lista (instanca klase list)
+dict                        -> rečnik (instanca klase dict)
+OAuth2PasswordRequestForm   -> objekat OAuth2 login forme (instanca klase OAuth2PasswordRequestForm)
+```
+
+`OAuth2PasswordRequestForm` je, dakle, tip odnosno klasa. U `Annotated` se nalazi na mestu prvog argumenta, a ne u metadata delu.
+
+---
+
+### 9.2. Šta može biti metadata
+
+Drugi deo može biti FastAPI informacija kao:
+
+```text
+Depends(...)  -> dobavi vrednost preko dependency sistema
+Query(...)    -> čitaj i validiraj query parametar
+Path(...)     -> čitaj i validiraj path parametar
+Header(...)   -> čitaj header vrednost
+Cookie(...)   -> čitaj cookie vrednost
+Body(...)     -> čitaj body vrednost
+Form(...)     -> čitaj form podatke
+File(...)     -> čitaj fajl podatke
+Security(...) -> sigurnosni dependency, na primer OAuth2 ili API key
+```
+
+Važno: `OAuth2PasswordRequestForm` nije metadata objekat. On je klasa koju FastAPI može koristiti kao dependency.
+
+---
+
+## 9.3. Da li su ova dva oblika ekvivalentna?
+
+Za ovaj konkretan slučaj, sledeća dva oblika imaju isto značenje:
+
+```python
+from typing import Annotated
+
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordRequestForm
+
+
+form_data: Annotated[
+	OAuth2PasswordRequestForm,
+	Depends(),
+]
+```
+
+i:
+
+```python
+form_data: Annotated[
+	OAuth2PasswordRequestForm,
+	Depends(OAuth2PasswordRequestForm),
+]
+```
+
+Zašto? Zato što `Depends()` bez eksplicitnog argumenta koristi tip iz `Annotated` kao dependency. U prvom primeru taj tip je `OAuth2PasswordRequestForm`, pa FastAPI zna da treba da koristi baš tu klasu.
+
+Drugi oblik to kaže eksplicitno:
+
+```text
+tip parametra: OAuth2PasswordRequestForm
+dependency:    OAuth2PasswordRequestForm
+```
+
+U ovom slučaju su isti objekat i tip i dependency callable, pa su oblici praktično ekvivalentni.
+
+---
+
+### 9.4. Oblik koji nije ispravan
+
+Ovo nije ispravan ekvivalent:
+
+```python
+Annotated[Depends(OAuth2PasswordRequestForm)]
+```
+
+Razlozi su:
+
+1. `Annotated` očekuje najmanje prvi argument koji predstavlja tip.
+2. `Depends(...)` je metadata, a ne tip parametra.
+3. Nije navedeno koji tip endpoint treba da dobije.
+
+Ispravno je:
+
+```python
+Annotated[
+	OAuth2PasswordRequestForm,
+	Depends(OAuth2PasswordRequestForm),
+]
+```
+
+ili kraće:
+
+```python
+Annotated[
+	OAuth2PasswordRequestForm,
+	Depends(),
+]
+```
+
+Razlika je ista kao razlika između nepotpunog opisa i potpunog opisa:
+
+```text
+Annotated[metadata]                  -> nedostaje tip
+Annotated[tip, metadata]             -> potpun oblik
+```
+
+---
+
+### 9.5. Šta znači `OAuth2PasswordRequestForm(...)`
+
+Važno je razlikovati klasu i instancu:
+
+```python
+OAuth2PasswordRequestForm       # klasa, tip i callable dependency
+OAuth2PasswordRequestForm(...)  # poziv klase, pokušaj pravljenja instance
+```
+
+U `Annotated` ne pišemo:
+
+```python
+Annotated[
+	OAuth2PasswordRequestForm,
+	OAuth2PasswordRequestForm(...),
+]
+```
+
+jer FastAPI ne treba unapred napravljenu formu. FastAPI treba da dobije instrukciju kako da napravi formu za konkretan request. Zato koristimo:
+
+```python
+Depends(OAuth2PasswordRequestForm)
+```
+
+ili, u ovom specifičnom slučaju, skraćeno:
+
+```python
+Depends()
+```
+
+Tok je:
+
+```text
+request sa username/password form podacima
+    -> FastAPI poziva OAuth2PasswordRequestForm dependency
+        -> pravi instancu forme za taj request
+            -> ubacuje je u form_data
+```
+
+---
+
+### 9.6. Poređenje sa bazom
+
+Kod baze imamo:
+
+```python
+db: Annotated[Session, Depends(get_db)]
+```
+
+Ovde tip i dependency nisu isti:
+
+```text
+Session       -> tip rezultata koji endpoint dobija (class Session)
+get_db        -> callable koji zna kako da napavi instancu klase Session
+              -> preko dependency injection (Depends(get_db)) koji FastAPI koristi
+			  -> na taj način što poziva funkciju get_db a zatim se preko db = LocalSession() i dobija instanca klase Session
+```
+
+Kod OAuth2 forme imamo:
+
+```python
+form_data: Annotated[
+	OAuth2PasswordRequestForm,
+	Depends(OAuth2PasswordRequestForm),
+]
+```
+
+Ovde ista klasa ima dve uloge:
+
+```text
+OAuth2PasswordRequestForm kao prvi deo -> tip rezultata koji endpoint dobija (class OAuth2PasswordRequestForm)
+
+OAuth2PasswordRequestForm u Depends -> callable koji pravi rezultat, vraća instancu klase OAuth2PasswordRequestForm
+```
+
+Zato je moguće koristiti `Depends()` bez argumenta.
 
 Za bazu:
 
@@ -310,11 +544,11 @@ Zato:
 db: Annotated[Session, Depends(get_db)]
 ```
 
-znaci:
+znači:
 
 ```text
-parametar se zove db
-ocekuje se Session
+Parametar se zove db
+čekuje se Session
 FastAPI treba da je dobavi pozivom get_db
 ```
 
@@ -324,13 +558,15 @@ A ovo:
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
-znaci da se isti opis cuva pod reusable imenom.
+znači da se isti opis čuva pod reusable imenom. Na taj način možemo ga koristiti na više mesta bez ponovnog kucanja koda ili redefinisanja dependency-ja.
+
+---
 
 ## 10. Dependency graf
 
-Dependency moze zavisiti od druge dependency.
+Dependency može zavisiti od drugog dependency-ja.
 
-U JWT delu kursa videces nesto slicno:
+U JWT delu kursa videćeš nešto slično:
 
 ```python
 async def get_current_user(
@@ -350,7 +586,7 @@ async def get_todos(
 	...
 ```
 
-Graf je:
+Grafikon (dependency graph) je:
 
 ```text
 get_todos
@@ -359,20 +595,22 @@ get_todos
 		-> get_db
 ```
 
-FastAPI prvo resava unutrasnje dependency-je, pa spoljasnje:
+FastAPI prvo rešava unutrašnje dependency-je, pa spoljašnje:
 
 ```text
-oauth2_scheme procita token
+oauth2_scheme pročita token
 	-> get_db obezbedi bazu
 		-> get_current_user identifikuje korisnika
 			-> get_todos dobija current_user
 ```
 
-Endpoint ne mora sam da cita header, dekodira JWT i pretrazuje bazu.
+Endpoint ne mora sam da čita header, dekodira JWT i pretrazuje bazu.
+
+---
 
 ## 11. Buduci JWT dependency: `OAuth2PasswordBearer`
 
-U sledecoj oblasti pojavice se:
+U sledećoj oblasti pojaviće se:
 
 ```python
 from fastapi.security import OAuth2PasswordBearer
@@ -383,7 +621,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 ```
 
-Token se cita ovako:
+Token se izdvaja ovako:
 
 ```python
 async def get_current_user(
@@ -392,7 +630,7 @@ async def get_current_user(
 	...
 ```
 
-Ako request sadrzi:
+Ako request sadrži:
 
 ```http
 Authorization: Bearer eyJ...
@@ -405,11 +643,13 @@ Bearer eyJ...
 	   -> token = eyJ...
 ```
 
-`oauth2_scheme` uglavnom cita token iz header-a. Ne treba ga mesati sa kompletnom proverom korisnika. Dekodiranje JWT-a i pretraga `Users` tabele pripadace sledecoj funkciji, na primer `get_current_user`.
+`oauth2_scheme` uglavnom čita token iz header-a. Ne treba ga mešati sa kompletnom proverom korisnika. Dekodiranje JWT-a i pretraga `Users` tabele pripadaće sledećoj funkciji, na primer `get_current_user`.
 
-## 12. `get_current_user` kao slozenija dependency
+---
 
-Buduci oblik moze izgledati ovako:
+## 12. `get_current_user` kao složenija dependency
+
+Budući oblik može izgledati ovako:
 
 ```python
 async def get_current_user(
@@ -457,7 +697,9 @@ Authorization header
 					-> endpoint dobija current_user
 ```
 
-Ako dependency podigne `HTTPException`, endpoint se ne izvrsava.
+Ako dependency podigne `HTTPException`, endpoint se ne izvršava.
+
+---
 
 ## 13. Authorization dependency i role
 
@@ -470,7 +712,7 @@ Ko je korisnik?
 Authorization odgovara na pitanje:
 
 ```text
-Sta korisnik sme da uradi?
+Šta korisnik sme da uradi?
 ```
 
 Za admin-only rutu moze se napraviti:
@@ -511,9 +753,11 @@ endpoint
 
 Provere se tako ne ponavljaju u svakom endpointu.
 
+---
+
 ## 14. Ownership dependency
 
-Dependency moze proveriti i da li todo pripada trenutnom korisniku:
+Dependency može proveriti i da li todo pripada trenutnom korisniku:
 
 ```python
 def get_todo_for_current_user(
@@ -548,6 +792,8 @@ async def read_todo(
 
 Ovaj dependency kombinuje path parametar, trenutnog korisnika, bazu i ownership pravilo.
 
+---
+
 ## 15. Dependency kao funkcija, klasa ili callable objekat
 
 ### Funkcija
@@ -565,6 +811,8 @@ async def read_items(
 ```
 
 FastAPI cita parametre `common_parameters` i dobavlja ih iz request-a.
+
+---
 
 ### Klasa
 
@@ -584,9 +832,11 @@ async def read_items(
 
 FastAPI instancira klasu.
 
+---
+
 ### Callable objekat
 
-Objekat moze imati `__call__` metod:
+Objekat može imati `__call__` metod:
 
 ```python
 class QueryChecker:
@@ -600,7 +850,9 @@ class QueryChecker:
 checker = QueryChecker("fastapi")
 ```
 
-Callable objekat moze biti dependency jer se ponasa kao funkcija.
+Callable objekat može biti dependency jer se ponaša kao funkcija.
+
+---
 
 ## 16. Dependency u parametru ili u dekoratoru
 
@@ -613,7 +865,7 @@ async def endpoint(
 	print(current_user.id)
 ```
 
-Ako nam treba samo provera, mozemo koristiti dependency na ruti:
+Ako nam treba samo provera, možemo koristiti dependency na ruti:
 
 ```python
 @router.get(
@@ -624,11 +876,13 @@ async def admin_area():
 	return {"message": "allowed"}
 ```
 
-U drugom obliku `require_admin` se izvrsava, ali njegov povratni objekat nije prosledjen endpointu kao parametar.
+U drugom obliku `require_admin` se izvršava, ali njegov povratni objekat nije prosleđen endpointu kao parametar.
+
+---
 
 ## 17. Dependency override i testiranje
 
-Dependency injection olaksava testiranje jer dependency mozemo zameniti.
+Dependency injection olakšava testiranje jer dependency možemo zameniti.
 
 Produkcija:
 
@@ -648,7 +902,7 @@ app.dependency_overrides[get_db] = override_get_db
 
 Endpoint kod ostaje isti, ali dobija testnu bazu.
 
-Isti princip moze zameniti:
+Isti princip može zameniti:
 
 ```text
 production email service -> fake email service
@@ -657,13 +911,15 @@ real current user -> test user
 production settings -> test settings
 ```
 
-Ovo je jedna od najprakticnijih prednosti dependency injection-a.
+Ovo je jedna od najpraktičnijih prednosti dependency injection-a.
 
-## 18. Ceste greske
+---
 
-### Pozivanje dependency funkcije rucno
+## 18. Česte greške
 
-Pogresno:
+### Pozivanje dependency funkcije ručno
+
+Pogrešno:
 
 ```python
 async def endpoint(db: get_db()):
@@ -679,7 +935,9 @@ async def endpoint(
 	...
 ```
 
-### Koriscenje funkcije bez `Depends`
+---
+
+### Korišćenje funkcije bez `Depends`
 
 ```python
 db: get_db
@@ -687,7 +945,9 @@ db: get_db
 
 Ovo ne daje FastAPI-ju instrukciju da treba da pozove `get_db` i da rezultat ubaci u `db`.
 
-### Vracanje session-a bez cleanup-a
+---
+
+### Vraćanje session-a bez cleanup-a
 
 ```python
 def get_db():
@@ -697,7 +957,9 @@ def get_db():
 
 Ovaj kod ne opisuje kada se session zatvara. Za request-scoped bazu bolji je `yield` sa `finally` blokom.
 
-### Mesanje authentication i authorization
+---
+
+### Mešanje authentication i authorization
 
 ```text
 oauth2_scheme       -> cita bearer token
@@ -705,13 +967,15 @@ get_current_user    -> identifikuje korisnika
 require_admin       -> proverava dozvolu
 ```
 
-To su razlicite odgovornosti, iako mogu biti povezane u jedan dependency lanac.
+To su različite odgovornosti, iako mogu biti povezane u jedan dependency lanac.
+
+---
 
 ## 19. Kada ne treba koristiti `Depends`
 
-Ne treba svaku pomocnu funkciju pretvoriti u dependency.
+Ne treba svaku pomoćnu funkciju pretvoriti u dependency.
 
-Obicna funkcija:
+Obična funkcija:
 
 ```python
 def hash_password(password: str) -> str:
@@ -728,53 +992,69 @@ dobavi vrednost iz request-a
 upravlja lifecycle-om resursa
 prosledi rezultat endpointu
 gradi dependency graf
-izvrsi zajednicku proveru
-omoguci test override
+izvrši zajednicku proveru
+omogući test override
 ```
+
+---
 
 ## 20. Dependency i middleware
 
-Middleware obmotava siri request/response tok:
+`Middleware` obmotava širi `request/response` tok:
 
 ```text
 request -> middleware -> router -> dependency -> endpoint
 ```
 
-Middleware je pogodan za logging svih request-ova, CORS, globalne headere i merenje vremena.
+`Middleware` je pogodan za logging svih request-ova, CORS, globalne headere i merenje vremena.
 
-Dependency je pogodniji za database session, trenutnog korisnika, role proveru i specificnu validaciju.
+`Dependency` je pogodniji za database session, trenutnog korisnika, role proveru i specificnu validaciju.
+
+---
 
 ## 21. Direktni odgovori
 
 ### Da li `Depends` odmah poziva funkciju?
 
-Ne. On opisuje sta FastAPI treba da uradi kada resava konkretan request.
+Ne. On opisuje tačno šta FastAPI treba da uradi kada rešava konkretan request.
+
+---
 
 ### Da li je `db_dependency` konkretna baza?
 
 Ne. To je alias za dependency opis. Konkretna `Session` nastaje tokom request-a.
 
-### Zasto endpoint ne poziva `get_db()`?
+---
 
-Zato sto FastAPI preko `Depends(get_db)` upravlja pozivanjem, prosledjivanjem i cleanup-om.
+### Zašto endpoint ne poziva `get_db()`?
+
+Zato što FastAPI preko `Depends(get_db)` upravlja pozivanjem, prosledjivanjem i cleanup-om.
+
+---
 
 ### Da li dependency mora da vrati objekat?
 
-Ne. Moze vratiti bilo koju vrednost ili samo izvrsiti proveru i podici exception.
+Ne. Može vratiti bilo koju vrednost ili samo izvršiti proveru i podići exception.
 
-### Da li dependency moze zavisiti od druge dependency?
+---
 
-Da. Na primer `get_current_user` moze zavisiti od tokena i baze, a endpoint od `get_current_user`.
+### Da li dependency može zavisiti od druge dependency?
+
+Da. Na primer `get_current_user` može zavisiti od tokena i baze, a endpoint od `get_current_user`.
+
+---
 
 ## 22. Najkraci rezime
 
 ```text
-dependency = ono sto endpointu treba
-Depends(...) = instrukcija kako FastAPI dobavlja dependency
-dependency injection = FastAPI prosledjuje dobijenu vrednost endpointu
+dependency = ono što endpointu treba za rad sa resursima iz FastAPI-ja (npr. baza, trenutni korisnik, token)
+
+Depends(...) -> sadrži instrukciju kako FastAPI dobavlja/kreira dependency. Najčešće se koristi za resurse koji zahtevaju lifecycle management, kao što su baze podataka ili autentifikacija.
+
+dependency injection -> FastAPI prosleđuje dobijenu vrednost za dependency u endpoint.
 ```
 
-Tvoja dva primera znace:
+Tvoja dva primera znače:
 
 ```python
 form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
@@ -786,20 +1066,22 @@ FastAPI pravi OAuth2 form objekat iz login request-a i ubacuje ga u `form_data`.
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
-Alias govori FastAPI-ju da za parametar koji koristi `db_dependency` pozove `get_db`, dobavi SQLAlchemy session i zatvori je nakon request-a.
+Alias govori FastAPI-ju da za parametar koji koristi `db_dependency` (npr. `db: db_dependency`) pozove `get_db`, dobavi SQLAlchemy session i zatvori je nakon request-a.
 
-Buduci obrasci su:
+Budući obrasci su:
 
 ```text
-oauth2_scheme       -> cita bearer token
-get_current_user    -> identifikuje korisnika
-require_admin       -> proverava rolu
-get_user_todo       -> proverava ownership
+oauth2_scheme       -> čita bearer token (Authorization header)
+get_current_user    -> identifikuje korisnika (iz bearer token-a)
+require_admin       -> proverava rolu (npr. admin)
+get_user_todo       -> proverava ownership (da li trenutni korisnik ima pristup datom todo-u)
 ```
 
-Endpoint ne treba da zna kako se svaki resurs pravi. Endpoint treba da dobije ono sto mu je potrebno i da se bavi svojom glavnom poslovnom logikom.
+Endpoint ne treba da zna kako se svaki resurs pravi. Endpoint treba da dobije ono što mu je potrebno i da se bavi svojom glavnom poslovnom logikom (npr. obrada todo item-a, kreiranje novog todo item-a, itd.).
 
-## 23. Sta se desava unutar jednog request-a
+---
+
+## 23. Šta se dešava unutar jednog request-a
 
 Pretpostavimo endpoint:
 
@@ -815,19 +1097,18 @@ async def read_todo(
 
 FastAPI konceptualno izvodi ovaj postupak:
 
-```text
-1. Stigne GET request /todos/7
-2. FastAPI analizira potpis endpointa
-3. Prepozna todo_id kao path parametar
-4. Resi get_current_user i njegove dependency-je
-5. Resi get_db i dobije Session
-6. Pozove endpoint sa gotovim argumentima
-7. Obradi povratnu vrednost
-8. Izvrsi cleanup dependency-ja koji koriste yield
-9. Posalje HTTP response
-```
+1. Stigne `GET request /todos/7` preko HTTP protokola.
+2. Endpoint je odabran na osnovu `URL`-a i `HTTP` metode (`GET`, `POST`, itd.).
+3. FastAPI `analizira potpis endpointa` da bi odredio koje `dependency`-je treba da reši i odakle da dobije vrednosti za parametre koje endpoint funkcija očekuje.
+4. Prepozna `todo_id` kao path parametar (`/todos/{todo_id}`).
+5. Resi `get_current_user` i njegove dependency-je
+6. Resi `get_db` i dobije `Session`
+7. Pozove endpoint sa gotovim argumentima (`todo_id`, `current_user`, `db`)
+8. Obradi povratnu vrednost (npr. JSON response)
+9. Izvrši cleanup dependency-ja koji koriste `yield`
+10. Pošalje HTTP response
 
-Jednim potpisom kombinujemo vise izvora:
+Jednim potpisom kombinujemo više izvora:
 
 ```text
 todo_id      -> URL path
@@ -835,9 +1116,11 @@ current_user -> Authorization header + baza
 db           -> SessionLocal
 ```
 
-## 24. Dependency funkcija moze imati svoje parametre
+---
 
-Dependency funkcija moze imati obicne FastAPI parametre:
+## 24. Dependency funkcija može imati svoje parametre
+
+Dependency funkcija može imati obične FastAPI parametre:
 
 ```python
 def pagination(
@@ -857,7 +1140,7 @@ async def get_todos(
 	...
 ```
 
-FastAPI cita `skip` i `limit` iz query string-a:
+FastAPI čita `skip` i `limit` iz query string-a:
 
 ```text
 GET /todos?skip=20&limit=10
@@ -865,18 +1148,20 @@ GET /todos?skip=20&limit=10
 		-> pagination_data = {"skip": 20, "limit": 10}
 ```
 
-Dependency tako moze obraditi zajednicke request parametre pre endpointa.
+Dependency tako može obraditi zajedničke request parametre pre endpointa.
+
+---
 
 ## 25. Odakle dependency dobavlja podatke
 
-Dependency moze koristiti path parametar:
+Dependency može koristiti path parametar:
 
 ```python
 def load_todo(todo_id: int, db: db_dependency):
 	return db.query(Todo).filter(Todo.id == todo_id).first()
 ```
 
-Moze koristiti header:
+Može koristiti header:
 
 ```python
 from fastapi import Header
@@ -888,7 +1173,7 @@ def get_request_id(
 	return x_request_id
 ```
 
-Moze koristiti cookie:
+Može koristiti cookie:
 
 ```python
 from fastapi import Cookie
@@ -900,23 +1185,25 @@ def get_session_id(
 	return session_id
 ```
 
-Moze koristiti i Pydantic body model:
+Može koristiti i Pydantic body model:
 
 ```python
 def validate_payload(payload: CreateUserRequest):
 	return payload
 ```
 
-Prakticno pravilo:
+Praktično pravilo:
 
 ```text
-tip parametra i FastAPI marker odredjuju odakle se vrednost cita
-Depends odredjuje da se pozove druga funkcija ili dependency klasa
+tip parametra i FastAPI marker određuju odakle se vrednost čita
+Depends određuje da se pozove druga funkcija ili dependency klasa
 ```
+
+---
 
 ## 26. `Depends` i drugi FastAPI markeri
 
-Ovi izrazi imaju slican izgled, ali razlicite uloge:
+Ovi izrazi imaju sličan izgled, ali različite uloge:
 
 ```python
 page: Annotated[int, Query(ge=1)]
@@ -925,22 +1212,22 @@ user_agent: Annotated[str | None, Header()]
 session_id: Annotated[str | None, Cookie()]
 ```
 
-Znacenja:
+Značenja:
 
-```text
-Query()  -> query string
-Path()   -> URL path
-Header() -> HTTP header
-Cookie() -> cookie
-Body()   -> request body
-Depends() -> dependency funkcija ili klasa
-```
+`Query()` -> query string (primer: `?skip=20&limit=10`)
+`Path()` -> URL path (primer: `/todos/{todo_id}`)
+`Header()` -> HTTP header (primer: `User-Agent`)
+`Cookie()` -> cookie (primer: `session_id=abc123`)
+`Body()` -> request body (primer: `{"key": "value"}`)
+`Depends()` -> dependency funkcija ili klasa (primer: `Depends(get_current_user)`)
 
-Svi ovi izrazi daju FastAPI-ju metadata, ali samo `Depends` opisuje dependency lanac.
+Svi ovi izrazi daju FastAPI-ju `metadata`, ali samo `Depends` opisuje `dependency lanac`.
+
+---
 
 ## 27. Caching dependency-ja u jednom request-u
 
-FastAPI po defaultu kesira rezultat dependency-ja unutar jednog request-a.
+FastAPI po defaultu kešira rezultat dependency-ja unutar jednog request-a.
 
 ```python
 def get_current_user():
@@ -955,7 +1242,7 @@ async def endpoint(
 	...
 ```
 
-Za isti request FastAPI obicno poziva `get_current_user` jednom i koristi rezultat na oba mesta.
+Za isti request FastAPI obično poziva `get_current_user` jednom i koristi rezultat na oba mesta.
 
 ```text
 jedan request
@@ -964,17 +1251,19 @@ jedan request
 		-> second_user = isti rezultat
 ```
 
-Ako namerno zelimo ponovno izvrsavanje:
+Ako namerno želimo ponovno izvršavanje:
 
 ```python
 Depends(get_value, use_cache=False)
 ```
 
-Ovo vazi samo za jedan request. Nije trajna memorija i ne deli rezultat izmedju razlicitih request-ova.
+Ovo važi samo za jedan request. Nije trajna memorija i ne deli rezultat između različitih request-ova.
+
+---
 
 ## 28. Sync i async dependency funkcije
 
-Dependency moze biti sinhrona:
+Dependency može biti sinhrona:
 
 ```python
 def get_settings():
@@ -988,7 +1277,7 @@ async def get_current_user():
 	return user
 ```
 
-Endpoint moze koristiti oba oblika:
+Endpoint može koristiti oba oblika:
 
 ```python
 async def endpoint(
@@ -1010,16 +1299,18 @@ Ispravno:
 value: Annotated[str, Depends(get_value)]
 ```
 
-FastAPI zna da saceka asinhroni dependency. Sinhroni dependency takodje moze da koristi i asinhroni endpoint; FastAPI upravlja nacinom izvrsavanja.
+FastAPI zna da sačeka asinhroni dependency. Sinhroni dependency takođe može da koristi i asinhroni endpoint; FastAPI upravlja načinom izvršavanja.
 
-Prakticno pravilo:
+Praktično pravilo:
 
 ```text
-ne biraj async samo zato sto izgleda modernije
+ne biraj async samo zato što izgleda modernije
 biraj oblik koji odgovara operaciji i biblioteci
 ```
 
-## 29. Redosled izvrsavanja
+---
+
+## 29. Redosled izvršavanja
 
 Ako imamo:
 
@@ -1087,17 +1378,19 @@ otvori A
 -> zatvori A
 ```
 
-Resurs koji je otvoren kasnije obicno se zatvara ranije. Za bazu to znaci da se `db.close()` izvrsava nakon endpointa i dependency-ja koji koriste bazu.
+Resurs koji je otvoren kasnije obično se zatvara ranije. Za bazu to znači da se `db.close()` izvršava nakon endpointa i dependency-ja koji koriste bazu.
+
+---
 
 ## 31. Globalni objekat naspram dependency-ja
 
-Mozemo imati globalnu konfiguraciju:
+Možemo imati globalnu konfiguraciju:
 
 ```python
 settings = Settings()
 ```
 
-I dependency koja je vraca:
+I dependency koja je vraća:
 
 ```python
 def get_settings():
@@ -1113,7 +1406,7 @@ async def endpoint(
 	...
 ```
 
-Dependency dodaje kontrolisanu granicu i omogucava override:
+Dependency dodaje kontrolisanu granicu i omogućava override:
 
 ```python
 def override_settings():
@@ -1125,6 +1418,8 @@ app.dependency_overrides[get_settings] = override_settings
 
 Ovo je korisno kada produkcijska konfiguracija koristi environment promenljive ili spoljne servise.
 
+---
+
 ## 32. Dependency kao granica odgovornosti
 
 Dobar dependency ima jednu jasnu odgovornost:
@@ -1133,19 +1428,19 @@ Dobar dependency ima jednu jasnu odgovornost:
 get_db             -> dobavi i zatvori bazu
 get_current_user   -> identifikuj korisnika
 require_admin      -> proveri admin privilegiju
-get_pagination     -> obradi paginaciju
-get_request_id     -> procitaj request ID
+get_pagination     -> obradi paginaciju (lista rezultata podeljena na strane ili delove u kojima se prikazuju rezultati endpointa)
+get_request_id     -> pročitaj request ID
 ```
 
 Prevelik dependency bi radio sve:
 
 ```text
-procitaj token
+pročitaj token
 dekodiraj JWT
-pronadji korisnika
+pronađi korisnika
 proveri role
-procitaj todo
-posalji email
+pročitaj todo
+pošalji email
 ```
 
 Bolje je napraviti mali lanac:
@@ -1157,7 +1452,9 @@ oauth2_scheme
 			-> endpoint
 ```
 
-Svaki sloj dobija jednu glavnu odgovornost i lakse se testira.
+Svaki sloj dobija jednu glavnu odgovornost i lakše se testira.
+
+---
 
 ## 33. Dependency i servisna funkcija
 
@@ -1168,7 +1465,7 @@ def calculate_total(items: list[Item]) -> float:
 	return sum(item.price for item in items)
 ```
 
-Dependency se resava pre endpointa:
+Dependency se rešava pre endpointa:
 
 ```python
 def get_current_user(
@@ -1180,11 +1477,11 @@ def get_current_user(
 Razlika je u tome ko upravlja pozivom:
 
 ```text
-obicnu funkciju poziva tvoj kod
+običnu funkciju poziva tvoj kod
 dependency poziva FastAPI dependency sistem
 ```
 
-Servisna funkcija moze biti pozvana iz dependency-ja:
+Servisna funkcija može biti pozvana iz dependency-ja:
 
 ```python
 def verify_token(token: str) -> str:
@@ -1198,25 +1495,29 @@ def get_current_user(
 	...
 ```
 
+---
+
 ## 34. Security redosled za buduci TodoApp
 
-Prakticni security lanac treba citati ovako:
+Praktični security lanac treba čitati ovako:
 
 ```text
-1. oauth2_scheme cita Authorization header
+1. oauth2_scheme čita Authorization header
 2. JWT decoder proverava potpis i expiration
 3. payload daje identitet kroz sub claim
-4. get_current_user cita korisnika iz baze
+4. get_current_user čita korisnika iz baze
 5. proverava se is_active
 6. require_admin ili ownership dependency proverava dozvolu
-7. endpoint izvrsava poslovnu operaciju
+7. endpoint izvršava poslovnu operaciju
 ```
 
-Dependency moze sakriti korake 1 do 5 od endpointa, ali ih ne uklanja. Oni i dalje moraju biti tacno implementirani.
+Dependency može sakriti korake 1 do 5 od endpointa, ali ih ne uklanja. Oni i dalje moraju biti tačno implementirani.
 
-Samo postojanje `current_user` ne znaci automatski da korisnik sme da menja svaki todo. Ownership uslov mora biti primenjen u query-ju ili kroz poseban dependency.
+Samo postojanje `current_user` ne znači automatski da korisnik sme da menja svaki todo. Ownership uslov mora biti primenjen u query-ju ili kroz poseban dependency.
 
-## 35. Vezba: rucno simuliraj FastAPI
+---
+
+## 35. Vežba: ručno simuliraj FastAPI
 
 Za ovaj endpoint:
 
@@ -1229,21 +1530,23 @@ async def get_todos(
 	return {"user_id": current_user.id}
 ```
 
-napisi redosled koji FastAPI mora da izvrsi:
+napiši redosled koji FastAPI mora da izvrši:
 
 ```text
 1. Pozvati get_db
 2. Dobiti Session
-3. Procitati bearer token
-4. Dekodirati token
-5. Pronaci korisnika
-6. Pozvati get_todos(db, current_user)
-7. Zatvoriti Session
+3. Pročitaj bearer token
+4. Dekodiraj token
+5. Pronađi korisnika
+6. Pozovi get_todos(db, current_user)
+7. Zatvori Session
 ```
 
-Ako mozes da objasnis ovaj redosled, razumes osnovu dependency injection-a.
+Ako možeš da objasniš ovaj redosled, razumeš osnovu dependency injection-a.
 
-## 36. Vezba: prepoznaj dependency
+---
+
+## 36. Vežba: prepoznaj dependency
 
 Odredi ulogu svakog izraza:
 
@@ -1255,7 +1558,7 @@ Depends(get_db)
 db.query(Todo).all()
 ```
 
-Resenje:
+Rešenje:
 
 ```text
 get_db               -> dependency funkcija
@@ -1265,31 +1568,33 @@ Depends(get_db)       -> instrukcija FastAPI-ju
 db.query(Todo).all()  -> query/poslovna operacija
 ```
 
-## 37. Zavrsni mentalni model
+---
 
-Kada vidis:
+## 37. Završni mentalni model
+
+Kada vidiš:
 
 ```python
 value: Annotated[SomeType, Depends(some_dependency)]
 ```
 
-procitaj ga ovako:
+pročitaj ga ovako:
 
 ```text
 Endpoint ima parametar value.
-Ocekuje se da value bude SomeType.
-FastAPI ne ceka da endpoint sam napravi value.
-FastAPI resava some_dependency.
+Očekuje se da value bude SomeType.
+FastAPI ne očekuje da endpoint sam napravi value.
+FastAPI rešava some_dependency (some_dependency je dependency funkcija koja vraća vrednost koja će biti ubačena u value).
 Rezultat dependency-ja ubacuje u value.
 ```
 
-Kada vidis:
+Kada vidiš:
 
 ```python
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
-procitaj ga ovako:
+pročitaj ga ovako:
 
 ```text
 Napravljen je reusable opis.
@@ -1298,20 +1603,20 @@ Session se dobavlja pozivom get_db.
 get_db upravlja lifecycle-om kroz yield i finally.
 ```
 
-Kada vidis:
+Kada vidiš:
 
 ```python
 current_user: Annotated[Users, Depends(get_current_user)]
 ```
 
-procitaj ga ovako:
+pročitaj ga ovako:
 
 ```text
 Endpoint zahteva identifikovanog korisnika.
-FastAPI pre endpointa cita i validira token.
-Pronadje korisnika u bazi.
+FastAPI pre endpointa čita i validira token.
+Pronađe korisnika u bazi.
 Ako provera ne uspe, endpoint se ne poziva.
 Ako uspe, endpoint dobija Users objekat.
 ```
 
-To je sustina FastAPI dependency injection sistema.
+To je suština `FastAPI dependency injection` sistema.

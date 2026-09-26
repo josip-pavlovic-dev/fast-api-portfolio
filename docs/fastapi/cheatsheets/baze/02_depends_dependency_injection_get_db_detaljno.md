@@ -1,12 +1,12 @@
 # Depends i Dependency Injection u FastAPI (detaljno)
 
-Ovaj materijal je fokusiran na najvazniji obrazac u FastAPI radu sa bazom:
+Ovaj materijal je fokusiran na najvažniji obrazac u FastAPI radu sa bazom:
 
-1. Depends
-2. dependency injection
-3. get_db sa yield
-4. Session
-5. Annotated
+1. Depends (FastAPI mehanizam za deklarisanje zavisnosti)
+2. dependency injection (automatsko ubacivanje zavisnosti u endpoint parametre)
+3. get_db sa yield (dependency funkcija koja priprema SQLAlchemy sesiju)
+4. Session (SQLAlchemy radni kontekst za `query/add/commit`)
+5. Annotated (tip-safe način da kažeš da parametar dolazi preko dependency injection)
 
 Cilj je da razumeš tačno šta FastAPI radi "iza scene" kada endpoint dobije `db` parametar.
 
