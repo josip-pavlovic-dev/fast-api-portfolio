@@ -98,6 +98,8 @@ async def create_users(
     try:
         db.commit()
     except IntegrityError:
+        # Ako dođe do IntegrityError, to znači da je došlo do kršenja unique ograničenja.
+        # db.rollback() znači poništavanje trenutne transakcije kako bi baza podataka ostala u konzistentnom (ispravnom) stanju. Posle ovoga možemo bezbedno podići HTTPException.
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -105,8 +107,7 @@ async def create_users(
         )
     db.refresh(create_user_model)
 
-    # response_model=UserResponse filtrira i serializuje odgovor,
-    # pa možemo bezbedno vratiti ORM objekat.
+    # response_model=UserResponse filtrira i serializuje (pretvara ORM objekat u Pydantic model zbog specificiranog response_model-a) odgovor, pa možemo bezbedno vratiti ORM objekat.
     return create_user_model
 
 

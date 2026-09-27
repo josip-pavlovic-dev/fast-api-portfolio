@@ -111,6 +111,7 @@ Obavezno tekstualno polje, najmanje 3 karaktera:
 ```python
 title: str = Field(min_length=3)
 ```
+
 ---
 
 ### `author`
@@ -120,6 +121,7 @@ Obavezno tekstualno polje, najmanje 1 karakter:
 ```python
 author: str = Field(min_length=1)
 ```
+
 ---
 
 ### `description`
@@ -151,6 +153,7 @@ Obavezno celobrojno polje između 1 i 5:
 ```python
 rating: int = Field(gt=0, lt=6)
 ```
+
 ---
 
 ### `published_date`

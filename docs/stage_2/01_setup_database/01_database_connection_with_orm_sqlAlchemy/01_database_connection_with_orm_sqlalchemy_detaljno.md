@@ -274,8 +274,7 @@ Kasnije unaprediti:
 
 1. Objasni svojim rečima razliku `Engine` vs `Session`.
 
-`Engine` je konekcioni mehanizam ka bazi, dok je `Session` radni kontekst za ORM operacije.
-2. Napiši šta znači `sqlite:///./todosapp.db` i zašto je bitan working directory.
+`Engine` je konekcioni mehanizam ka bazi, dok je `Session` radni kontekst za ORM operacije. 2. Napiši šta znači `sqlite:///./todosapp.db` i zašto je bitan working directory.
 
 `sqlite:///./todosapp.db` označava SQLite bazu koja se nalazi u trenutnom radnom direktorijumu (`./`). Bitan je working directory jer SQLite koristi relativnu putanju za fajl baze. To znači da ako pokreneš aplikaciju iz drugog direktorijuma, SQLite možda neće moći da pronađe fajl baze.
 
@@ -294,9 +293,11 @@ class Users(Base):
     email = Column(String, unique=True, index=True)
     phone = Column(String, index=True)
 ```
+
 5. Napiši mini dijagnostiku: šta proveravaš ako .tables ne prikazuje users i todos.
 
 Ako `.tables` ne prikazuje `users` i `todos`, proveri sledeće:
+
 - Da li si importovao modele u `main.py` pre kreiranja tabela.
 - Da li si pozvao `Base.metadata.create_all(bind=engine)` nakon što su modeli definisani.
 - Da li je putanja do SQLite fajla ispravna i da li fajl postoji.
@@ -304,11 +305,11 @@ Ako `.tables` ne prikazuje `users` i `todos`, proveri sledeće:
 - Da li si proverio da li su migracije potrebne ako koristiš SQLite i menjaš postojeće tabele.
 
 Provera iz bash-a:
+
 ```bash
 sqlite3 ./todosapp.db
 .tables
 ```
-
 
 ---
 

@@ -69,7 +69,8 @@ Mane:
 python -m TodoApp.main
 uvicorn TodoApp.main:app
 ```
-- Napomena: Uvek pokreći aplikaciju iz korena paketa kako bi apsolutni importi radili ispravno u suprotnom može doći do grešaka.
+
+Napomena: Uvek pokreći aplikaciju iz korena paketa kako bi apsolutni importi radili ispravno u suprotnom može doći do grešaka.
 
 ---
 
@@ -149,6 +150,7 @@ Odgovor: U terminalu treba da se nalaziš u root-u projekta i koristiš apsolutn
 ```python
 from podpaket.base import Base
 ```
+
 - Napomena: Ovaj pristup zahteva da se uvek pokrećeš iz root-a projekta kako bi apsolutni importi radili ispravno. Pokretanje:
 
 ```bash
@@ -156,6 +158,7 @@ cd root_projekta
 python -m main
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
 PITANJE: Ako se `main.py` nalazi u root-u projekta, a base.py sa Base klasom u podpaket/subpaket/?
 
 Odgovor: U terminalu treba da se nalaziš u root-u projekta i koristiš apsolutni import iz korena paketa. Na primer:
@@ -163,6 +166,7 @@ Odgovor: U terminalu treba da se nalaziš u root-u projekta i koristiš apsolutn
 ```python
 from podpaket.subpaket.base import Base
 ```
+
 Napomena: Ovaj pristup zahteva da se uvek pokrećeš iz root-a projekta kako bi apsolutni importi radili ispravno. Pokretanje:
 
 ```bash
@@ -170,6 +174,7 @@ cd root_projekta
 python -m main
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
 PITANJE: Šta znače `..` u relativnim importima?
 
 Odgovor: `..` znači idi jedan nivo iznad trenutnog paketa. Na primer:
@@ -177,6 +182,7 @@ Odgovor: `..` znači idi jedan nivo iznad trenutnog paketa. Na primer:
 ```python
 from ..subpaket import modul
 ```
+
 NAPOMENA: Kod relativnih importa kao u kod apsolutnih, važno je da skriptu pokrećeš iz root-a paketa kako bi Python znao kontekst trenutnog paketa.
 
 ---

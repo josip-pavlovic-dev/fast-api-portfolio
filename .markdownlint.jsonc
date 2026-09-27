@@ -1,0 +1,25 @@
+{
+  // Dozvoli ponavljanje istih podnaslova u razlicitim sekcijama,
+  // ali i dalje hvataj duplikate medju sibling naslovima.
+  "MD024": {
+    "siblings_only": true
+  },
+
+  // U edukativnim beleškama redovi su namerno duži radi kontinuiteta teksta.
+  "MD013": false,
+
+  // Dozvoli i dvotacku i upitnik na kraju naslova (npr. "Primer:" ili "Zasto?").
+  "MD026": {
+    "punctuation": ".,;!"
+  },
+  // Dozvoli duge redove u kod blokovima.
+  "MD010": false,
+
+  // Dozvoli duge redove u listama.
+  "MD040": false,
+
+  // Dozvoli duge redove u tabelama.
+  "MD029": false
+
+
+}
