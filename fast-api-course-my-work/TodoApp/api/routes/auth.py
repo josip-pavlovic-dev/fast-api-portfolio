@@ -1,5 +1,6 @@
-from typing import Annotated, cast
+from typing import Annotated
 
+# from typing import cast  # Stari workaround je ostavljen zakomentarisan ispod.
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -27,16 +28,38 @@ def authenticate_user(username: str, password: str, db: db_dependency):
     if user is None:
         return False
 
-    hashed_password = cast(str, getattr(user, "hashed_password"))
-    is_active = cast(bool, getattr(user, "is_active"))
+    # Prethodna verzija je koristila cast() da utiša Pylance upozorenje.
+    # cast() samo menja statičku pretpostavku type checker-a; ne proverava
+    # stvarni tip vrednosti i ne štiti od None ili neispravnih podataka.
+    # hashed_password = cast(str, getattr(user, "hashed_password"))
+    # is_active = cast(bool, getattr(user, "is_active"))
+
+    # Runtime provera stvarno potvrđuje da su vrednosti odgovarajućeg tipa.
+    hashed_password = getattr(user, "hashed_password", None)
+    if not isinstance(hashed_password, str):
+        return False
 
     if not bcrypt_context.verify(password, hashed_password):
         return False
 
+    is_active = getattr(user, "is_active", None)
+    if not isinstance(is_active, bool):
+        return False
     if not is_active:
         return False
 
     return user
+
+
+# # Drugi način autentifikacije iz kursa:
+# def authenticate_user_alternative(username: str, password: str, db: db_dependency):
+#     """Alternativni način autentifikacije korisnika iz kursa."""
+#     user = db.query(Users).filter(Users.username == username).first()
+#     if not user:
+#         return False
+#     if not bcrypt_context.verify(password, user.hashed_password):
+#         return False
+#     return True
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
@@ -111,3 +134,20 @@ async def login_for_access_token(
         "access_token": "token",
         "token_type": "bearer",
     }
+
+
+# # Druga varijanta iz kursa:
+# @router.post("/token-alt")
+# async def login_for_access_token_alternative(
+#     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+#     db: db_dependency,
+# ):
+#     authenticated_user = authenticate_user_alternative(
+#         form_data.username,
+#         form_data.password,
+#         db,
+#     )
+#     if not authenticated_user:
+#         return "Failed Authentication"
+
+#     return "Successful Authentication"
