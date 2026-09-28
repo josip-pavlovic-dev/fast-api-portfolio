@@ -733,6 +733,7 @@ Dakle: folder nije važan; aktivno Python okruženje jeste.
 PITANJE: Da li i ja u ovoj fazi mogu da pređem na moderniji `pwdlib` ili da sačekam kada budem refaktorisao ceo `TodosApp` u `SQLALCHEMY 2.0`.? Koliko je kursna verzija zastarela i amaterska?
 
 ---
+
 ## Odgovor 8
 
 ODGOVOR: U ovoj fazi je preporučljivo držati se kursne verzije (`passlib` i `bcrypt`) kako bi se pratila logika lekcija. Moderniji `pwdlib` može se koristiti kasnije prilikom refaktorisanja projekta, ali za sada nije neophodno menjati kursnu implementaciju.

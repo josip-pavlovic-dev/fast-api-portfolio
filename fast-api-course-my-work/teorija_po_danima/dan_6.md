@@ -1568,7 +1568,7 @@ POST /token
 
 Ako želiš baš putanju `/token`, imaš dve mogućnosti.
 
-**Opcija 1: ukloniš prefiks sa tog routera**
+#### Opcija 1: ukloniš prefiks sa tog routera\*\*
 
 ```python
 router = APIRouter(tags=["auth"])
@@ -1581,7 +1581,7 @@ POST /
 POST /token
 ```
 
-**Opcija 2: koristiš poseban router za token**
+#### Opcija 2: koristiš poseban router za token\*\*
 
 ```python
 auth_router = APIRouter(
@@ -1606,12 +1606,6 @@ POST /auth/token
 ```
 
 Prefiks jasno pokazuje da obe rute pripadaju authentication delu aplikacije. U Swagger-u ćeš zato videti `/auth/token`.
-
----
-
-## Pitanje 4
-
-PITANJE:
 
 ---
 
