@@ -624,3 +624,655 @@ Važna napomena:
 Ako je `.env` nekad ranije već bio commit-ovan, samo dodavanje u `.gitignore` nije dovoljno; tada ga treba ukloniti iz Git praćenja (tracking), a zatim rotirati sve tajne koje su možda procurele.
 
 Za produkciju, secret se ne drži u repozitorijumu niti u javnim fajlovima, već kroz `deployment secret manager/environment mehanizam.`
+
+---
+
+## Pitanje 3
+
+PITANJE: Kako da proverim koji su sve fajlovi praćeni na `Git-u` a promenili su rutu? Katovao sam ih iz jednog u drugi folder ali nisam obrisao prethodno praćene fajlova na staroj root-i? Kako da ih uklonim iz Git praćenja?
+
+---
+
+## Odgovor 3
+
+ODGOVOR: Najpre možeš da proveriš koji su fajlovi praćeni na Git-u koristeći komandu:
+
+```bash
+git ls-files
+```
+
+Ako želiš da ukloniš fajl iz Git praćenja, koristi:
+
+```bash
+git rm --cached putanja/do/fajla
+```
+
+Posle toga, fajl više neće biti praćen od strane Git-a, ali će i dalje postojati u tvom lokalnom fajl sistemu.
+
+Ako je fajl katovan (premešten) u drugi folder, prethodna putanja automatski više neće biti praćena, ali nova putanja će biti dodata u Git praćenje kada izvršiš `git add` na novoj lokaciji.
+
+Takođe, ako želiš da ukloniš sve prethodno praćene fajlove koji više ne postoje na starim lokacijama, možeš koristiti:
+
+```bash
+git ls-files --deleted -z | xargs -0 git rm --cached
+```
+
+Ova komanda će pronaći sve fajlove koji su obrisani iz radnog direktorijuma, ali su i dalje praćeni od strane Git-a, i ukloniće ih iz Git praćenja.
+
+### Detaljno objašnjenje
+
+1. Nema rename zapisa trenutno u git status izlazu (nema R linija).
+2. Samo jedan .gitignore postoji: `.gitignore`.
+3. .env fajl nije praćen u git-u.
+4. Pravilo iz `.gitignore` već ignoriše i .env u root-u i .env u podfolderu fast-api-course-my-work.
+
+Kako da proveriš koje su praćene putanje i da li je nešto ostalo praćeno na staroj lokaciji
+
+1. Pregled promena sa statusima:
+   git status --short
+
+2. Pregled sa tipom promene (A/M/D/R):
+   git diff --name-status
+   git diff --cached --name-status
+
+3. Da vidiš da li je konkretan fajl još praćen:
+   git ls-files | rg "deo_putanje_ili_ime_fajla"
+
+4. Da vidiš da li ignore pravilo radi za staru i novu lokaciju:
+   git check-ignore -v stara_putanja nova_putanja
+
+Ako je fajl nekad bio praćen, a sad treba da ostane lokalan
+
+1. Ukloni ga samo iz git praćenja (ne briše lokalni fajl):
+   git rm --cached putanja/fajla
+
+2. Commit:
+   git commit -m "Stop tracking moved/local file"
+
+3. Proveri ponovo:
+   git status --short
+
+Za tvoj konkretan slučaj sa `.env` trenutno ne moraš ništa dodatno da radiš, jer nije praćen i ignore pravilo već radi.
+
+---
+
+## Pitanje 4
+
+PITANJE: Koji je tačan redosled kreiranja fajlova i importa za JWT deo, da ne upadnem u problem tipa `config.py` radi bez importa, a `security.py` ne radi bez config-a?
+
+---
+
+## Odgovor 4
+
+ODGOVOR: Za tvoj projekat i trenutni kursni (legacy SQLAlchemy) stil, najčistiji redosled je ovaj:
+
+### Redosled kreiranja (korak po korak)
+
+1. `fast-api-course-my-work/.env`
+   - prvo upišeš `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
+   - razlog: config fajl treba odmah da ima odakle da čita vrednosti
+
+2. `fast-api-course-my-work/TodoApp/core/config.py`
+   - praviš `settings` (učitavanje env varijabli + validacija)
+   - razlog: `security.py` zavisi od `settings`
+
+3. `fast-api-course-my-work/TodoApp/core/security.py`
+   - praviš `create_access_token(...)`
+   - importuješ `settings` iz `core/config.py`
+   - razlog: security sloj koristi secret/algorithm/expire iz config sloja
+
+4. `fast-api-course-my-work/TodoApp/schemas.py`
+   - dodaješ `Token` response model
+   - razlog: auth ruta vraća tipizovan odgovor
+
+5. `fast-api-course-my-work/TodoApp/api/routes/auth.py`
+   - importuješ `create_access_token` (i po potrebi `settings`)
+   - menjaš `/auth/token` da vraća pravi JWT (`response_model=Token`)
+   - razlog: auth endpoint je poslednji sloj koji "spaja" config + security + schema
+
+6. Tek onda test i commit
+   - `python -m pip show python-jose`
+   - test login rute
+   - proveri git status, pa commit
+
+### Kratko pravilo zavisnosti
+
+Zavisnosti treba da idu u jednom smeru:
+
+1. `.env` -> `config.py`
+2. `config.py` -> `security.py`
+3. `security.py` + `schemas.py` -> `auth.py`
+
+`config.py` ne treba da importuje `security.py`, i `schemas.py` ne treba da zavisi od auth rute.
+
+### Mini mental model (da lakše pamtiš)
+
+1. Konfiguracija: odakle čitam tajne i parametre?
+2. Security helper: kako pravim token?
+3. Schema: kako izgleda odgovor?
+4. Ruta: kada pozivam helper i šta vraćam klijentu?
+
+Ako pratiš ovaj red, izbegavaš kružne importe i "polu-gotov" kod koji puca pri importovanju modula.
+
+---
+
+## Pitanje 5
+
+PITANJE: Kako da proverim verziju `python-jose[cryptography]` za requirements.txt? Da li može i bez verzije?
+
+---
+
+## Odgovor 5
+
+ODGOVOR: Verzija se proverava tako što pokreneš komandu:
+
+```bash
+python -m pip show python-jose
+```
+
+Ako želiš da proveriš i dependency koji dolazi kroz extra, proveri posebno:
+
+```bash
+python -m pip show cryptography
+```
+
+Ako želiš da dodaš u `requirements.txt` bez fiksne verzije, možeš napisati:
+
+```text
+python-jose[cryptography]
+```
+
+ali preporučljivo je da ipak fiksiraš verziju kako bi izbegao potencijalne probleme sa kompatibilnošću u budućnosti. Na primer:
+
+```text
+python-jose[cryptography]==3.5.0
+```
+
+### Detaljno objašnjenje
+
+Može i bez verzije, ali je bolje sa verzijom zbog stabilnosti i reprodukovanja okruženja.
+
+Bitno: `python-jose[cryptography]` je ispravan format za `pip install`, ali nije ispravan argument za `pip show`.
+
+Proverio sam ti trenutno instalirane verzije (`python -m pip show python-jose` i `python -m pip show cryptography`) u venv-u:
+
+1. python-jose: 3.5.0
+
+2. cryptography: 50.0.1
+
+Šta da staviš u `requirements.txt`:
+
+#### Opcija A (preporučeno za tebe sada):
+
+```text
+python-jose[cryptography]==3.5.0
+```
+
+---
+
+#### Opcija B (još strožije pinovanje):
+
+```text
+python-jose[cryptography]==3.5.0
+cryptography==50.0.1
+```
+
+Odgovor na tvoje pitanje:
+
+1. Da, može bez verzije.
+2. Ali bez verzije pri sledećem install-u možeš dobiti noviju verziju i drugačije ponašanje.
+3. Za kurs/projekat je sigurnije da pinuješ bar python-jose verziju.
+
+---
+
+## Pitanje 6
+
+PITANJE: Potrebna mi je detalja analize liniju po liniju sa objašnjenjem. Od imorta i modula pa sve do kraja config.py.
+
+---
+
+## Odgovor 6
+
+ODGOVOR: U nastavku je detaljna analiza liniju po liniju za `TodoApp/core/config.py`, od prvog importa do poslednje linije.
+
+### Ceo kod (referenca)
+
+```python
+import os
+from dataclasses import dataclass
+
+from dotenv import load_dotenv
+
+# Učitava varijable iz .env fajla ako postoji.
+load_dotenv()
+
+
+@dataclass(frozen=True)
+class Settings:
+    jwt_secret_key: str
+    jwt_algorithm: str
+    access_token_expire_minutes: int
+
+
+def get_settings() -> Settings:
+    jwt_secret_key = os.getenv("JWT_SECRET_KEY")
+    if not jwt_secret_key:
+        raise RuntimeError(
+            "JWT_SECRET_KEY nije postavljen. Dodaj ga u environment ili .env fajl."
+        )
+
+    jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
+
+    expire_minutes_raw = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "20")
+    try:
+        access_token_expire_minutes = int(expire_minutes_raw)
+    except ValueError as error:
+        raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti ceo broj.") from error
+
+    if access_token_expire_minutes <= 0:
+        raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti > 0.")
+
+    return Settings(
+        jwt_secret_key=jwt_secret_key,
+        jwt_algorithm=jwt_algorithm,
+        access_token_expire_minutes=access_token_expire_minutes,
+    )
+
+
+settings = get_settings()
+```
+
+---
+
+### Linija po linija objašnjenje
+
+Ovaj fajl definiše konfiguraciju aplikacije koristeći environment varijable i `.env` fajl. Sadrži klasu `Settings` koja čuva ključne konfiguracione vrednosti i funkciju `get_settings` koja validira i vraća instancu te klase. Na kraju, kreira se globalni objekat `settings` koji se koristi u ostatku aplikacije.
+
+#### Linija 1: `import os`
+
+Koristi se za čitanje environment varijabli preko `os.getenv(...)` na taj način da aplikacija može da pristupi konfiguracionim vrednostima definisanim u environment-u (npr. preko terminala ili sistema da pristupi operativnom sistemu) ili `.env` fajlu koji se učitava pomoću `load_dotenv()`.
+
+POJMOVI i FUNKCIJE:
+
+1. `os.getenv(...)` - standardna funkcija koja čita vrednost environment varijable. I dalje se koristi u modernom programiranju. Ako varijabla ne postoji, vraća `None` ili default vrednost ako je prosleđena kao drugi argument. Potpis funkcije bez Optional import-a (od Python 3.8+ je dovoljno koristiti `str` tip za return vrednost):
+
+```python
+os.getenv(key: str, default: str = None) -> str:
+    """Čita vrednost environment varijable sa ključem `key`
+    koji je ustvari naziv varijable u environment-u.
+    Ako varijabla ne postoji, vraća `default` vrednost."""
+
+    return os.getenv(key, default)
+```
+
+2. `from dotenv import load_dotenv` - uvozi funkciju `load_dotenv` koja učitava `.env` fajl u environment. Ovaj modul je third-party i omogućava da konfiguracione vrednosti budu definisane u `.env` fajlu umesto direktno u environment-u.
+
+3. `environment` - skup varijabli koje definišu konfiguraciju aplikacije u operativnom sistemu. Ove varijable se mogu čitati pomoću `os.getenv(...)` i mogu biti definisane direktno u sistemu ili učitane iz `.env` fajla. One su dostupne tokom celog životnog ciklusa aplikacije.
+
+---
+
+#### Linija 2: `from dataclasses import dataclass`
+
+Uvozi dekorator za jednostavnu i tipizovanu (`type-annotated`) konfiguracionu klasu. Modul `dataclasses` je standardni Python modul za rad sa klasama koje sadrže polja definisana tipovima. (`dataclass` dekorator) On omogućava automatsko generisanje metoda kao što su `__init__`, `__repr__` i `__eq__`, čineći kod čistijim i lakšim za održavanje.
+
+POJMOVI i FUNKCIJE:
+
+1. Kada kažemo za klasu da je `dataclass`, to znači da je klasa prvenstveno namenjena za čuvanje podataka i da će Python automatski generisati osnovne metode kao što su `__init__`, `__repr__` i `__eq__`. Ovo čini kod čitljivijim i smanjuje potrebu za ručnim pisanjem boilerplate koda.
+
+2. `frozen=True` - opcija koja čini dataclass immutable, što znači da se vrednosti polja ne mogu menjati nakon inicijalizacije. Ovo je korisno za konfiguracione klase gde želimo da osiguramo da se vrednosti ne menjaju tokom runtime-a.
+
+3. `@dataclass(frozen=True)` - dekorator koji se primenjuje na klasu da bi postala immutable dataclass tj klasa koja ne može da menja svoje polja nakon inicijalizacije i osigurava konzistentnost podataka tokom celog životnog ciklusa objekta `Settings` i svih njegovih instanci zahvaljujući `frozen=True` opciji.
+
+---
+
+#### Linija 4: `from dotenv import load_dotenv`
+
+Uvozi funkciju koja učitava `.env` varijable u environment. Koristi se da bi se konfiguracione vrednosti definisane u `.env` fajlu učitale u environment pre nego što se pozovu `os.getenv(...)`.
+
+---
+
+#### Linija 7: `load_dotenv()`
+
+Ovo se izvršava pri importu modula i priprema varijable potrebne za `os.getenv` pozive. Pravilo za module je da se prvi put u toku importovanja modula sve linije na vrhu fajla (top-level modul koda) izvršavaju, što znači da će `.env` fajl biti učitan pre nego što se bilo koja funkcija koja zavisi od environment varijabli pozove. Modul se učitava samo jednom. `sys.modules` čuva referencu na učitane module i njemu se pristupa pri svakom narednom importu istog modula što osigurava da se `load_dotenv()` ne izvršava više puta.
+
+---
+
+#### Linija 10: `@dataclass(frozen=True)`
+
+`Settings` postaje `immutable dataclass` i time sprečava slučajno runtime menjanje konfiguracije. Ovo osigurava da konfiguracija ostaje konzistentna (podaci su istog tipa i vrednosti) tokom celog životnog ciklusa aplikacije.
+
+---
+
+#### Linija 11: `class Settings:`
+
+Definiše tip koji predstavlja centralnu JWT konfiguraciju. Sve instance ove klase su immutable i predstavljaju konzistentnu (nepromenljivu) konfiguraciju tokom celog životnog ciklusa aplikacije.
+
+---
+
+#### Linija 12: `jwt_secret_key: str`
+
+Tajni ključ za potpisivanje/verifikaciju JWT-a. Mora biti čuvan u tajnosti i ne sme biti hardkodovan u kodu. U praksi se čuva u environment varijablama ili tajnim menadžerima. (npr. `HashiCorp Vault`, `AWS Secrets Manager` i slični sistemi)
+
+---
+
+#### Linija 13: `jwt_algorithm: str`
+
+Naziv algoritma (npr. `HS256`). Mora biti u skladu sa JWT standardima i podržan od strane biblioteke koja se koristi za generisanje i verifikaciju tokena.
+
+---
+
+#### Linija 14: `access_token_expire_minutes: int`
+
+Trajanje access tokena u minutima. Mora biti pozitivan ceo broj. Ako nije, aplikacija će odmah prijaviti grešku i prekinuti izvršavanje. U obzir se uzimaju samo validne, pozitivne vrednosti tipa int.
+
+---
+
+#### Linija 17: def get_settings() -> Settings:
+
+Funkcija `get_settings` čita, validira i vraća jednu konzistentnu konfiguraciju. Ako dođe do greške u konfiguraciji, aplikacija će odmah prijaviti grešku i prekinuti izvršavanje. Od parametara environment varijabli (varijabli iz `.env` fajla i sistema) pravi se finalni, validirani `Settings` objekat.
+
+---
+
+#### Linija 18: jwt_secret_key = os.getenv("JWT_SECRET_KEY")
+
+Čita obaveznu varijablu iz environment-a (`.env fajla`) i dodeljuje je lokalnoj promenljivoj `jwt_secret_key`.
+
+---
+
+#### Linija 19: if not jwt_secret_key:
+
+Provera da li `jwt_secret_key` postoji i da li nije prazan string. Provera da li je prazan string je važna jer prazan string tehnički postoji, ali nije validan tajni ključ. Ovu proveru obezbeđuje `if not jwt_secret_key:` uslov. Posto je prazan string "falsy" u Pythonu, uslov će biti zadovoljen i aplikacija će prijaviti grešku.
+
+PITANJE: Zašto ne koristimo `if jwt_secret_key is None:` umesto `if not jwt_secret_key:`?
+
+ODGOVOR: Koristimo `if not jwt_secret_key:` jer želimo da obuhvatimo oba slučaja: kada varijabla ne postoji (`None`) i kada je prazan string (`""`). `if jwt_secret_key is None:` bi obuhvatio samo slučaj kada varijabla ne postoji, ali ne bi detektovao prazan string, koji takođe nije validan tajni ključ. U praksi je bolje koristiti `if not jwt_secret_key:` jer je jednostavnije i pokriva oba scenarija.
+
+---
+
+#### Linije 20-22: raise RuntimeError(...)
+
+Ako secret nedostaje, aplikacija se zaustavlja odmah sa jasnom porukom.
+
+---
+
+#### Linija 24: jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
+
+Čita algoritam i koristi default `HS256` ako varijabla nije setovana. Dodeljuje ga lokalnoj promenljivoj `jwt_algorithm`. Za default vrednost se koristi string `"HS256"` zato što je to najčešće korišćen i bezbedan algoritam za HMAC. Njega smo i definisali kao default u kodu.
+
+---
+
+#### Linija 26: expire_minutes_raw = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "20")
+
+Čita trajanje kao string sa default vrednošću `20`.
+
+---
+
+#### Linija 27: try:
+
+Počinje bezbedna konverzija stringa u broj.
+
+---
+
+#### Linija 28: access_token_expire_minutes = int(expire_minutes_raw)
+
+Parsira minute u integer.
+
+---
+
+#### Linija 29: except ValueError as error:
+
+Hvata slučaj pogrešnog unosa (npr. `abc`).
+
+---
+
+#### Linija 30: raise RuntimeError(...) from error
+
+Vraća jasnu poruku i čuva originalni uzrok greške.
+
+PITANJE: Prvi put vidim `raise RuntimeError(...) from error`. Šta znači `from error`?
+
+ODGOVOR: `from error` u `raise RuntimeError(...) from error` zadržava originalni exception (`ValueError` u ovom slučaju) kao uzrok za pojavljivanja novog exception-a (`RuntimeError`). To omogućava da traceback pokaže oba exception-a, što olakšava debagovanje. Bez `from error`, originalni exception (`ValueError`) bi bio izgubljen i traceback bi pokazivao samo novi exception (`RuntimeError`). Ovakva sintaksa se naziva "exception chaining" i korisna je za praćenje uzroka grešaka. Na ovaj način možeš videti kompletnu istoriju grešaka i lakše identifikovati problem. Primer "exception chaining"-a bi bio:
+
+```python
+try:
+    access_token_expire_minutes = int(expire_minutes_raw)
+except ValueError as e:
+    raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti ceo broj.") from e
+    # Ovaj deo koda osigurava da se greška pravilno propagira i da originalni ValueError nije izgubljen.
+```
+
+Primer sa višestrukim exception chaining-om bi bio:
+
+```python
+try:
+    access_token_expire_minutes = int(expire_minutes_raw)
+    if access_token_expire_minutes <= 0:
+        raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti > 0.")
+except ValueError as e:
+    raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti ceo broj.") from e
+except RuntimeError as e:
+    raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti > 0.") from e
+    # Ovaj deo koda osigurava da se greška pravilno propagira i da originalni RuntimeError nije izgubljen.
+    # Ako se desi bilo koja druga greška, ona će biti propagirana dalje.
+    pass
+```
+
+---
+
+#### Linija 32: if access_token_expire_minutes <= 0:
+
+Semantička validacija: vrednost za koliko minuta token važi mora biti pozitivna.
+
+---
+
+#### Linija 33: raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti > 0.")
+
+Fail-fast za nelogičnu konfiguraciju. Ovo znači da aplikacija neće ni pokušati da radi sa nevalidnim podešavanjima, već će odmah prijaviti grešku i zaustaviti se. Tek nakon što se sve konfiguracije uspešno validiraju, aplikacija nastavlja sa radom.
+
+---
+
+#### Linije 35-39: return Settings(...)
+
+Pravi finalni, validirani settings objekat koji se koristi u ostatku aplikacije. Dodeljuje atributima klase `Settings` vrednosti iz environment-a ili default vrednosti, osiguravajući da su sve konfiguracije validirane pre nego što aplikacija počne sa radom.
+
+---
+
+#### Linija 42: settings = get_settings()
+
+Pravi modulsku instancu konfiguracije koju drugi moduli importuju kao jedinstven izvor istine.
+
+---
+
+### Šta je ovde najvažnije da zapamtiš
+
+1. `load_dotenv()` mora da se desi pre `getenv` čitanja. Ovo osigurava da su sve vrednosti iz `.env` fajla učitane u environment pre nego što ih aplikacija pokuša da pročita.
+2. `JWT_SECRET_KEY` je obavezan i nema default (bezbednosno ispravno). On mora biti eksplicitno definisan u environment-u.
+3. `JWT_ALGORITHM` i `ACCESS_TOKEN_EXPIRE_MINUTES` mogu imati default. On omogućava aplikaciji da radi sa podrazumevanim vrednostima ako nisu eksplicitno definisane u environment-u.
+4. `settings = get_settings()` znači da greške u config-u vidiš odmah pri startu aplikacije za razliku od situacije kada bi se greške pojavile tek tokom runtime-a. Greške se tako detektuju ranije, što olakšava debugging i povećava pouzdanost aplikacije.
+5. `frozen=True` sprečava runtime menjanje konfiguracije i povećava predvidljivost. Ovo je posebno korisno u većim aplikacijama gde bi neočekivane promene konfiguracije mogle dovesti do teških za otkrivanje bug-ova.
+
+---
+
+## Pitanje 7
+
+PITANJE: Potrebna mi je detaljna analiza liniju po liniju za `security.py`, isto kao za `config.py`.
+
+---
+
+## Odgovor 7
+
+ODGOVOR: U nastavku je detaljna analiza liniju po liniju za `TodoApp/core/security.py`.
+
+### Ceo kod (referenca)
+
+```python
+from datetime import datetime, timedelta, timezone
+from typing import Any
+
+from jose import jwt
+
+from .config import settings
+
+
+def create_access_token(
+   *,  # sve argumente nakon * je potrebno proslediti po imenu (keyword arguments)
+   username: str,
+   user_id: int,
+   expires_delta: timedelta | None = None,
+) -> str:
+   expire_delta = expires_delta or timedelta(
+      minutes=settings.access_token_expire_minutes
+   )
+   expire = datetime.now(timezone.utc) + expire_delta
+
+   # sub nosi stabilan identitet (user_id), username je pomoćni claim.
+   payload: dict[str, Any] = {
+      "sub": str(user_id),
+      "username": username,
+      "exp": expire,
+   }
+
+   return jwt.encode(
+      payload,
+      settings.jwt_secret_key,
+      algorithm=settings.jwt_algorithm,
+   )
+```
+
+### Linija po linija objašnjenje
+
+#### Linija 1: `from datetime import datetime, timedelta, timezone`
+
+Uvozi alate za rad sa vremenom. `timedelta` služi da definišeš koliko token traje, `datetime` i `timezone` da izračunaš tačan UTC trenutak isteka.
+
+---
+
+#### Linija 2: `from typing import Any`
+
+Koristi se za tip `payload` rečnika (`dict[str, Any]`), jer JWT claims mogu imati različite tipove vrednosti (string, datetime, broj).
+
+Linija 3 je prazna.
+
+Stilsko razdvajanje standardnih i third-party importa.
+
+---
+
+#### Linija 4: `from jose import jwt`
+
+Uvozi JWT API iz `python-jose` biblioteke. Ovaj objekat ima `encode` i `decode` funkcije.
+
+---
+
+#### Linija 6: `from .config import settings`
+
+Uvozi centralnu konfiguraciju iz `config.py`. Time `security.py` ne hardkoduje secret ni algorithm, već ih čita iz jednog izvora.
+
+---
+
+#### Linija 9: `def create_access_token(`
+
+Početak helper funkcije koja pravi JWT access token.
+
+---
+
+#### Linija 10: `*,`
+
+Sve argumente posle `*` moraš proslediti po imenu (keyword-only). Ovo je dobra praksa za čitljivost i smanjuje greške pri pozivu.
+
+---
+
+#### Linija 11: `username: str,`
+
+Username koji ubacuješ u payload kao pomoćni claim.
+
+---
+
+#### Linija 12: `user_id: int,`
+
+Stabilan identitet korisnika koji koristiš za `sub` claim.
+
+---
+
+#### Linija 13: `expires_delta: timedelta | None = None,`
+
+Opcioni argument: ako pozivalac ne pošalje custom trajanje, koristi se default iz settings.
+
+---
+
+#### Linija 14: `) -> str:`
+
+Funkcija vraća string, tj. JWT token
+
+---
+
+#### Linije 15-17: `expire_delta = expires_delta or timedelta(...)`
+
+Ako je prosleđen `expires_delta`, koristi njega. Ako nije, pravi `timedelta` iz `settings.access_token_expire_minutes`.
+
+---
+
+#### Linija 18: `expire = datetime.now(timezone.utc) + expire_delta`
+
+Računa tačno vreme isteka koristeći timezone-aware UTC vreme. Ovo je ispravno i modernije od naive pristupa.
+
+---
+
+#### Linija 20 je komentar
+
+Objašnjava dizajn odluku za claim-ove: `sub` nosi stabilan ID, `username` je pomoćna informacija.
+
+---
+
+#### Linija 21: `payload: dict[str, Any] = {`
+
+Početak payload rečnika koji ulazi u JWT.
+
+---
+
+#### Linija 22: `"sub": str(user_id),`
+
+Najvažniji claim identiteta. `user_id` se pretvara u string radi doslednosti JWT claim formata.
+
+---
+
+#### Linija 23: `"username": username,`
+
+Dodatni claim koristan za debug ili prikaz, ali ne treba da bude jedini identitet.
+
+---
+
+#### Linija 24: `"exp": expire,`
+
+Claim isteka. Biblioteka će ovaj datetime obraditi u JWT-compatible format.
+
+--
+
+#### Linija 25: `}`
+
+Kraj payload rečnika.
+
+---
+
+#### Linije 27-31: `return jwt.encode(...)`
+
+Kreira i vraća potpisan JWT string. Argument 1 je `payload`, argument 2 je secret (`settings.jwt_secret_key`), a `algorithm` uzimaš iz settings (`settings.jwt_algorithm`).
+
+---
+
+### Zašto je ovaj helper dobar za tvoj trenutni projekat
+
+1. Kompatibilan je sa trenutnim (legacy) SQLAlchemy stilom, jer ne menja ORM pattern.
+2. Uklanja hardkodovane tajne iz route fajla.
+3. Drži JWT logiku izolovanu u `core/security.py`, što olakšava sledeći korak (decode/current user).
+4. Koristi UTC-aware vreme i centralizovanu konfiguraciju, što je pouzdanije za produkcijski tok.
+
+---
+
+### Najvažnije da zapamtiš
+
+1. `settings` dolazi iz config sloja i mora biti validan pri startu aplikacije.
+2. `sub` je najvažniji identitetski claim i treba da ostane dosledan i u decode fazi.
+3. `exp` mora postojati da token ne bi bio praktično "beskonačan".
+4. `jwt.encode(...)` ne enkriptuje payload; on ga potpisuje. Zato nikad ne stavljaj osetljive podatke u claims.
+
+---
