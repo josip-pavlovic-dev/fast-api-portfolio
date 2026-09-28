@@ -5,8 +5,8 @@
 Prethodna lekcija je objasnila strukturu JWT-a. Sada se ta ideja pretvara u tok aplikacije:
 
 ```text
-uspesna autentifikacija
-    -> korisnik je pronadjen
+uspešna autentifikacija
+    -> korisnik je pronađen
     -> password je validan
         -> napravi JWT
             -> vrati access token klijentu
@@ -23,39 +23,53 @@ U transkriptu se uvode:
 - claims `sub`, `id` i `exp`
 - `Token` response schema
 
-### Vazna napomena za trenutni plan
+### Važna napomena za trenutni plan
 
-Ovo je teorijski materijal. Ne instaliramo pakete, ne menjamo `requirements.txt`, ne dodajemo secret u kod i ne menjamo aktivne Python fajlove.
+Ovo je **teorijski** materijal. Ne instaliramo pakete, ne menjamo `requirements.txt`, ne dodajemo `secret` u kod i ne menjamo aktivne Python fajlove.
 
 ---
 
-## 1) Gde se buduci kod smesta u tvom projektu
+## 1) Gde se budući kod smesta u tvom projektu
 
-Kursni kod moze drzati sve u `auth.py`, ali tvoj organizovaniji raspored treba da razdvoji odgovornosti:
+Kursni kod može držati sve u `auth.py`, ali tvoj organizovaniji raspored treba da razdvoji odgovornosti:
 
 ```text
 fast-api-course-my-work/
     TodoApp/
+        __init__.py
         main.py
         models.py
         schemas.py
         api/
+            __init__.py
             routes/
+                __init__.py
+                admin.py
                 auth.py
+                todos.py
+                users.py
+                __pycache__/
+                    auth.crypton -312.pyc
         core/
+            __init__.py
             config.py
             security.py
         db/
+            __init__.py
+            base.py
+            database.py
             session.py
+    requirements.txt
+    todosapp.db
 ```
 
-Buduca podela:
+Buduća podela:
 
 ```text
 TodoApp/core/config.py
     secret key
     JWT algorithm
-    expiration podesavanja
+    expiration podešavanja
 
 TodoApp/core/security.py
     encode helper
@@ -74,13 +88,13 @@ TodoApp/db/session.py
     db_dependency
 ```
 
-Za teorijsko pracenje transkripta primeri ce ponekad biti prikazani zajedno, ali je ciljna lokacija za tvoj projekat ovako podeljena.
+Za teorijsko praćenje transkripta primeri će ponekad biti prikazani zajedno, ali je ciljna lokacija za tvoj projekat ovako podeljena kako je prikazano iznad.
 
 ---
 
 ## 2) Instalacija JWT biblioteke
 
-Transkript uvodi paket komandom slicnom:
+Transkript uvodi paket komandom sličnom:
 
 ```bash
 pip install "python-jose[cryptography]"
@@ -94,25 +108,27 @@ Dodatak:
 [cryptography]
 ```
 
-oznacava extra dependency-je potrebne za kriptografske funkcije.
+Označava `extra dependency`-je potrebne za kriptografske (`cryptography`) funkcije.
 
-U requirements fajlu se konceptualno moze zapisati:
+U `fast-api-course-my-work/requirements.txt` fajlu se konceptualno može zapisati:
 
 ```text
 python-jose[cryptography]
 ```
 
-To je runtime dependency jer aplikacija koristi JWT dok radi.
+To je `runtime dependency` jer aplikacija koristi `JWT` samo dok radi.
 
-### Vazna napomena
+---
 
-Ne instaliramo paket sada. Kada dodjemo do prakticnog rada, proverice se:
+### Važna napomena
 
-- postojeci virtual environment
-- verzija Python-a
-- ostatak requirements fajla
-- verzija biblioteke
-- eventualne kompatibilnosti
+Ne instaliramo paket sada. Kada dođemo do praktičnog rada, proveriće se:
+
+- postojeći virtual environment (npr. `source venv/bin/activate`)
+- verzija Python-a (npr. `python --version`)
+- ostatak requirements fajla (npr. `cat requirements.txt`)
+- verzija biblioteke (npr. `pip show python-jose`)
+- eventualne kompatibilnosti (npr. sa verzijom Python-a)
 
 ---
 
@@ -123,7 +139,7 @@ JWT sa HS256 algoritmom koristi secret key za potpisivanje.
 Konceptualno:
 
 ```python
-SECRET_KEY = "dugacak-tajan-string"
+SECRET_KEY = "dugačak-tajni-string"
 ```
 
 Secret treba da bude:
@@ -140,17 +156,21 @@ Kurs generise nasumican string alatom poput:
 openssl rand -hex 32
 ```
 
-To moze biti koristan nacin za generisanje testne tajne.
+To može biti koristan način za generisanje testne tajne.
+
+---
 
 ### Gde secret ne treba da stoji
 
-Ne treba ga hardkodovati ovako u routeru:
+Ne treba ga `hardkodovati` ovako `u routeru`:
 
 ```python
 SECRET_KEY = "learn online"
 ```
 
 Ne treba ga commit-ovati u git.
+
+---
 
 ### Gde treba da stoji
 
@@ -161,6 +181,8 @@ environment variable
     -> TodoApp/core/config.py
         -> TodoApp/core/security.py
 ```
+
+---
 
 Primer koncepta:
 
@@ -184,14 +206,14 @@ ALGORITHM = "HS256"
 
 HS256 je HMAC-SHA-256 algoritam.
 
-Kod simetricnog potpisa ista tajna se koristi za:
+Kod simetričnog potpisa (`simetrična enkripcija`) ista tajna se koristi za:
 
 ```text
 encode tokena
 decode/proveru tokena
 ```
 
-Secret i algorithm rade zajedno:
+`Secret` i `algorithm` rade zajedno:
 
 ```text
 header + payload + secret + algorithm
@@ -199,15 +221,15 @@ header + payload + secret + algorithm
         -> JWT
 ```
 
-Algoritam nije tajna. Server treba eksplicitno da ocekuje dozvoljeni algoritam i ne treba slepo da prihvata vrednost koju klijent posalje u header-u tokena.
+Algoritam nije tajna. `Server` treba eksplicitno da ocekuje dozvoljeni algoritam i ne treba slepo da prihvata vrednost koju klijent pošalje u `header`-u tokena.
 
-U vecim sistemima mogu se koristiti asymmetric algoritmi, ali ova lekcija prati HS256.
+U većim sistemima mogu se koristiti `asymmetric` algoritmi, ali ova lekcija prati HS256.
 
 ---
 
 ## 5) Funkcija `create_access_token`
 
-Transkript uvodi pomocnu funkciju:
+Transkript uvodi pomoćnu funkciju:
 
 ```python
 def create_access_token(
@@ -218,7 +240,7 @@ def create_access_token(
     ...
 ```
 
-Funkcija prima podatke potrebne za claims:
+Funkcija prima podatke potrebne za `claims`:
 
 ```text
 username
@@ -232,7 +254,7 @@ Za tvoj projekat funkcija bi kasnije pripadala:
 TodoApp/core/security.py
 ```
 
-Router ne treba da zna detalje kako se racuna signature. Router treba da pozove helper:
+Router ne treba da zna detalje kako se računa signature. `Router` treba da `pozove helper`:
 
 ```python
 token = create_access_token(

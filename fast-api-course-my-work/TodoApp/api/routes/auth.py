@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Annotated
 
 # from typing import cast  # Stari workaround je ostavljen zakomentarisan ispod.
@@ -6,9 +7,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
 
+from ...core.config import settings
+from ...core.security import create_access_token
 from ...db.session import db_dependency
 from ...models import Users
-from ...schemas import CreateUserRequest, UserResponse
+from ...schemas import CreateUserRequest, Token, UserResponse
 
 router = APIRouter(
     prefix="/auth",
@@ -111,7 +114,7 @@ async def create_users(
     return create_user_model
 
 
-@router.post("/token")
+@router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: db_dependency,
@@ -131,10 +134,22 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return {
-        "access_token": "token",
-        "token_type": "bearer",
-    }
+    username = getattr(authenticated_user, "username", None)
+    user_id = getattr(authenticated_user, "id", None)
+    if not isinstance(username, str) or not isinstance(user_id, int):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(
+        username=username,
+        user_id=user_id,
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+    )
+
+    return Token(access_token=access_token, token_type="bearer")
 
 
 # # Druga varijanta iz kursa:

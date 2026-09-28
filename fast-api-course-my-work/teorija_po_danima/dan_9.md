@@ -444,3 +444,183 @@ Ako odradiš plan iznad, ulaziš u sledeći nivo backend razumevanja:
 - nego znaš zašto radi,
 - gde je bezbednosna granica,
 - i kako da projekat ostane održiv kad poraste.
+
+---
+
+## Pitanje 1
+
+PITANJE: Da li mogu da pokrenem pip install iz fast-api-course-my-work foldera. Aktivirao sam `venv`?
+
+---
+
+## Odgovor 1
+
+ODGOVOR: Da, možeš da pokreneš `pip install` iz `fast-api-course-my-work` foldera, pod uslovom da je aktiviran odgovarajući `venv`. To će instalirati pakete u aktivirani virtuelni environment, a ne globalno.
+
+### Detaljno objašnjenje
+
+Da, možeš slobodno iz foldera fast-api-course-my-work, ako je .venv aktivan.
+
+Najbezbednije je da koristiš ovaj oblik komande:
+
+1. `python -m pip install "python-jose[cryptography]"`
+2. `python -m pip show python-jose`
+
+Zašto ovako:
+
+1. Aktiviran `.venv` znači instalacija ide u taj virtual environment.
+2. `python -m pip` garantuje da koristiš pip iz trenutno aktivnog Python okruženja.
+
+Brza provera pre instalacije:
+
+1. `which python`
+2. `python -m pip --version`
+
+Ako oba pokazuju putanju ka tvom `.venv`, spreman si za instalaciju.
+
+---
+
+## Pitanje 2
+
+PITANJE: Gde tačno treba da stavim `SECRET_KEY`, `ALGORITHM` i `funkciju create_access_token`? Da li `SECRET_KEY` i `ALGORITHM` idu u `fast-api-course-my-work/TodoApp/core/config.py` a funkcija create_access_token u `fast-api-course-my-work/TodoApp/core/security`? Takođe mi objasni `.env` fajl za `secret key` i da li treba da ga koristim i kako. Obeležio sam ti pasus sa tajnim ključem.
+
+ODGOVOR:
+
+Da, upravo tako treba da bude raspoređeno, i sada je povezano u projektu:
+
+1. `SECRET_KEY` i `ALGORITHM` (kao `JWT_SECRET_KEY` i `JWT_ALGORITHM`) idu kroz `config` sloj.
+2. `create_access_token` ide u `security` sloj (`TodoApp/core/security.py`).
+3. `/auth/token` ruta koristi helper iz security sloja i vraća pravi JWT, ne placeholder.
+
+### Šta je konkretno urađeno u kodu
+
+1. Config sloj je prebačen na environment pristup u `TodoApp/core/config.py`.
+2. Uveden je `Settings` objekat sa poljima:
+   - `jwt_secret_key` (iz `.env` fajla ili environment varijable `JWT_SECRET_KEY`)
+   - `jwt_algorithm` (iz `.env` fajla ili environment varijable `JWT_ALGORITHM`)
+   - `access_token_expire_minutes` (iz `.env` fajla ili environment varijable `ACCESS_TOKEN_EXPIRE_MINUTES`)
+3. Dodata je validacija da:
+   - `JWT_SECRET_KEY` mora postojati
+   - `ACCESS_TOKEN_EXPIRE_MINUTES` mora biti ceo broj i > 0
+4. Dodat je JWT helper u `TodoApp/core/security.py`:
+   - `create_access_token(...)`
+   - koristi timezone-aware UTC (`datetime.now(timezone.utc)`)
+   - `sub` claim je stabilan `user_id` (`str(user_id)`)
+   - `username` je pomoćni claim
+5. Dodata je `Token` schema u `TodoApp/schemas.py`.
+6. Izmenjen je `/auth/token` endpoint u `TodoApp/api/routes/auth.py`:
+   - sada ima `response_model=Token`
+   - pravi JWT preko `create_access_token(...)`
+   - vraća `Token(access_token=..., token_type="bearer")`
+7. Dodat je `fast-api-course-my-work/.env` sa:
+   - `JWT_SECRET_KEY`
+   - `JWT_ALGORITHM=HS256`
+   - `ACCESS_TOKEN_EXPIRE_MINUTES=20`
+
+---
+
+### Zašto je ovo dobar pristup za trenutni kurs (legacy SQLAlchemy stil)
+
+Dogovor je da trenutno ostajemo kompatibilni sa kursnim stilom, pa su zadržani:
+
+1. `db.query(...).filter(...).first()` obrasci (`legacy ORM query API`)
+2. trenutna organizacija routera
+3. postojeći auth flow sa minimumom invazivnih promena
+
+Istovremeno su primenjene moderne prakse koje ne lome tvoj trenutni stil:
+
+1. secret više nije hardkodovan u auth ruti
+2. settings su centralizovani
+3. token response ima jasan API ugovor (`Token` schema)
+4. JWT vreme koristi UTC aware datetime
+5. claim ugovor je stabilniji (`sub` = user_id)
+
+To je dobar kompromis: moderno i bezbedno, ali bez prisilnog prelaska na SQLAlchemy 2.0 stil pre dogovorene faze.
+
+---
+
+## Analiza lekcija 12, 13 i 14 (pravac kursa)
+
+### Lekcija 12 - Encode JWT
+
+Suština:
+
+1. Posle uspešnog login-a server kreira access token.
+2. Uvodi se secret + algorithm + expiration.
+3. Token endpoint dobija jasan response model.
+
+Poruka lekcije:
+
+- Authentication više nije samo "username/password check".
+- Postaje `state-less` token flow: klijent nosi dokaz identiteta kroz JWT.
+
+---
+
+### Lekcija 13 - Decode JWT i current user
+
+Suština:
+
+1. `OAuth2PasswordBearer` čita Bearer token iz header-a.
+2. `jwt.decode(...)` validira signature/exp/claims.
+3. `get_current_user` postaje centralni security dependency.
+
+Poruka lekcije:
+
+- Token koji nije validiran ne sme da otvara pristup endpointu.
+- Security treba centralizovati kroz dependency, ne kopirati po rutama.
+
+---
+
+### Lekcija 14 - Authentication enhancements
+
+Suština:
+
+1. Standardizuju se auth rute (`/auth/...`).
+2. Sređuje se `tokenUrl` da odgovara stvarnoj ruti (`auth/token`).
+3. Login greške vraćaju pravi HTTP 401 (ne plain string).
+4. Swagger organizacija (`tags=["auth"]`) postaje jasnija.
+
+Poruka lekcije:
+
+- Kurs prelazi sa "radi" na "radi ispravno i čitljivo".
+- Ugovor API-ja (putanje, status kodovi, OpenAPI) postaje jednako važan kao i sama logika.
+
+---
+
+## Kuda ide kurs odmah posle ove tri lekcije
+
+Posle 12/13/14 praktični pravac je gotovo sigurno:
+
+1. protected endpoint-i nad Todo resursima
+2. current user ownership filter (`owner_id == current_user_id`)
+3. razlika 401 vs 403 u realnim scenarijima
+4. eventualno role-based provere (admin/user)
+
+Drugim rečima:
+
+1. lekcija 12 daje "token issuance"
+2. lekcija 13 daje "token verification"
+3. lekcija 14 daje "API contract cleanup"
+4. sledeća oblast prirodno prelazi na "authorization nad resursima"
+
+To je tačka gde auth prestaje da bude izolovan modul i počinje da utiče direktno na CRUD ponašanje aplikacije.
+
+---
+
+## Kratka tehnička napomena o `.env`
+
+`.env` treba da koristiš za lokalni development jer:
+
+1. drži tajne van source koda (`.env` fajl)
+2. olakšava promenu vrednosti po okruženju (`.env` fajl za lokalni development, environment varijable za produkciju)
+3. sprečava slučajno commit-ovanje secret-a (uz `.gitignore`)
+
+Da, `.env` treba da bude u `.gitignore`.
+
+U tvom projektu to je već podešeno u root `.gitignore` fajlu (`.env` stavka postoji), što je ispravno.
+
+Važna napomena:
+
+Ako je `.env` nekad ranije već bio commit-ovan, samo dodavanje u `.gitignore` nije dovoljno; tada ga treba ukloniti iz Git praćenja (tracking), a zatim rotirati sve tajne koje su možda procurele.
+
+Za produkciju, secret se ne drži u repozitorijumu niti u javnim fajlovima, već kroz `deployment secret manager/environment mehanizam.`

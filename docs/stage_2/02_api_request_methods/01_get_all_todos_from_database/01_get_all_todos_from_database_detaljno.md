@@ -256,6 +256,7 @@ router = APIRouter()
 def get_all_todos(db: Session = Depends(get_db)):
     return db.query(Todos).order_by(Todos.id).all()
 ```
+
 2. Zatim dodaj auth i filter po `owner_id`.
 
 ```python
@@ -272,6 +273,7 @@ def get_all_todos(user_id: int, db: Session = Depends(get_db)):
     # Dodaj filter po owner_id
     return db.query(Todos).filter(Todos.owner_id == user_id).order_by(Todos.id).all()
 ```
+
 3. Uoči razliku u rezultatima.
 
 Razlika je u tome što prvi endpoint vraća sve todos bez obzira na vlasnika, dok drugi endpoint vraća samo todos koji pripadaju korisniku sa datim `user_id`.
@@ -285,6 +287,7 @@ curl -X GET "http://127.0.0.1:8000/todos"
 # Testiranje drugog endpointa (samo todos za korisnika sa user_id=1)
 curl -X GET "http://127.0.0.1:8000/todos/1"
 ```
+
 Testiranje treba da pokaže da prvi endpoint vraća sve todos, dok drugi endpoint vraća samo todos za korisnika sa datim `user_id`.
 Bonus:
 
