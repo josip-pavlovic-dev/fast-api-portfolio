@@ -113,7 +113,7 @@ async def create_users(
     # response_model=UserResponse filtrira i serializuje (pretvara ORM objekat u Pydantic model zbog specificiranog response_model-a) odgovor, pa možemo bezbedno vratiti ORM objekat.
     return create_user_model
 
-
+# Endpoint za prijavu i dobijanje pristupnog tokena (JWT)
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],

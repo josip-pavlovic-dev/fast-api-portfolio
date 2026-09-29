@@ -1,11 +1,11 @@
 # Dan 9 - Plan rada za JWT (Lekcije 12 i 13) + trenutno stanje projekta
 
-Ovaj dokument je dnevni vodič za danasnji rad.
+Ovaj dokument je dnevni vodič za današnji rad.
 
 Cilj dokumenta:
 
 1. Tačna retrospektiva dokle je stigao trenutni TodoApp kod.
-2. Uskladjivanje teorije iz lekcija 12 i 13 sa stvarnim stanjem projekta.
+2. Usklađivanje teorije iz lekcija 12 i 13 sa stvarnim stanjem projekta.
 3. Jedinstveno objašnjenje kako HTTP zahtev putuje do servera i kroz FastAPI.
 4. Praktičan plan rada i raspodela vremena za danas.
 5. Preporuka za dalje backend učenje (Udemy smernice).

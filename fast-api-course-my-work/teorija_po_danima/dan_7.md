@@ -149,7 +149,7 @@ Dakle, Python prvo napravi ovaj `Annotated` izraz:
 Annotated[Session, Depends(get_db)]
 ```
 
-i zatim ga sacuva pod imenom:
+i zatim ga sačuva pod imenom:
 
 ```python
 db_dependency
@@ -207,7 +207,9 @@ parametar: anotacija
 form_data: Annotated[...]
 ```
 
-### Sacuvano u aliasu
+---
+
+### Sačuvano u aliasu
 
 ```python
 db_dependency = Annotated[Session, Depends(get_db)]
