@@ -95,10 +95,14 @@ Mapiranje na tvoj projekat:
 
 ### 2.1 Šta će ići gde
 
-- `TodoApp/core/config.py`
+- `.env` / environment varijable
   - JWT_SECRET_KEY
   - JWT_ALGORITHM
   - ACCESS_TOKEN_EXPIRE_MINUTES
+
+- `TodoApp/core/config.py`
+  - čitanje i validacija gore navedenih varijabli
+  - formiranje centralnog `settings` objekta
 
 - `TodoApp/core/security.py`
   - `create_access_token(...)`
@@ -486,9 +490,9 @@ PITANJE: Gde tačno treba da stavim `SECRET_KEY`, `ALGORITHM` i `funkciju create
 
 ODGOVOR:
 
-Da, upravo tako treba da bude raspoređeno, i sada je povezano u projektu:
+Ne potpuno: `JWT_SECRET_KEY`, `JWT_ALGORITHM` i `ACCESS_TOKEN_EXPIRE_MINUTES` se čuvaju u `.env` (ili sistemskom environment-u), a `config` sloj ih čita i validira. U projektu je sada povezano ovako:
 
-1. `SECRET_KEY` i `ALGORITHM` (kao `JWT_SECRET_KEY` i `JWT_ALGORITHM`) idu kroz `config` sloj.
+1. `SECRET_KEY` i `ALGORITHM` (kao `JWT_SECRET_KEY` i `JWT_ALGORITHM`) stoje u `.env`/environment-u, a `config` sloj ih učitava.
 2. `create_access_token` ide u `security` sloj (`TodoApp/core/security.py`).
 3. `/auth/token` ruta koristi helper iz security sloja i vraća pravi JWT, ne placeholder.
 
@@ -1086,7 +1090,7 @@ Pravi modulsku instancu konfiguracije koju drugi moduli importuju kao jedinstven
 ### Šta je ovde najvažnije da zapamtiš
 
 1. `load_dotenv()` mora da se desi pre `getenv` čitanja. Ovo osigurava da su sve vrednosti iz `.env` fajla učitane u environment pre nego što ih aplikacija pokuša da pročita.
-2. `JWT_SECRET_KEY` je obavezan i nema default (bezbednosno ispravno). On mora biti eksplicitno definisan u environment-u.
+2. `JWT_SECRET_KEY` je obavezan i nema default (bezbednosno ispravno). On mora biti eksplicitno definisan u environment-u (`.env` fajlu ili sistemskom environment-u) ili aplikacija neće moći da funkcioniše.
 3. `JWT_ALGORITHM` i `ACCESS_TOKEN_EXPIRE_MINUTES` mogu imati default. On omogućava aplikaciji da radi sa podrazumevanim vrednostima ako nisu eksplicitno definisane u environment-u.
 4. `settings = get_settings()` znači da greške u config-u vidiš odmah pri startu aplikacije za razliku od situacije kada bi se greške pojavile tek tokom runtime-a. Greške se tako detektuju ranije, što olakšava debugging i povećava pouzdanost aplikacije.
 5. `frozen=True` sprečava runtime menjanje konfiguracije i povećava predvidljivost. Ovo je posebno korisno u većim aplikacijama gde bi neočekivane promene konfiguracije mogle dovesti do teških za otkrivanje bug-ova.
@@ -1143,7 +1147,17 @@ def create_access_token(
 
 #### Linija 1: `from datetime import datetime, timedelta, timezone`
 
-Uvozi alate za rad sa vremenom. `timedelta` služi da definišeš koliko token traje, `datetime` i `timezone` da izračunaš tačan UTC trenutak isteka.
+Uvozi alate za rad sa vremenom. `timedelta` služi da definišeš koliko token traje, `datetime` i `timezone` da izračunaš tačan UTC trenutak isteka tokena.
+
+Detaljnije objašnjenje: `datetime.now(timezone.utc)` vraća trenutni UTC datum i vreme sa informacijom o vremenskoj zoni, dok `timedelta` omogućava jednostavno dodavanje ili oduzimanje vremenskih intervala. Kombinovanjem ova dva alata dobijaš tačan trenutak isteka tokena u UTC vremenu koji se koristi u `exp` claim-u JWT tokena.
+
+```text
+expire = datetime.now(timezone.utc) + expire_delta
+
+expire je trenutni UTC datum i vreme kada token ističe, dobijeno dodavanjem `expire_delta` na trenutni UTC trenutak.
+
+expire_delta je vremenski interval koji definiše koliko dugo token važi, tj. koliko minuta od trenutnog UTC vremena će proći pre nego što token istekne.
+```
 
 ---
 
@@ -1151,7 +1165,11 @@ Uvozi alate za rad sa vremenom. `timedelta` služi da definišeš koliko token t
 
 Koristi se za tip `payload` rečnika (`dict[str, Any]`), jer JWT claims mogu imati različite tipove vrednosti (string, datetime, broj).
 
-Linija 3 je prazna.
+NAPOMENA: U Python-u 3.9+ koristi se `dict[str, Any]` za tipizaciju rečnika sa string ključevima i vrednostima bilo kog tipa. Pre Python 3.9, koristilo se `Dict[str, Any]` iz `typing` modula.
+
+---
+
+#### Linija 3 je prazna
 
 Stilsko razdvajanje standardnih i third-party importa.
 
@@ -1159,13 +1177,23 @@ Stilsko razdvajanje standardnih i third-party importa.
 
 #### Linija 4: `from jose import jwt`
 
-Uvozi JWT API iz `python-jose` biblioteke. Ovaj objekat ima `encode` i `decode` funkcije.
+Uvozi `JWT` API objekat iz `python-jose` biblioteke. Ovaj objekat ima `encode` i `decode` funkcije.
 
 ---
 
 #### Linija 6: `from .config import settings`
 
-Uvozi centralnu konfiguraciju iz `config.py`. Time `security.py` ne hardkoduje secret ni algorithm, već ih čita iz jednog izvora.
+Uvozi centralnu konfiguraciju `settings` iz `config.py`.
+
+Time `security.py` ne hardkoduje `secret` ni `algorithm`, već ih čita iz jednog izvora istine.
+
+Preciznije: `settings` se formira u `config.py` na osnovu environment varijabli (uključujući `.env` u development-u), `default vrednosti` koje se koriste kada environment varijabla nije postavljena i `fail-fast` validacije u samom `config.py`.
+
+`fail-fast` pristup validacija znači da aplikacija odmah prijavljuje grešku ako konfiguracija nije validna, umesto da kasnije naiđe na neočekivane probleme. Ovo povećava pouzdanost i predvidljivost aplikacije.
+
+`fail-fast` validacija se vrši u samom `config.py` u kojem se definišu i čitaju sve konfiguracione vrednosti i dinamički proveravaju njihova validnost uz pomoć odgovarajućih `funkcija`, `logike` i `exception handling-a`.
+
+Na taj način, `security.py` koristi već proverene vrednosti umesto da ponavlja čitanje i proveru konfiguracije.
 
 ---
 
@@ -1185,29 +1213,41 @@ Sve argumente posle `*` moraš proslediti po imenu (keyword-only). Ovo je dobra 
 
 Username koji ubacuješ u payload kao pomoćni claim.
 
+PITANJE: Zašto kao `pomoćni claim`?
+
+ODGOVOR: `username: str` se koristi u našoj aplikaciji kao pomoćni claim zbog toga što sam `user_id` nosi stabilan (nepromenljiv) identitet, dok `username` može biti koristan za prikaz ili debug, ali ne treba da bude jedini identitet.
+
+ZAKLJUČAK: Stabilan identitet mora biti nezavistan od promenljivih korisničkih podataka a `username` može da se menja.
+
 ---
 
 #### Linija 12: `user_id: int,`
 
 Stabilan identitet korisnika koji koristiš za `sub` claim.
 
+`sub` claim je standardni JWT claim koji nosi stabilan identitet korisnika, obično njegov jedinstveni ID.
+
+Ne treba ga mešati sa promenljivim korisničkim podacima poput `username`. Nalazi se u `payload`-u tokena i koristi se za `autentifikaciju` i `autorizaciju`. Baš zbog toga je važno da `sub` bude stabilan i nepromenljiv.
+
 ---
 
 #### Linija 13: `expires_delta: timedelta | None = None,`
 
-Opcioni argument: ako pozivalac ne pošalje custom trajanje, koristi se default iz settings.
+Opcioni argument: ako pozivalac ne pošalje custom trajanje, koristi se default iz settings. To se postiže linijama 15-17 gde se `expires_delta` postavlja na prosleđenu vrednost ili na default `timedelta` iz settings.
 
 ---
 
 #### Linija 14: `) -> str:`
 
-Funkcija vraća string, tj. JWT token
+Funkcija vraća `string`, tj. `JWT token`.
 
 ---
 
 #### Linije 15-17: `expire_delta = expires_delta or timedelta(...)`
 
-Ako je prosleđen `expires_delta`, koristi njega. Ako nije, pravi `timedelta` iz `settings.access_token_expire_minutes`.
+Ako je prosleđen `expires_delta`, koristi njega. Ako nije vraća se None koji je `false`-y vrednost u Pythonu i ne izvršava se. Umesto toga prelazi se na drugi deo izraza (`or timedelta(...)`) pa se pravi `timedelta` iz `settings.access_token_expire_minutes` tako što se pravi novi `timedelta` objekat sa brojem minuta definisanih u `settings.access_token_expire_minutes` varijabli.
+
+`timedelta(minutes=settings.access_token_expire_minutes)` pretvara broj minuta iz settings u `timedelta` objekat koji se može koristiti za računanje vremena isteka tokena. `timedelta` objekat predstavlja vremenski interval (format `HH:MM:SS`) i može se sabirati sa `datetime` objektima da bi se dobilo buduće vreme.
 
 ---
 
@@ -1215,11 +1255,27 @@ Ako je prosleđen `expires_delta`, koristi njega. Ako nije, pravi `timedelta` iz
 
 Računa tačno vreme isteka koristeći timezone-aware UTC vreme. Ovo je ispravno i modernije od naive pristupa.
 
+`timezone` je modul iz `datetime` biblioteke koji omogućava kreiranje timezone-aware `datetime` objekata. To je objekat koji ima informaciju o vremenskoj zoni u kojoj se vreme nalazi, što omogućava precizno računanje vremena u različitim vremenskim zonama.
+
+`timezone.utc` je objekat koji predstavlja UTC vremensku zonu i koristi se za kreiranje timezone-aware `datetime` objekata u UTC vremenu.
+
+`UTC` je standardno referentno vreme koje se koristi `globalno` za sinhronizaciju i izbegavanje problema sa lokalnim vremenskim zonama. To se postiže tako što se sve operacije sa vremenom vrše u UTC, a lokalne vremenske zone se primenjuju samo kada je potrebno prikazati vreme korisniku. UTC vreme je nezavisno od lokalne vremenske zone i omogućava konzistentno računanje i poređenje vremena.
+
+`UTC` vremena je obično u formatu `YYYY-MM-DDTHH:MM:SSZ`.
+
+`SS` označava sekunde a `Z` označava da je vreme u `UTC` zoni. Nije obavezno uključiti sekunde i oznaku `Z`, ali je preporučljivo uključiti sekunde i oznaku `Z` za jasnoću i kompatibilnost sa standardima (`ISO 8601`).
+
 ---
 
 #### Linija 20 je komentar
 
-Objašnjava dizajn odluku za claim-ove: `sub` nosi stabilan ID, `username` je pomoćna informacija.
+Objašnjava dizajn odluku za `claim`-ove: `sub` nosi stabilan ID, `username` je pomoćna informacija.
+
+PITANJE: Koja je uloga pomoćnog `username` clama u JWT?
+
+ODGOVOR: Pomoćni `username` claim može biti koristan za `prikaz korisničkog imena u interfejsu` ili za debugovanje, ali ne treba ga koristiti kao jedini identifikator korisnika jer `sub` nosi stabilan ID.
+
+`payload` u JWT-u treba da sadrži minimalne informacije potrebne za `autentifikaciju` i `autorizaciju`. Korisnik nećе uneti ID direktno, već se ID koristi interno (u backend-u, npr. u bazi podataka) za identifikaciju korisnika. Korisnik unosi `username`,preko koga se identifikuje u interfejsu, zatim se poziva backend koji koristi `sub` za identifikaciju korisnika u bazi podataka.
 
 ---
 
@@ -1227,23 +1283,33 @@ Objašnjava dizajn odluku za claim-ove: `sub` nosi stabilan ID, `username` je po
 
 Početak payload rečnika koji ulazi u JWT.
 
+`dict[str, Any]` označava tip rečnika gde su ključevi stringovi, a vrednosti mogu biti bilo koji tip (`Any`). `payload rečnik` sadrži sve claim-ove koji će biti `enkodovani` u `JWT`.
+
+`claim`-ove definišeš ti prema potrebama `autentifikacije` i `autorizacije`, a ne korisnik. Definisanjem claim-ova u payload-u osiguravaš da backend ima sve potrebne informacije za autentifikaciju i autorizaciju bez oslanjanja na korisnika.
+
+Važna dopuna: `JWT payload` nije enkriptovan, već samo potpisan (`signature`), pa ne treba stavljati osetljive podatke u claim-ove (npr. `lozinke`, `API ključeve`, `secrets`). Takođe, backend treba da veruje `claim`-ovima tek nakon uspešne verifikacije potpisa i isteka tokena (`exp`) u decode fazi.
+
 ---
 
 #### Linija 22: `"sub": str(user_id),`
 
-Najvažniji claim identiteta. `user_id` se pretvara u string radi doslednosti JWT claim formata.
+Najvažniji `claim` identiteta.
+
+NAPOMENA: `user_id` se pretvara u `string` radi doslednosti JWT claim formata. Naime, `JWT` standard očekuje da je `sub` string. Ovo je bitno za kompatibilnost sa standardom i za pravilno parsiranje tokena u različitim bibliotekama. Činjenica da je `id` definisan kao `integer` u `bazi` ne menja potrebu da u `JWT`-u bude `string`.
 
 ---
 
 #### Linija 23: `"username": username,`
 
-Dodatni claim koristan za debug ili prikaz, ali ne treba da bude jedini identitet.
+Dodatni `claim` koristan za debug ili prikaz, ali ne treba da bude jedini identitet.
+
+`"username": username` znači da se vrednost promenljive `username` definisanoj kroz argument funkcije `create_access_token` smešta u claim `"username"` u JWT payload-u.
 
 ---
 
 #### Linija 24: `"exp": expire,`
 
-Claim isteka. Biblioteka će ovaj datetime obraditi u JWT-compatible format.
+Claim isteka. Biblioteka (`jwt`) će ovaj datetime obraditi u JWT-compatible format. Ovo osigurava da token automatski postane nevažeći nakon određenog vremena.
 
 --
 
@@ -1255,7 +1321,12 @@ Kraj payload rečnika.
 
 #### Linije 27-31: `return jwt.encode(...)`
 
-Kreira i vraća potpisan JWT string. Argument 1 je `payload`, argument 2 je secret (`settings.jwt_secret_key`), a `algorithm` uzimaš iz settings (`settings.jwt_algorithm`).
+Kreira i vraća potpisan JWT string.
+Argument 1 -> `payload`
+Argument 2 -> `secret` uzimaš iz settings (`settings.jwt_secret_key`)
+Argument 3 ->`algorithm` uzimaš iz settings (`settings.jwt_algorithm`).
+
+NAPOMENA: `jwt.encode` funkcija očekuje da prvi argument bude `payload`, drugi `secret`, a treći opcionalni `algorithm`. Promena redosleda bi dovela do greške ili neispravnog tokena.
 
 ---
 
@@ -1273,6 +1344,149 @@ Kreira i vraća potpisan JWT string. Argument 1 je `payload`, argument 2 je secr
 1. `settings` dolazi iz config sloja i mora biti validan pri startu aplikacije.
 2. `sub` je najvažniji identitetski claim i treba da ostane dosledan i u decode fazi.
 3. `exp` mora postojati da token ne bi bio praktično "beskonačan".
-4. `jwt.encode(...)` ne enkriptuje payload; on ga potpisuje. Zato nikad ne stavljaj osetljive podatke u claims.
+4. `jwt.encode(...) - ne enkriptuje payload; on ga potpisuje`. Zato nikad ne stavljaj osetljive podatke u claims.
 
 ---
+
+## Pitanje 8
+
+PITANJE: Koja je razlika između `ValueError` i `RuntimeError`? Da li je `RuntimeError` u hijerarhiji ispod `ValueError`?
+
+---
+
+## Odgovor 8
+
+ODGOVOR: `RuntimeError` nije ispod `ValueError` u hijerarhiji. To su "sestrinski" exception tipovi.
+
+Oba nasleđuju `Exception`, ali jedan ne nasleđuje drugi.
+
+Skica hijerarhije:
+
+```text
+BaseException
+└── Exception
+   ├── ValueError
+   └── RuntimeError
+```
+
+### Šta znači `ValueError`
+
+`ValueError` koristiš kada je tip formalno dozvoljen, ali je vrednost neispravna za operaciju.
+
+Primer iz tvog `config.py`:
+
+```python
+expire_minutes_raw = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "20")
+access_token_expire_minutes = int(expire_minutes_raw)
+```
+
+Ako je `expire_minutes_raw="abc"`, `int("abc")` baca `ValueError`.
+
+Dakle:
+
+1. Operacija je "pretvori u int".
+2. Ulazna vrednost nije validna za tu operaciju.
+3. Python javlja `ValueError`.
+
+---
+
+### Šta znači `RuntimeError`
+
+`RuntimeError` je opštiji exception tip koji se koristi za grešku u toku izvršavanja koda (`runtime`-u) kada nemaš (ili ne želiš da koristiš) specifičniji ugrađeni tip. U tvom primeru on služi kao jasna, domen-specifična poruka za problem konfiguracije.
+
+Važno pojašnjenje: ovo je poruka pre svega za `developera/operatora` koji pokreće aplikaciju (jer je ovo startup konfiguracija), ne za krajnjeg korisnika API-ja.
+
+Primer je podizanje `RuntimeError` kada `ACCESS_TOKEN_EXPIRE_MINUTES` nije validan ceo broj, kada je nelogičan ili kada nedostaje.
+
+U tvom `config.py` imaš:
+
+```python
+except ValueError as error:
+   raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti ceo broj.") from error
+```
+
+Logika je:
+
+1. Niska Python greška: `ValueError` (iz `int(...)`). Originalni exception se čuva u `error`. Zato možeš koristiti `from error` kada podižeš `RuntimeError`.
+2. Tvoja domen poruka: `RuntimeError` sa jasnim objašnjenjem konfiguracije. Na taj način dobijaš čitljiv startup error umesto generičke poruke iz `int(...)`.
+3. `from error` čuva originalni uzrok (exception chaining). Ovo omogućava debageru ili log sistemu da vidi i originalni `ValueError` i novi `RuntimeError`.
+
+To znači da ne "gubiš" tehnički detalj (`ValueError`), ali dobijaš jasniju aplikacionu poruku u kontekstu konfiguracije.
+
+---
+
+### Zašto je ovo dobro urađeno u tvom kodu
+
+U `config.py` imaš tri nivoa zaštite:
+
+1. Nedostaje secret -> `RuntimeError`.
+2. Broj nije parsabilan (`abc`) -> prvo `ValueError`, pa ga prevodiš u `RuntimeError`.
+3. Broj je parsiran, ali je nelogičan (`0` ili `-5`) -> `RuntimeError`.
+
+To je dobar fail-fast pattern: aplikacija puca odmah na startu sa jasnim razlogom.
+
+### Konkretan mini scenario iz tvoje skripte
+
+Ako u `.env` staviš:
+
+```text
+ACCESS_TOKEN_EXPIRE_MINUTES=abc
+```
+
+desi se:
+
+1. `int("abc")` -> `ValueError`.
+2. `except ValueError as error:` ga hvata.
+3. `raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti ceo broj.") from error` podiže novu, jasniju grešku.
+
+Ako staviš:
+
+```text
+ACCESS_TOKEN_EXPIRE_MINUTES=0
+```
+
+onda nema `ValueError` (jer `int("0")` radi), ali padaš na:
+
+```python
+if access_token_expire_minutes <= 0:
+   raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES mora biti > 0.")
+```
+
+### Kratka paralela sa `security.py`
+
+U `security.py` trenutno nema `try/except` jer nema parse-a koji bi tipično bacio `ValueError`.
+
+Tu se oslanjaš na to da je `config.py` već validirao konfiguraciju. Zato je redosled odličan:
+
+1. `config.py` validira i fail-fast proverava.
+2. `security.py` koristi već proverene vrednosti (`settings.jwt_secret_key`, `settings.jwt_algorithm`, `settings.access_token_expire_minutes`).
+
+### Zaključak
+
+1. `RuntimeError` nije podtip od `ValueError`.
+2. `ValueError` opisuje tehnički problem vrednosti u konkretnoj operaciji.
+3. `RuntimeError` u tvom kodu služi kao jasna aplikaciona poruka za konfiguracione greške.
+4. `raise ... from error` je ispravan i profesionalan način da spojiš oba nivoa informacije.
+
+---
+
+## Pitanje 9
+
+PITANJE: Da li to znači da su `ValueError` i `RuntimeError` namenjeni developeru, a ne korisniku aplikacije?
+
+---
+
+## Odgovor 9
+
+ODGOVOR: Ne baš potpuno crno-belo. Primarno su namenjeni developerskom sloju (kod, logovi, debugging), ali indirektno utiču i na korisnika ako ih ne obradiš.
+
+Kako to izgleda u praksi za web aplikaciju (FastAPI):
+
+1. U internom kodu podigneš `ValueError`, `RuntimeError` ili custom exception.
+2. Na API granici te greške prevedeš u kontrolisan HTTP odgovor (`HTTPException`, npr. 400/401/422/500).
+3. Developer u logovima vidi tehnički uzrok, a korisnik dobija bezbednu i jasnu poruku bez traceback-a.
+
+Zaključak:
+
+1. `ValueError` i `RuntimeError` su pre svega jezik između delova koda.
+2. Krajnjem korisniku API-ja obično ne šalješ raw Python exception, nego smislen HTTP response.
