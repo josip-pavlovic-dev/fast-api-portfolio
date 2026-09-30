@@ -29,7 +29,31 @@ Cilj nije samo da korisnik moze da se uloguje. Cilj je da aplikacija zna:
 - da li korisnik sme da pristupi konkretnom resursu
 - kako se auth logika odvaja od Todo poslovne logike
 
-> Ovaj recap je teorijsko-prakticni plan. U skladu sa dogovorenim redosledom rada, prvo se zavrsava teorija cele oblasti, a tek zatim se menjaju aktivne skripte, dodaju `Users` tabela, auth routeri i ownership pravila.
+> Ovaj recap je teorijsko-prakticni plan i sada je uskladjen sa trenutnim stanjem projekta: osnovna Stage 3 auth implementacija je vec aktivna (`auth.py`, `todos.py`, `core/security.py`, JWT encode/decode i ownership filter po `owner_id`).
+
+## 0) Trenutno stanje projekta (usklađeno sa kodom)
+
+Aktivne rute u `TodoApp/main.py` trenutno su:
+
+```text
+POST /auth/
+POST /auth/token
+
+GET /todos/
+GET /todos/{todo_id}
+POST /todos/
+PUT /todos/{todo_id}
+DELETE /todos/{todo_id}
+```
+
+Kljucne potvrde iz aktivnog koda:
+
+1. Auth router koristi `prefix="/auth"` i `tags=["auth"]`.
+2. Create user ruta je `POST /auth/` (u ovom projektu nije `/auth/create_user`).
+3. Token ruta je `POST /auth/token`.
+4. Todo router koristi `prefix="/todos"` i `tags=["todos"]`.
+5. `OAuth2PasswordBearer` je uskladjen sa javnom token rutom kroz `tokenUrl="auth/token"`.
+6. `get_current_user()` radi JWT decode + DB lookup i koristi se za ownership filter (`Todos.owner_id == current_user.id`).
 
 ---
 
@@ -167,7 +191,7 @@ Users:
     is_active
 ```
 
-Napomena za aktivni projekat: `Users` tabela se dodaje tek nakon zavrsetka teorijske faze.
+Napomena za aktivni projekat: `Users` tabela je vec prisutna i koristi se u auth toku; ova lekcija ostaje kao konceptualni pregled kako je do tog stanja doslo.
 
 Materijal:
 
@@ -373,7 +397,7 @@ Ishod:
 Ciljane rute:
 
 ```text
-POST /auth/create_user
+POST /auth/
 POST /auth/token
 ```
 
@@ -613,7 +637,7 @@ POST /auth/token
 ### Stage 3 tok za protected Todo zahtev
 
 ```text
-GET /todo
+GET /todos/
     -> Authorization: Bearer <jwt>
         -> OAuth2PasswordBearer
             -> jwt.decode
@@ -755,7 +779,7 @@ Exit kriterijum:
 ### Register tok
 
 ```text
-POST /auth/create_user
+POST /auth/
     -> validacija request-a
         -> proveri da username ne postoji
             -> hash password-a
@@ -781,7 +805,7 @@ POST /auth/token
 ### Protected request tok
 
 ```text
-GET /todo
+GET /todos/
     -> Authorization: Bearer <token>
         -> OAuth2PasswordBearer
             -> jwt.decode
@@ -821,18 +845,18 @@ Ne treba da bude mesto za sve auth i Todo endpoint implementacije.
 
 ### `TodoApp/api/routes/auth.py`
 
-Buduce odgovornosti:
+Trenutne odgovornosti:
 
 - auth router
 - `prefix="/auth"`
 - `tags=["auth"]`
-- create user endpoint
+- create user endpoint (`POST /auth/`)
 - token/login endpoint
 - HTTP 401 za neuspesnu autentifikaciju
 
 ### `TodoApp/api/routes/todos.py`
 
-Buduce odgovornosti:
+Trenutne odgovornosti:
 
 - Todo CRUD rute
 - current user dependency

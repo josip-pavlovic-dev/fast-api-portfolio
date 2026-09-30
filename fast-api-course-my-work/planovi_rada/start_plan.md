@@ -1,4 +1,4 @@
-Updated todo list
+# FastAPI Teorijski Plan za Početnike
 
 Iću da ti dam jedan jednostavan teorijski plan korak po korak, tako da uvek radiš samo ono što je najvažnije za početak i ne previše opterećuješ.
 
