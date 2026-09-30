@@ -86,11 +86,40 @@ form_data: Annotated[
 Znači:
 
 1. `form_data` je objekat tipa `OAuth2PasswordRequestForm`
-2. `Depends()` govori FastAPI-ju da taj objekat dobavi kao dependency,a FastAPI će automatski proslediti odgovarajući objekat prilikom poziva funkcije.
+2. `Depends()` govori FastAPI-ju da taj objekat dobavi kao `dependency`, a FastAPI će automatski proslediti odgovarajući objekat prilikom poziva funkcije.
 
 ### Detaljnije o Depends i dependency injection
 
 `Depends` je `FastAPI funkcija` koja označava da određeni parametar funkcije treba da bude popunjen od strane `FastAPI dependency injection sistema`. Kada koristimo `Annotated` sa `Depends()`, mi zapravo govorimo FastAPI-ju: "Ovaj parametar zavisi od određenog dependency-ja, pa ga automatski popuni."
+
+Praktično, ista ideja može da se napiše na dva načina.
+
+Stariji (i dalje validan) oblik:
+
+```python
+current_user: CurrentUser = Depends(get_current_user)
+```
+
+Noviji preporučen oblik sa `Annotated`:
+
+```python
+current_user: Annotated[CurrentUser, Depends(get_current_user)]
+```
+
+Važno: kod `Annotated` sintaksa koristi uglaste zagrade, ne obične zagrade.
+
+Značenje starijeg oblika (`CurrentUser = Depends(...)`) je:
+
+1. `:` kaže koji tip želiš da dobiješ (`CurrentUser`).
+2. `=` postavlja podrazumevanu vrednost parametra na `Depends(...)` marker.
+3. FastAPI pročita taj marker i umesto obične default vrednosti izvrši dependency funkciju i ubaci rezultat u `current_user`.
+
+Značenje `Annotated` oblika je:
+
+1. `CurrentUser` je tip vrednosti.
+2. `Depends(get_current_user)` je metadata instrukcija FastAPI-ju kako da tu vrednost dobavi.
+
+Za savremeni `FastAPI/Pydantic` stil češće se preporučuje `Annotated[...]` jer jasnije odvaja tip i dependency metadata.
 
 ---
 

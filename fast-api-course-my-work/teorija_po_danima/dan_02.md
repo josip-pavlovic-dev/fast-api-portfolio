@@ -141,7 +141,10 @@ Ovo su stvari koje ne predstavljaju “konkretan resurs”, već dodatne opcije 
 
 Ovo je veoma važno da razumeš.
 
+---
+
 ### Path Parameter
+
 Koristi se kada želiš da pristupiš konkretnom objektu:
 
 ```http
@@ -150,7 +153,10 @@ Koristi se kada želiš da pristupiš konkretnom objektu:
 
 Ovo znači: “uzmi korisnika sa ID 7”.
 
+---
+
 ### Query Parameter
+
 Koristi se kada želiš da dodaš opcije ili filtere:
 
 ```http
@@ -176,6 +182,8 @@ Poziv:
 ```http
 GET /users/10
 ```
+
+---
 
 ### Ruta sa query parametrom
 
@@ -218,7 +226,7 @@ GET /items
 dobija se:
 
 ```json
-{"skip": 0, "limit": 10}
+{ "skip": 0, "limit": 10 }
 ```
 
 Ako pošalje:
@@ -230,7 +238,7 @@ GET /items?limit=5
 dobija se:
 
 ```json
-{"skip": 0, "limit": 5}
+{ "skip": 0, "limit": 5 }
 ```
 
 ---
@@ -300,6 +308,7 @@ Ovde:
 ## 11) Najčešće greške za početnike
 
 ### Greška 1: zaboraviš znak `?`
+
 Netačno:
 
 ```http
@@ -315,6 +324,7 @@ Tačno:
 ---
 
 ### Greška 2: koristiš query paramete kao path parametre
+
 Netačno:
 
 ```python
@@ -334,6 +344,7 @@ def get_users(role: str = None):
 ---
 
 ### Greška 3: zaboraviš da parametri u funkciji moraju imati ista imena
+
 Netačno:
 
 ```python

@@ -2,9 +2,9 @@
 
 ## Lekcija 13 - Dekodiranje i validacija JWT-a
 
-Prethodna lekcija je kreirala JWT nakon uspesnog login-a.
+Prethodna lekcija je kreirala JWT nakon uspešnog login-a.
 
-Sada aplikacija treba da proveri token koji klijent salje uz protected request:
+Sada aplikacija treba da proveri token koji klijent šalje uz protected request:
 
 ```text
 klijent salje Authorization: Bearer <jwt>
@@ -14,19 +14,15 @@ klijent salje Authorization: Bearer <jwt>
                 -> dobija current user
 ```
 
-Dekodiranje nije samo citanje payload-a. Pravo dekodiranje u autentifikacionom kontekstu treba da potvrdi da je token validan, da nije izmenjen i da nije istekao.
-
-### Vazna napomena za trenutni plan
-
-Ovo je teorijski materijal. Ne menjamo aktivne Python fajlove, ne dodajemo OAuth2 dependency u routere i ne instaliramo pakete dok ne zavrsimo teoriju cele oblasti.
+Dekodiranje nije samo čitanje `payload`-a. Pravo dekodiranje u autentifikacionom kontekstu treba da potvrdi da je token validan, da nije izmenjen i da nije istekao.
 
 ---
 
 ## 1) Zasto se JWT dekodira
 
-Kada korisnik uspesno izvrsi login, server mu vrati JWT.
+Kada korisnik uspešno izvrši `login`, server mu vrati `JWT`.
 
-Pri sledecem zahtevu klijent salje token, na primer:
+Pri sledećem zahtevu klijent šalje `token`, na primer:
 
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
@@ -34,16 +30,16 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 Server mora da proveri:
 
-- da li token ima ispravnu strukturu
-- da li je signature napravljen odgovarajucim secret key-em
-- da li je koriscen dozvoljeni algoritam
-- da li token nije istekao
-- da li payload sadrzi potrebne claims
-- ko je korisnik predstavljen tokenom
+- da li token ima ispravnu strukturu (`header.payload.signature`)
+- da li je signature napravljen odgovarajućim `secret key`-em (server zna taj ključ)
+- da li je korišćen dozvoljeni algoritam (`alg` u header-u)
+- da li token nije istekao (`exp` claim)
+- da li `payload` sadrži potrebne `claims` (npr. `sub` za identifikaciju korisnika)
+- ko je korisnik predstavljen tokenom (`sub` claim)
 
-Ako provera uspe, server moze da napravi current user kontekst.
+Ako provera uspe, server može da napravi `current user` kontekst.
 
-Ako provera ne uspe, protected endpoint ne treba da nastavi obradu.
+Ako provera ne uspe, `protected endpoint` ne treba da nastavi obradu. U tom slučaju server obično vraća `HTTP 401 Unauthorized`.
 
 ---
 
@@ -63,7 +59,7 @@ oauth2_bearer = OAuth2PasswordBearer(
 )
 ```
 
-U tvom projektu, ako auth router koristi prefix `/auth`, jasnija vrednost moze biti:
+U tvom projektu, ako auth router koristi prefix `/auth`, jasnija vrednost može biti:
 
 ```python
 oauth2_bearer = OAuth2PasswordBearer(
@@ -71,20 +67,20 @@ oauth2_bearer = OAuth2PasswordBearer(
 )
 ```
 
-Tacna vrednost treba da odgovara javnoj putanji token endpointa i OpenAPI konfiguraciji.
+Tačna vrednost treba da odgovara javnoj putanji token endpointa i OpenAPI konfiguraciji.
 
-### Sta ovaj objekat radi
+### Šta ovaj objekat radi
 
 `OAuth2PasswordBearer`:
 
-1. cita `Authorization` header
-2. ocekuje scheme `Bearer`
+1. čita `Authorization` header
+2. očekuje scheme `Bearer`
 3. izdvaja samo token string
-4. ako header nedostaje ili je pogresan, pokrece HTTP 401
+4. ako header nedostaje ili je pogrešan, pokreće HTTP 401
 
-On ne proverava sam JWT signature. On samo pribavlja Bearer token koji sledeci security helper treba da dekodira.
+On ne proverava sam JWT signature. On samo pribavlja Bearer token koji sledeći security helper treba da dekodira.
 
-To je vazna razlika:
+To je važna razlika:
 
 ```text
 OAuth2PasswordBearer
@@ -98,11 +94,11 @@ jwt.decode
 
 ## 3) Gde se dependency smesta u tvom projektu
 
-Kursni primer moze drzati `oauth2_bearer` u `auth.py`.
+Kursni primer može držati `oauth2_bearer` u `auth.py`.
 
-U tvom ciljanom rasporedu moguce su dve faze:
+U tvom ciljanom rasporedu moguće su dve faze:
 
-### Pocetna kursna faza
+### Početna kursna faza
 
 ```text
 TodoApp/api/routes/auth.py
@@ -110,6 +106,8 @@ TodoApp/api/routes/auth.py
     get_current_user
     auth endpointi
 ```
+
+---
 
 ### Organizovanija faza
 
@@ -126,7 +124,7 @@ TodoApp/api/routes/todos.py
     koristi current user dependency
 ```
 
-Pošto je `get_current_user` security dependency, dugorocno pripada security sloju, a ne poslovnoj Todo logici.
+Pošto je `get_current_user` security dependency, dugoročno pripada security sloju, a ne poslovnoj Todo logici.
 
 ---
 
@@ -138,7 +136,7 @@ U izrazu:
 OAuth2PasswordBearer(tokenUrl="auth/token")
 ```
 
-`tokenUrl` opisuje gde klijent dobija token.
+`tokenUrl` opisuje gde klijent dobija token tj. na koji `endpoint` treba da pošalje svoje kredencijale (`username` i `password`).
 
 On nije:
 
@@ -146,9 +144,9 @@ On nije:
 - URL koji server posebnim pozivom proverava
 - zamena za JWT decode
 
-Njegova glavna uloga je da FastAPI/OpenAPI zna koji endpoint predstavlja OAuth2 token endpoint.
+Njegova glavna uloga je da `FastAPI/OpenAPI` zna koji `endpoint` predstavlja `OAuth2 token endpoint`.
 
-Ako koristis router prefix:
+Ako koristiš router prefix:
 
 ```python
 router = APIRouter(prefix="/auth")
@@ -185,7 +183,7 @@ Ona nema dekorator poput:
 @router.get(...)
 ```
 
-Zato nije samostalna ruta. To je dependency koju druge rute koriste:
+Zato nije samostalna ruta. To je `dependency` koju druge rute koriste:
 
 ```python
 @router.get("/protected")
@@ -201,19 +199,19 @@ Njena odgovornost je:
 Bearer token -> validiran current user identitet
 ```
 
-Ne treba da sadrzi Todo query logiku. Todo router kasnije koristi rezultat dependency-ja.
+Ne treba da sadrži `Todo query logiku`. Todo router kasnije koristi rezultat dependency-ja.
 
 ---
 
 ## 6) Tipiziranje token dependency-ja
 
-Transkript koristi obrazac slican:
+Transkript koristi obrazac sličan:
 
 ```python
 token: Annotated[str, Depends(oauth2_bearer)]
 ```
 
-Znacenje:
+Značenje:
 
 ```text
 token
@@ -223,7 +221,7 @@ Depends(oauth2_bearer)
     FastAPI treba da je dobavi iz Bearer header-a
 ```
 
-Posle resavanja dependency-ja, `token` sadrzi samo JWT string, bez prefiksa:
+Posle rešavanja dependency-ja, `token` sadrži samo JWT string, bez prefiksa:
 
 ```text
 Authorization header:
@@ -233,7 +231,13 @@ vrednost token promenljive:
 eyJ...
 ```
 
-U tvom projektu moze se koristiti postojeci `Annotated` stil iz `db/session.py`.
+U tvom projektu se može koristiti postojeći `Annotated` stil iz `db/session.py`. Tada bi deklaracija token dependency-ja mogla izgledati ovako:
+
+```python
+token: Annotated[str, Depends(oauth2_bearer)]
+```
+
+Ovo je način da se jasno naznači da `token` dolazi iz Bearer header-a i da je tipiziran kao string.
 
 ---
 
@@ -262,7 +266,7 @@ algorithms
     dozvoljena lista algoritama
 ```
 
-### Vazna napomena o `algorithms`
+### Važna napomena o `algorithms`
 
 Decode kod treba eksplicitno da navede dozvoljene algoritme:
 
@@ -270,33 +274,33 @@ Decode kod treba eksplicitno da navede dozvoljene algoritme:
 algorithms=["HS256"]
 ```
 
-Ne treba nekriticki verovati algoritmu koji je token sam naveo u header-u.
+Ne treba nekritički verovati algoritmu koji je token sam naveo u header-u.
 
-Server zna koji algoritam ocekuje kroz konfiguraciju.
-
----
-
-## 8) Sta `jwt.decode()` proverava
-
-U zavisnosti od biblioteke i podesavanja, decode validacija moze proveriti:
-
-- da li je JWT struktura ispravna
-- da li signature odgovara secret key-u
-- da li je algoritam dozvoljen
-- da li je `exp` prosao
-- eventualno `iss`, `aud` ili druge claims ako ih konfigurises
-
-Ako neko promeni payload bez validnog potpisa, decode treba da padne.
-
-Ako token istekne, decode treba da odbije token.
-
-Ako se koristi pogresan secret, signature nece odgovarati.
+Server zna koji algoritam očekuje kroz konfiguraciju.
 
 ---
 
-## 9) Citanje claims-a iz payload-a
+## 8) Šta `jwt.decode()` proverava
 
-Posle uspesnog decode-a, `payload` je recnik:
+U zavisnosti od biblioteke i podešavanja, `decode validacija` može proveriti:
+
+- da li je JWT struktura ispravna (header.payload.signature)
+- da li signature odgovara secret key-u (provera potpisa)
+- da li je algoritam dozvoljen (u odnosu na listu `algorithms` prosleđenu `jwt.decode()`)
+- da li je `exp` prošao (da li je token istekao)
+- eventualno `iss`, `aud` ili druge claims ako ih konfigurišeš
+
+Ako neko promeni `payload` bez validnog `potpisa`, decode treba da `padne`.
+
+Ako token istekne, decode treba da odbije token. Ovo znači da će biblioteka podići izuzetak ili vratiti grešku prilikom pokušaja dekodiranja.
+
+Ako se koristi pogrešan `secret`, `signature` neće odgovarati.
+
+---
+
+## 9) Čitanje claims-a iz `payload`-a
+
+Posle uspešnog decode-a, `payload` je rečnik:
 
 ```python
 payload = {
@@ -306,14 +310,14 @@ payload = {
 }
 ```
 
-Claims se citaju ovako:
+Claims se čitaju ovako:
 
 ```python
 username = payload.get("sub")
 user_id = payload.get("id")
 ```
 
-U modernijem doslednom obliku mozemo koristiti:
+U modernijem doslednom obliku možemo koristiti:
 
 ```python
 subject = payload.get("sub")
@@ -321,7 +325,7 @@ subject = payload.get("sub")
 
 gde je `subject` stabilan user ID.
 
-Ne treba pretpostaviti da claim postoji samo zato sto je token potpisan. Token moze biti validno potpisan, ali pogresno ili nepotpuno napravljen.
+Ne treba pretpostaviti da claim postoji samo zato što je token potpisan. Token može biti validno potpisan, ali pogrešno ili nepotpuno napravljen.
 
 Zato se proverava:
 
@@ -332,9 +336,9 @@ if username is None or user_id is None:
 
 ---
 
-## 10) Zasto se proveravaju `sub` i `id`
+## 10) Zašto se proveravaju `sub` i `id`
 
-Validan signature znaci da token nije menjan od strane nekoga ko ne zna secret.
+Validan `signature` znači da token nije menjan od strane nekoga ko ne zna secret.
 
 Ali server i dalje treba da proveri da li token ima podatke koje aplikacija zahteva.
 
@@ -346,11 +350,11 @@ Na primer, token sa payload-om:
 }
 ```
 
-moze imati validan signature, ali nema identitet korisnika.
+Može imati validan `signature`, ali nema identitet korisnika.
 
-Takav token ne treba koristiti za current user logiku.
+Takav token ne treba koristiti za `current user logiku`.
 
-Provera claims-a ima dva nivoa:
+Provera `claims`-a ima dva nivoa:
 
 ```text
 kriptografska validacija
@@ -373,16 +377,16 @@ raise HTTPException(
 )
 ```
 
-HTTP 401 znaci da zahtev nema validne autentifikacione kredencijale.
+HTTP 401 znači da zahtev nema validne autentifikacione kredencijale.
 
-To moze biti:
+To može biti:
 
-- nedostajuci Bearer token
-- pogresan token
+- nedostajući Bearer token
+- pogrešan token
 - istekao token
-- pogresan secret
+- pogrešan secret
 - promenjen payload
-- nedostajuci obavezni claim
+- nedostajući obavezni claim
 
 Za Bearer autentifikaciju koristan je i header:
 
@@ -411,7 +415,7 @@ validan user token, ali user nije admin -> 403
 
 ## 12) `JWTError`
 
-Dekodiranje moze baciti JWT-specificnu gresku:
+Dekodiranje može baciti JWT-specificnu grešku:
 
 ```python
 from jose import JWTError
@@ -434,21 +438,21 @@ except JWTError:
     )
 ```
 
-Ne treba korisniku vracati detalje poput:
+Ne treba korisniku vraćati detalje poput:
 
 ```text
 signature mismatch at byte ...
 ```
 
-Genericki odgovor smanjuje otkrivanje internih detalja.
+Generički odgovor smanjuje otkrivanje internih detalja.
 
-Interni log moze imati vise informacija, ali ne treba logovati ceo token ili secret.
+Interni log može imati više informacija, ali ne treba logovati ceo token ili secret.
 
 ---
 
 ## 13) Konceptualni `get_current_user()` helper
 
-Kursni oblik je slican:
+Kursni oblik je sličan:
 
 ```python
 async def get_current_user(
@@ -481,7 +485,7 @@ async def get_current_user(
         )
 ```
 
-Za organizovaniji tvoj projekat helper bi dugorocno bio u:
+Za organizovaniji tvoj projekat helper bi dugoročno bio u:
 
 ```text
 TodoApp/core/security.py
@@ -491,11 +495,11 @@ A `auth.py` i `todos.py` bi ga importovali.
 
 ---
 
-## 14) Paznja na `HTTPException` unutar `try` bloka
+## 14) Pažnja na `HTTPException` unutar `try` bloka
 
-Ako se `HTTPException` podigne zbog nedostajuceg claim-a unutar `try` bloka, siroki `except JWTError` je nece uhvatiti jer `HTTPException` nije `JWTError`.
+Ako se `HTTPException` podigne zbog nedostajućeg claim-a unutar `try` bloka, siroki `except JWTError` je neće uhvatiti jer `HTTPException` nije `JWTError`.
 
-Ipak, citljiviji oblik moze odvojiti decode od provere claims-a:
+Ipak, čitljiviji oblik može odvojiti `decode` od provere `claims`-a:
 
 ```python
 try:
@@ -556,17 +560,17 @@ async def read_my_todos(
     ...
 ```
 
-Kasnije moze postojati Pydantic ili typed struktura za current user kontekst.
+Kasnije može postojati Pydantic ili typed struktura za current user kontekst.
 
-Recnik je jednostavan za kurs, ali typed objekat moze smanjiti greske u vecem projektu.
+Rečnik je jednostavan za kurs, ali typed objekat može smanjiti greške u većem projektu.
 
-Vazno je da current user rezultat predstavlja server-verifikovan identitet, a ne proizvoljan `user_id` iz URL-a.
+Važno je da current user rezultat predstavlja server-verifikovan identitet, a ne proizvoljan `user_id` iz URL-a.
 
 ---
 
 ## 16) Kako Todo endpoint koristi current user
 
-Buduci Todo query:
+Budući `Todo` query:
 
 ```python
 @router.get("/todo")
@@ -593,7 +597,7 @@ Authorization header
                 -> Todos.owner_id filter
 ```
 
-Ne treba prihvatati proizvoljan `user_id` samo zato sto se nalazi u URL-u.
+Ne treba prihvatati proizvoljan `user_id` samo zato što se nalazi u URL-u.
 
 ---
 
@@ -608,7 +612,7 @@ payload = {
 }
 ```
 
-decode funkcija mora citati:
+decode funkcija mora čitati:
 
 ```python
 username = payload.get("sub")
@@ -633,20 +637,20 @@ username = payload.get("username")
 
 Encode i decode nisu nezavisne funkcije. One dele API ugovor o claims-ima.
 
-Promena naziva claim-a zahteva promenu svih potrosaca tokena i moze invalidirati stare tokene.
+Promena naziva claim-a zahteva promenu svih potrošača tokena i može invalidirati stare tokene.
 
 ---
 
 ## 18) Validacija tipova claims-a
 
-`payload.get("id")` moze vratiti:
+`payload.get("id")` može vratiti:
 
 - `None`
 - string
 - broj
-- neocekivanu vrednost
+- neočekivanu vrednost (npr. listu ili dict)
 
-Zato se u ozbiljnijem kodu proverava i tip ili se koristi standardizovani claim format.
+Zato se u ozbiljnijem kodu proverava i tip ili se koristi standardizovani `claim` format.
 
 Primer:
 
@@ -666,7 +670,7 @@ except (TypeError, ValueError) as error:
     raise HTTPException(...) from error
 ```
 
-Ovo je aplikaciona validacija nakon JWT signature provere.
+Ovo je **aplikaciona validacija** nakon JWT signature provere.
 
 ---
 
@@ -685,7 +689,7 @@ Ako se secret promeni:
 stari tokeni -> nevalidni
 ```
 
-To moze biti namerna rotacija kljuca, ali zahteva plan za aktivne tokene.
+To može biti namerna rotacija ključa, ali zahteva plan za aktivne tokene.
 
 U tvom projektu parametri pripadaju:
 
@@ -693,24 +697,24 @@ U tvom projektu parametri pripadaju:
 TodoApp/core/config.py
 ```
 
-Ne treba ih duplirati u vise router fajlova jer se mogu razlikovati i izazvati tesko uocljive greske.
+Ne treba ih duplirati u više router fajlova jer se mogu razlikovati i izazvati teško uočljive greške.
 
 ---
 
-## 20) Sta ova lekcija jos ne implementira
+## 20) Šta ova lekcija jos ne implementira
 
-Ova lekcija jos ne dodaje stvarnu zastitu Todo endpointa.
+Ova lekcija još ne dodaje stvarnu zaštitu Todo endpointa.
 
-Ne implementira jos:
+Ne implementira još:
 
-- `get_current_user` u aktivnom kodu
-- `OAuth2PasswordBearer` dependency u projektu
-- user lookup iz baze nakon decode-a
-- proveru da korisnik i dalje postoji
-- proveru `is_active` u current user dependency-ju
-- role authorization
-- ownership filter u stvarnom routeru
-- refresh token
+- `get_current_user` u aktivnom kodu (dependency)
+- `OAuth2PasswordBearer` dependency u projektu (npr. `oauth2_bearer`)
+- user lookup iz baze nakon decode-a (npr. `get_user_by_id(user_id)`)
+- proveru da korisnik i dalje postoji (npr. `get_user_by_id(user_id)`)
+- proveru `is_active` u current user dependency-ju (npr. `get_current_user`)
+- role autorizaciju (npr. `get_current_user`)
+- ownership filter u stvarnom routeru (npr. `Todos.owner_id`)
+- refresh token (npr. `refresh_access_token`)
 
 Ona priprema centralni security korak:
 
@@ -720,7 +724,7 @@ Bearer token -> validiran current user identitet
 
 ---
 
-## 21) Buduci raspored fajlova
+## 21) Budući raspored fajlova
 
 Ciljni raspored za kasniju implementaciju:
 
@@ -742,60 +746,117 @@ TodoApp/
 
 ### `core/config.py`
 
-- secret key
-- algorithm
-- token expiration
+- secret key (npr. `SECRET_KEY`)
+- algorithm (npr. `ALGORITHM`)
+- token expiration (npr. `ACCESS_TOKEN_EXPIRE_MINUTES`)
+
+---
 
 ### `core/security.py`
 
-- `oauth2_bearer`
-- `get_current_user`
-- JWT decode helper
-- password helperi
+- `oauth2_bearer` (npr. `OAuth2PasswordBearer(tokenUrl="token")`)
+- `get_current_user` (npr. `def get_current_user(token: str = Depends(oauth2_bearer))`)
+- JWT decode helper (npr. `def decode_jwt(token: str) -> dict`)
+- password helperi (npr. `def verify_password(plain_password: str, hashed_password: str) -> bool`)
+
+---
 
 ### `api/routes/auth.py`
 
 - `/token`
-- register i login tok
+- register i login token endpoints
+
+---
 
 ### `api/routes/todos.py`
 
-- dependency injection current user-a
-- owner filteri
+- dependency injection current user-a (npr. `get_current_user`)
+- owner filteri (npr. `Todos.owner_id`)
+
+---
 
 ### `db/session.py`
 
-- DB session dependency
+- DB session dependency (npr. `def get_db() -> Session`)
+
+---
 
 ### `models.py`
 
-- `Users`
-- `Todos.owner_id`
+- `Users` (npr. `Users.id`, `Users.username`)
+- `Todos.owner_id` (npr. `Todos.owner_id`)
 
 ---
 
 ## 22) Pitanja za proveru znanja
 
-1. Zasto se JWT dekodira pri svakom protected request-u?
-2. Sta radi `OAuth2PasswordBearer`?
+1. Zašto se JWT dekodira pri svakom protected request-u?
+
+ODGOVOR: JWT se dekodira pri svakom protected request-u kako bi se validirao identitet korisnika i osiguralo da token nije istekao ili izmenjen. Na taj način se obezbeđuje sigurnost i integritet aplikacije.
+
+2. Šta radi `OAuth2PasswordBearer`?
+
+ODGOVOR: `OAuth2PasswordBearer` je dependency koji izvlači Bearer token iz Authorization header-a i prosleđuje ga dalje u funkcije koje ga zavise. Sam po sebi ne proverava validnost tokena.
+
 3. Da li `OAuth2PasswordBearer` proverava JWT signature?
-4. Sta je uloga `tokenUrl` parametra?
-5. Zasto `get_current_user()` nije API endpoint?
-6. Sta radi `jwt.decode()`?
-7. Zasto decode mora dobiti secret i listu dozvoljenih algoritama?
-8. Sta se desava ako je signature nevalidan?
-9. Sta je `JWTError`?
-10. Zasto se proveravaju `sub` i `id` claims nakon decode-a?
-11. Sta znaci HTTP 401?
-12. Koja je razlika izmedju 401 i 403?
-13. Zasto encode i decode moraju deliti isti claims ugovor?
+
+ODGOVOR: Ne, `OAuth2PasswordBearer` samo izvlači token iz header-a. Validacija tokena, uključujući proveru signature-a, se obavlja kasnije, obično u `get_current_user` funkciji.
+
+4. Šta je uloga `tokenUrl` parametra?
+
+ODGOVOR: `tokenUrl` parametar specificira URL endpoint-a na koji klijent treba da pošalje korisničke kredencijale kako bi dobio JWT token. FastAPI koristi ovaj URL za generisanje OpenAPI dokumentacije i za interaktivni Swagger UI.
+
+5. Zašto `get_current_user()` nije API endpoint?
+
+ODGOVOR: `get_current_user()` je dependency koji se koristi unutar drugih API endpoint-a kako bi se dobio trenutno ulogovani korisnik. Nije samostalni endpoint jer ne odgovara direktno na HTTP zahteve, već služi kao pomoćna funkcija za autorizaciju.
+
+6. Šta radi `jwt.decode()`?
+
+ODGOVOR: `jwt.decode()` uzima JWT token, secret i listu dozvoljenih algoritama, i vraća dekodirane claims ako je token validan. Ako je token nevalidan ili je istekao, baca izuzetak (`JWTError`).
+
+7. Zašto decode mora dobiti secret i listu dozvoljenih algoritama?
+
+ODGOVOR: `jwt.decode()` mora dobiti secret kako bi mogao da proveri signature tokena i osigura da token nije izmenjen. Lista dozvoljenih algoritama je potrebna da bi se sprečile sigurnosne ranjivosti povezane sa neautorizovanim algoritmima.
+
+8. Šta se dešava ako je signature nevalidan?
+
+ODGOVOR: Ako je signature nevalidan, `jwt.decode()` će baciti izuzetak (`JWTError`), što znači da token nije validan i ne može se koristiti za autentifikaciju.
+
+9. Šta je `JWTError`?
+
+ODGOVOR: `JWTError` je izuzetak koji se baca kada dođe do problema sa JWT tokenom, kao što su nevalidan signature, istekao token ili neispravan format tokena. Ovaj izuzetak omogućava aplikaciji da pravilno reaguje na nevalidne ili neupotrebljive tokene.
+
+10. Zašto se proveravaju `sub` i `id` claims nakon decode-a?
+
+ODGOVOR: Nakon što se JWT dekodira, proveravaju se `sub` i `id` claims kako bi se osiguralo da token sadrži identitet korisnika. Ovo je važno jer validan token sa ispravnim potpisom ne garantuje da token sadrži sve potrebne informacije za autorizaciju korisnika.
+
+11. Šta znači HTTP 401?
+
+ODGOVOR: HTTP 401 Unauthorized znači da korisnik nije autentifikovan ili da je autentifikacija neuspešna. Server odbija zahtev jer ne može da potvrdi identitet korisnika.
+
+12. Koja je razlika između 401 i 403?
+
+ODGOVOR: HTTP 401 Unauthorized znači da korisnik nije autentifikovan ili da je autentifikacija neuspešna, dok HTTP 403 Forbidden znači da je korisnik autentifikovan, ali nema dozvolu za pristup traženom resursu. U suštini, 401 se odnosi na problem sa autentifikacijom, a 403 na problem sa autorizacijom.
+
+13. Zašto encode i decode moraju deliti isti claims ugovor?
+
+ODGOVOR: Encode i decode moraju deliti isti claims ugovor kako bi se osiguralo da token sadrži sve potrebne informacije za autentifikaciju i autorizaciju korisnika. Ako encode i decode ne koriste isti ugovor, dekodirani token može biti nepotpun ili neupotrebljiv, što može dovesti do grešaka u aplikaciji.
+
 14. Gde se u tvom projektu nalazi buduca security logika?
+
+ODGOVOR: Buduća security logika se obično nalazi u sloju aplikacije koji obrađuje autentifikaciju i autorizaciju korisnika, kao što su rute, dependency-ji za dobijanje trenutnog korisnika i middleware koji proverava pristupne tokene.
+
 15. Kako current user ID kasnije filtrira `Todos.owner_id`?
-16. Zasto token sa validnim potpisom ipak moze biti aplikaciono neupotrebljiv?
+
+ODGOVOR: Current user ID se koristi za filtriranje `Todos.owner_id` kako bi se osiguralo da korisnik može pristupiti samo svojim zadacima. Ovo je deo autorizacione logike koja povezuje identitet korisnika sa resursima kojima može pristupiti.
+
+16. Zašto token sa validnim potpisom ipak može biti aplikaciono neupotrebljiv?
+
+ODGOVOR: Token sa validnim potpisom može biti aplikaciono neupotrebljiv ako ne sadrži sve potrebne claims, kao što su `sub` ili `id`. Iako je token kriptografski validan, aplikacija ne može da identifikuje korisnika ili da pravilno primeni autorizaciju bez ovih informacija.
 
 ---
 
-## 23) Prakticni zadaci
+## 23) Praktični zadaci
 
 ### Zadatak 1 - Rastavi Authorization header
 
