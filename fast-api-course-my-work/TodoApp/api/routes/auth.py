@@ -11,7 +11,8 @@ from ...core.config import settings
 from ...core.security import create_access_token
 from ...db.session import db_dependency
 from ...models import Users
-from ...schemas import CreateUserRequest, Token, UserResponse
+from ...schemas import CreateUserRequest as CreateUserPayload
+from ...schemas import Token, UserResponse
 
 router = APIRouter(
     prefix="/auth",
@@ -67,7 +68,7 @@ def authenticate_user(username: str, password: str, db: db_dependency):
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 async def create_users(
-    create_user_request: CreateUserRequest,
+    create_user_request: CreateUserPayload,
     db: db_dependency,
 ) -> UserResponse:
     # Brza provera pre upisa da bismo izbegli 500 na unique ograničenjima.
@@ -112,6 +113,7 @@ async def create_users(
 
     # response_model=UserResponse filtrira i serializuje (pretvara ORM objekat u Pydantic model zbog specificiranog response_model-a) odgovor, pa možemo bezbedno vratiti ORM objekat.
     return create_user_model
+
 
 # Endpoint za prijavu i dobijanje pristupnog tokena (JWT)
 @router.post("/token", response_model=Token)

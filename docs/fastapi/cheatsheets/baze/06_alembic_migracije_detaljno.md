@@ -326,3 +326,70 @@ Kljucne ideje za pamcenje:
 - Alembic postaje glavni izvor istine za strukturu baze, ne rucne izmene ili `create_all()`
 
 Ovo je prirodan sledeci korak nakon sto imas stabilan CRUD i osnovne modele, i pre nego sto pocnes da menjas semu baze koja vec sadrzi podatke.
+
+---
+
+## 15) Gde si trenutno i sta je sledece u tvom projektu
+
+Na osnovu tvog trenutnog `TodoApp` stanja:
+
+1. Auth/Todo tok je funkcionalan.
+2. Koristis klasican SQLAlchemy stil (`Column`, `query`, `filter`, `first`, `all`).
+3. `create_all()` je i dalje u `main.py`.
+
+To je potpuno validno za fazu u kojoj si sada.
+
+Najbezbedniji sledeci korak pre oblasti 12 je:
+
+1. prvo prebacivanje koda na SQLAlchemy 2.0 stil,
+2. zatim uvodjenje Alembic workflow-a kao glavnog nacina promene seme.
+
+Drugim recima: nemoj preskakati 2.0 refaktor pa odmah juriti migracije na nestabilnim modelima.
+
+---
+
+## 16) Prakticni prelaz sa create_all na Alembic (bez haosa)
+
+Kad zavrsis SQLAlchemy 2.0 refaktor i potvrdis da app radi:
+
+1. Inicijalizuj Alembic u projektu.
+2. Povezi `env.py` sa tvojim `Base.metadata`.
+3. Proveri da Alembic gadja istu bazu kao aplikacija.
+4. Napravi prvu reviziju koja predstavlja trenutno stanje seme.
+5. Od tog trenutka sve dalje promene tabela radi kroz migracije.
+
+Bitan momenat:
+
+- `create_all()` mozes ostaviti privremeno u development fazi,
+- ali kad migracije postanu zvanicni tok, `create_all()` vise ne treba da bude glavni mehanizam evolucije seme.
+
+---
+
+## 17) Najcesce greske bas u prelazu na production DB setup
+
+1. Istovremeno menjanje ORM stila i uvodjenje 10 novih kolona bez faza.
+2. Pokretanje migracija nad pogresnom bazom zbog pogresnog URL-a.
+3. Verovanje da autogenerate sve zna bez pregleda migracionog fajla.
+4. Oslanjanje na rucni SQL mimo Alembic evidencije.
+5. Nepravljenje backup-a pre prve ozbiljne migracije.
+
+Prakticno pravilo:
+
+- male promene,
+- jasan commit,
+- pregled migracije,
+- tek onda `upgrade`.
+
+---
+
+## 18) Checkpoint pre oblasti 12
+
+Pre ulaska u "Large Production Database Setup" potvrdi:
+
+1. Razumes razliku `create_all()` vs Alembic migracije.
+2. Znaci ti `revision` / `down_revision` lanac.
+3. Umes procitati i objasniti `upgrade()` i `downgrade()`.
+4. Znas gde je `target_metadata` i zasto mora da pokazuje na tvoje modele.
+5. Imas stabilan SQLAlchemy 2.0 stil u najvaznijim delovima (`auth`, `todos`, `security`).
+
+Ako su ovih 5 stvari jasne, spreman si da oblast 12 bude smislen skok, a ne konfuzija.
