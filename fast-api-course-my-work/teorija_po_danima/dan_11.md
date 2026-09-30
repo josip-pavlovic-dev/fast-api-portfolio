@@ -194,8 +194,8 @@ Treba ti DB i `Users` model da od token identiteta dobiješ stvarnog korisnika.
 
 #### `oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")`
 
-1. `tokenUrl` mora da odgovara javnoj token ruti (`/auth/token`).
-2. Ovo koristi `OpenAPI/Swagger` i dependency sistem tako što automatski čita token iz `Authorization` header-a, tačnije iz njegove vrednosti formata `Bearer <token>`), i prosleđuje token u dependency funkciju (`get_current_user`).
+1. `tokenUrl` mora da odgovara javnoj token ruti (`/auth/token`). U tvom projektu to je ruta koja generiše JWT token i nalazi se u `auth.py` fajlu. Bez obzira gde se nalazio security modul u našem projektu, ovaj URL mora biti tačan. Ako je pogrešan, Swagger UI neće moći da dobije token i dependency funkcija neće raditi ispravno.
+2. Ovo koristi `OpenAPI/Swagger` i dependency sistem tako što automatski čita token iz `Authorization` header-a, tačnije iz njegove vrednosti formata `Bearer <token>`, i prosleđuje token u dependency funkciju (`get_current_user`). U toj funkciji se onda može koristiti `jwt.decode(...)` da se verifikuje i pročita payload.
 
 Jednostavno rečeno, token se vadi iz `bearer` dela `Authorization header`-a (sve što dolazi posle `Bearer` a to je `string vrednost tokena`).
 
@@ -209,9 +209,41 @@ Potpis funkcije znači:
 2. `db` dolazi iz DB dependency-ja.
 3. Funkcija vraća `Users` instancu (verified current user).
 
+---
+
 #### `credentials_exception = HTTPException(...)`
 
-Jedno mesto za standardni 401 odgovor, da ne dupliraš isti blok više puta.
+Jedno mesto za standardni `401` odgovor, da ne dupliraš isti blok više puta.
+
+PITANJE: Šta tačno znači `headers={"WWW-Authenticate": "Bearer"}` i zašto se pojavljuje Authentication header a ne Authorization header?
+
+ODGOVOR:
+
+Ovo je važna razlika između `request` i `response` strane HTTP komunikacije.
+
+1. `Authorization` je request header.
+2. Klijent (browser, Swagger, Postman) šalje `Authorization: Bearer <token>` ka serveru.
+3. Server čita taj header kada proverava token.
+
+`WWW-Authenticate` je response header koji server vraća nazad kada autentifikacija nije uspela (najčešće uz `401 Unauthorized`).
+
+Šta znači `headers={"WWW-Authenticate": "Bearer"}`:
+
+1. Server klijentu šalje signal: "Za ovaj resurs očekujem Bearer autentifikaciju".
+2. To je standardni način da 401 odgovor opiše koju auth šemu klijent treba da koristi.
+3. Zato ovde ne postavljaš `Authorization` header, jer server ne šalje sam sebi token, već obaveštava klijenta šta se očekuje.
+
+Kratko pravilo koje pomaže da se ne pomeša:
+
+1. Klijent -> server: `Authorization`.
+2. Server -> klijent (kod 401): `WWW-Authenticate`.
+
+U tvom `security.py` to znači:
+
+1. `OAuth2PasswordBearer` čita token iz dolaznog `Authorization` header-a.
+2. Ako validacija padne, `HTTPException(401, headers={"WWW-Authenticate": "Bearer"})` vraća klijentu jasan signal da je potreban validan Bearer token.
+
+---
 
 #### `payload = jwt.decode(...)`
 
@@ -221,33 +253,49 @@ Ovde se dešava prava validacija:
 2. provera algoritma (`algorithms=[settings.jwt_algorithm]`),
 3. provera vremena (`exp`) kroz biblioteku.
 
+---
+
 #### `except JWTError as error: raise credentials_exception from error`
 
 Ako decode padne iz bilo kog JWT razloga, vraćaš uniforman 401.
+
+---
 
 #### `subject = payload.get("sub")`
 
 Čitaš identitet iz claim-a koji encode već upisuje (`sub` = `str(user_id)`).
 
+---
+
 #### `if not isinstance(subject, str) or not subject:`
 
 Aplikaciona validacija: claim mora postojati i biti ne-prazan string.
+
+---
 
 #### `user_id = int(subject)`
 
 Konvertuješ `sub` nazad u integer ID korisnika.
 
+---
+
 #### `user = db.query(Users).filter(Users.id == user_id).first()`
 
 Od token identiteta dobijaš stvarni DB user objekat.
+
+---
 
 #### `if user is None: raise credentials_exception`
 
 Token može biti kriptografski validan, ali korisnik više ne postoji.
 
+---
+
 #### `is_active` provera
 
 Zadržavaš bezbednosno pravilo da neaktivan user ne sme proći autentifikaciju.
+
+---
 
 #### `return user`
 
@@ -388,33 +436,49 @@ async def delete_todo(
 
 Potrebno za typed dependency alias.
 
+---
+
 #### `from fastapi import ... Depends ...`
 
 `Depends` je obavezan jer sada rute zahtevaju current user dependency.
+
+---
 
 #### `from ...core.security import get_current_user`
 
 Uvozi decode helper koji verifikuje token i vraća user-a.
 
+---
+
 #### `from ...models import Todos, Users`
 
 Dodaješ `Users` tip da `current_user_dependency` bude tipizovan.
+
+---
 
 #### `current_user_dependency = Annotated[Users, Depends(get_current_user)]`
 
 Jedna linija za DRY pristup: ne ponavljaš `Annotated[...]` u svakoj ruti.
 
+---
+
 #### `current_user: current_user_dependency` u potpisima ruta
 
 Svaka ruta postaje protected. Bez validnog Bearer tokena nema pristupa.
+
+---
 
 #### `filter(Todos.owner_id == current_user.id)`
 
 To je ownership filter. User vidi samo svoje podatke.
 
+---
+
 #### `Todos(**todo_request.model_dump(), owner_id=current_user.id)`
 
 Na kreiranju novog todo-a ownership dolazi iz tokena, ne iz klijentskog input-a.
+
+---
 
 #### `filter(Todos.id == todo_id, Todos.owner_id == current_user.id)`
 
@@ -548,6 +612,113 @@ Zašto je ovo dobro za validaciju:
 Zaključak:
 
 `str(user_id)` u `sub` nije slučajno, nego namerna odluka da identitet u JWT bude u standardnom, prenosivom obliku, a da se stroga tipizacija (`int`) vrati tek u kontrolisanoj decode logici.
+
+---
+
+## Pitanje 8
+
+PITANJE: Zašto za encode važi `algorithm=settings.jwt_algorithm`, a za decode `algorithms=[settings.jwt_algorithm]`?
+
+---
+
+## Odgovor 8
+
+ODGOVOR: Razlika je namerna i dolazi iz toga šta se radi u svakoj fazi i kako je biblioteka dizajnirana.
+
+1. U encode fazi token se potpisuje jednim konkretnim algoritmom.
+2. Zato je parametar u jednini: `algorithm=...`.
+3. U tom trenutku ti biraš tačno jedan način potpisa za taj token.
+
+U decode fazi:
+
+1. Server verifikuje već postojeći token.
+2. Potrebno je eksplicitno reći koje algoritme prihvataš kao dozvoljene.
+3. Zato je parametar u množini: `algorithms=[...]` (lista dozvoljenih algoritama).
+
+Bezbednosni razlog:
+
+1. Tokom verifikacije ne želiš da biblioteka implicitno prihvati neočekivan algoritam.
+2. Sa `algorithms=[settings.jwt_algorithm]` zaključavaš validaciju na tačno ono što očekuješ.
+
+Praktično, iako sada imaš jedan algoritam u listi:
+
+1. `algorithm` u encode znači: "čime potpisujem ovaj token".
+2. `algorithms` u decode znači: "šta sam spreman da prihvatim pri verifikaciji".
+
+Dodatna razlika u ulazu/izlazu:
+
+1. `jwt.encode(...)` prima payload i vraća token string.
+2. `jwt.decode(...)` prima token string i vraća payload (ako verifikacija uspe).
+
+---
+
+## Pitanje 9
+
+PITANJE: Kako se u `get_current_user` uzima vrednost `sub` iz `payload`, kada je payload sa `sub` zapravo kreiran u drugoj funkciji (`create_access_token`)?
+
+---
+
+## Odgovor 9
+
+ODGOVOR: FastAPI ne deli direktno Python promenljive između te dve funkcije. Veza između njih je sam `JWT token string` (parametar `token` u `get_current_user`).
+
+Korak po korak:
+
+1. U `create_access_token` praviš payload dict sa claim-ovima (`sub`, `username`, `exp`).
+2. `jwt.encode(...)` taj payload kriptografski potpisuje i pretvara u token string.
+3. Taj token se vraća klijentu (login odgovor).
+4. Klijent kasnije šalje isti token nazad kroz `Authorization: Bearer <token>`.
+5. U `get_current_user`, `OAuth2PasswordBearer` izvuče token string iz header-a.
+6. `jwt.decode(...)` verifikuje token i od njega napravi novi Python dict (`payload`).
+7. Taj novi dict sadrži iste claim-ove koji su ranije upisani pri encode fazi, uključujući `sub`.
+8. Zato `subject = payload.get("sub")` radi potpuno normalno.
+
+Važna poenta:
+
+1. `payload` u `create_access_token` i `payload` u `get_current_user` nisu ista promenljiva u memoriji.
+2. To su dva odvojena dict objekta u dva različita trenutka.
+3. Povezuje ih sadržaj tokena: prvo je claim upisan u token, kasnije iz tokena pročitan.
+
+Drugim rečima:
+
+1. Encode faza: "upisujem `sub` u token".
+2. Decode faza: "čitam `sub` iz tokena".
+3. FastAPI tu služi da prosledi token kroz dependency sistem, a `jwt.decode(...)` radi stvarno čitanje claim-ova.
+
+---
+
+## Pitanje 10
+
+PITANJE: Zbog čega je funkcija `get_current_user` asinhrona (`async`), a funkcija `create_access_token` nije?
+
+---
+
+## Odgovor 10
+
+ODGOVOR: Ključna razlika je u prirodi posla koji svaka funkcija radi.
+
+`create_access_token` je obična (`def`) funkcija zato što:
+
+1. Radi lokalnu obradu u memoriji (sastavljanje payload-a i potpisivanje tokena).
+2. Nema mrežni poziv niti čekanje spoljnog resursa.
+3. Takav posao je brz i tipično ne traži `await`.
+
+`get_current_user` je `async def` zato što:
+
+1. Ona je deo request/dependency toka u FastAPI-u.
+2. U tom toku često postoji čekanje spoljnog resursa (npr. baza, drugi servis), sada ili kasnije.
+3. Kada je funkcija `async`, FastAPI je može lakše uklopiti u asinhroni tok obrade zahteva.
+
+Početnička praktična slika:
+
+1. `create_access_token` = "izračunaj i vrati rezultat odmah".
+2. `get_current_user` = "obrada korisnika tokom HTTP zahteva, potencijalno sa čekanjem".
+
+Važna napomena za tvoj trenutni kod:
+
+1. U `get_current_user` trenutno koristiš klasičan SQLAlchemy query stil (`db.query(...).first()`), što je sinhrono.
+2. To i dalje može da radi unutar `async` funkcije u FastAPI projektu.
+3. Kasnije, kada budeš radio detaljno asinhronost i/ili async DB pristup, videćeš još jasnije zašto se dependency funkcije često pišu kao `async`.
 
 ---
 
