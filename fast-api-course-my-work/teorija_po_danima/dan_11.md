@@ -134,35 +134,78 @@ async def get_current_user(
 1. `Any` već koristiš za payload tip.
 2. `Annotated` je potreban da dependency jasno bude tipizovan.
 
+---
+
 #### `from fastapi import Depends, HTTPException, status`
 
 1. `Depends` rešava token iz header-a.
 2. `HTTPException` daje kontrolisan 401 odgovor.
 3. `status` čini kod čitljivijim (`status.HTTP_401_UNAUTHORIZED`).
 
+---
+
 #### `from fastapi.security import OAuth2PasswordBearer`
 
-Dodaje mehanizam koji iz `Authorization: Bearer <token>` izvlači samo token string.
+Ovo nije "skripta koja sama sebe importuje".
+
+Šta se zapravo dešava:
+
+1. `fastapi` je instaliran paket.
+2. `security` je modul unutar tog paketa (`fastapi/security/...`).
+3. `OAuth2PasswordBearer` je klasa definisana u tom modulu.
+4. Linija `from fastapi.security import OAuth2PasswordBearer` samo "uzima" tu klasu i pravi je dostupnom u tvom fajlu.
+
+Drugim rečima:
+
+1. Ništa se ne importuje "samo od sebe".
+2. Ti eksplicitno tražiš objekat iz spoljnog modula.
+3. Posle toga možeš da napišeš:
+
+```python
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
+```
+
+Kratka paralela:
+
+```python
+from datetime import timedelta
+```
+
+Radi po istoj ideji: uzimaš `timedelta` iz `datetime` modula i koristiš je u svom fajlu.
+
+Praktično značenje u ovom projektu:
+
+`OAuth2PasswordBearer` dodaje mehanizam koji iz `Authorization: Bearer <token>` izvlači samo token string.
+
+---
 
 #### `from jose import JWTError, jwt`
 
 1. `jwt.decode(...)` radi verifikaciju i čitanje payload-a.
 2. `JWTError` hvata nevalidan token/signature/format/exp slučajeve.
 
+---
+
 #### `from ..db.session import db_dependency` i `from ..models import Users`
 
 Treba ti DB i `Users` model da od token identiteta dobiješ stvarnog korisnika.
 
+---
+
 #### `oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")`
 
 1. `tokenUrl` mora da odgovara javnoj token ruti (`/auth/token`).
-2. Ovo koristi OpenAPI/Swagger i dependency sistem.
+2. Ovo koristi `OpenAPI/Swagger` i dependency sistem tako što automatski čita token iz `Authorization` header-a, tačnije iz njegove vrednosti formata `Bearer <token>`), i prosleđuje token u dependency funkciju (`get_current_user`).
+
+Jednostavno rečeno, token se vadi iz `bearer` dela `Authorization header`-a (sve što dolazi posle `Bearer` a to je `string vrednost tokena`).
+
+---
 
 #### `async def get_current_user(...)`
 
 Potpis funkcije znači:
 
-1. `token` dolazi iz Bearer header-a.
+1. `token` dolazi iz `Authorization` header-a (Bearer šema: `Authorization: Bearer <token>`).
 2. `db` dolazi iz DB dependency-ja.
 3. Funkcija vraća `Users` instancu (verified current user).
 
@@ -421,6 +464,90 @@ Minimalni očekivani rezultat lekcije 13:
 1. `get_current_user` uspešno dekodira token.
 2. Protected ruta zahteva validan Bearer token.
 3. Todo rezultat je filtriran po `owner_id`.
+
+---
+
+## Pitanje 6
+
+PITANJE: Odakle dolazi naziv `user_id` kada je u `models.py` i `schemas.py` polje `id`?
+
+---
+
+## Odgovor 6
+
+ODGOVOR: Naziv `user_id` ne dolazi automatski iz SQLAlchemy modela ili Pydantic sheme, nego iz imena parametra koje si ti izabrao u funkciji.
+
+Ključna ideja:
+
+1. U modelu korisnika imaš atribut `id` (na primer `user.id`).
+2. Kada tu vrednost prosleđuješ u funkciju za kreiranje tokena, parametar može da se zove kako želiš.
+3. U ovom kodu je izabrano ime `user_id` jer je čitljivije i preciznije od samog `id`.
+
+Primer mapiranja u praksi:
+
+```python
+authenticated_user = ...
+
+token = create_access_token(
+	username=authenticated_user.username,
+	user_id=authenticated_user.id,
+)
+```
+
+Šta ovo znači:
+
+1. Levo (`user_id=...`) je naziv funkcijskog parametra.
+2. Desno (`authenticated_user.id`) je realna vrednost iz modela (`id` kolona iz baze).
+3. Dakle, `id` iz modela se samo prosledi u parametar koji je nazvan `user_id`.
+
+Zašto je to dobro:
+
+1. U većim fajlovima imaš više različitih ID vrednosti (`todo_id`, `user_id`, `project_id`).
+2. Ime `user_id` odmah govori da je to ID korisnika, pa je kod čitljiviji i manje sklon greškama.
+
+Napomena:
+
+Mogao bi tehnički da nazoveš parametar i `id`, i kod bi radio, ali je to slabije čitljivo i može da napravi zabunu kada imaš više tipova identifikatora.
+
+---
+
+## Pitanje 7
+
+PITANJE: Zašto se za ključ `sub` radi `str(user_id)` umesto da ostane broj?
+
+---
+
+## Odgovor 7
+
+ODGOVOR: Radi se prvenstveno zbog standardizacije i interoperabilnosti JWT claim-ova.
+
+Suština:
+
+1. `sub` (subject) predstavlja identitet subjekta tokena.
+2. U praksi JWT/OAuth2/OIDC ekosistema `sub` se najčešće tretira kao string identifikator.
+3. Zato je bezbednije i kompatibilnije da u token upišeš `sub` kao tekst, tj. `str(user_id)`.
+
+Šta time dobijaš:
+
+1. Bolju kompatibilnost između biblioteka, jezika i servisa (manje zavisiš od toga kako ko tretira JSON brojeve).
+2. Stabilniji format identiteta kroz ceo auth tok.
+3. Jasnu i eksplicitnu validaciju u decode fazi, jer ti kontrolišeš kada i kako se string pretvara nazad u `int`.
+
+Kako to izgleda u tvom toku:
+
+1. Encode faza: u payload ide `"sub": str(user_id)`.
+2. Decode faza: čitaš `subject = payload.get("sub")`.
+3. Proveravaš da je `subject` neprazan string.
+4. Tek onda radiš `user_id = int(subject)`.
+
+Zašto je ovo dobro za validaciju:
+
+1. Ako je `sub` neispravan (npr. prazan, pogrešnog tipa, ili ne može da se konvertuje), odmah vraćaš 401.
+2. Time sprečavaš da nevalidan identitet stigne do DB upita.
+
+Zaključak:
+
+`str(user_id)` u `sub` nije slučajno, nego namerna odluka da identitet u JWT bude u standardnom, prenosivom obliku, a da se stroga tipizacija (`int`) vrati tek u kontrolisanoj decode logici.
 
 ---
 

@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Path, status
+from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException, Path, status
+
+from ...core.security import get_current_user
 from ...db.session import db_dependency
-from ...models import Todos
+from ...models import Todos, Users
 from ...schemas import CreateTodoRequest, TodoResponse
 
 router = APIRouter(
@@ -9,13 +12,20 @@ router = APIRouter(
     tags=["todos"],
 )
 
+# Skraćenica za dependency koji vraća verifikovanog korisnika iz JWT-a.
+current_user_dependency = Annotated[Users, Depends(get_current_user)]
+
 
 @router.get(
     "/",
     status_code=status.HTTP_200_OK,
 )
-async def get_all(db: db_dependency) -> list[TodoResponse]:
-    todo_models = db.query(Todos).all()
+async def get_all(
+    db: db_dependency,
+    current_user: current_user_dependency,
+) -> list[TodoResponse]:
+    # Ownership filter: korisnik vidi samo svoje todo stavke.
+    todo_models = db.query(Todos).filter(Todos.owner_id == current_user.id).all()
     return [TodoResponse.model_validate(todo) for todo in todo_models]
 
 
@@ -25,10 +35,15 @@ async def get_all(db: db_dependency) -> list[TodoResponse]:
 )
 async def read_todo(
     db: db_dependency,
-    todo_id: int = Path(gt=0, description="ID todo zatatka mora biti veći od nule."),
+    current_user: current_user_dependency,
+    todo_id: int = Path(gt=0, description="ID todo zadatka mora biti veći od nule."),
 ) -> TodoResponse:
 
-    todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+    todo_model = (
+        db.query(Todos)
+        .filter(Todos.id == todo_id, Todos.owner_id == current_user.id)
+        .first()
+    )
 
     if todo_model is not None:
         return TodoResponse.model_validate(todo_model)
@@ -44,9 +59,11 @@ async def read_todo(
 )
 async def create_todo(
     db: db_dependency,
+    current_user: current_user_dependency,
     todo_request: CreateTodoRequest,
 ) -> TodoResponse:
-    todo_model = Todos(**todo_request.model_dump())
+    # owner_id se postavlja iz tokena, nikad iz klijentskog input-a.
+    todo_model = Todos(**todo_request.model_dump(), owner_id=current_user.id)
 
     db.add(todo_model)
 
@@ -60,10 +77,15 @@ async def create_todo(
 @router.put("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def update_todo(
     db: db_dependency,
+    current_user: current_user_dependency,
     todo_request: CreateTodoRequest,
-    todo_id: int = Path(gt=0, description="ID todo zatatka mora biti veći od nule"),
+    todo_id: int = Path(gt=0, description="ID todo zadatka mora biti veći od nule"),
 ) -> None:
-    todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+    todo_model = (
+        db.query(Todos)
+        .filter(Todos.id == todo_id, Todos.owner_id == current_user.id)
+        .first()
+    )
     if todo_model is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -80,20 +102,22 @@ async def update_todo(
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(
     db: db_dependency,
+    current_user: current_user_dependency,
     todo_id: int = Path(
         gt=0,
         description="ID todo zadatka mora biti veći od nule",
     ),
 ) -> None:
-    # todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
-    todo_model = db.get(Todos, todo_id)
+    todo_model = (
+        db.query(Todos)
+        .filter(Todos.id == todo_id, Todos.owner_id == current_user.id)
+        .first()
+    )
     if todo_model is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Todo nije pronađen.",
         )
-
-    # db.query(Todos).filter(Todos.id == todo_id).delete()
 
     db.delete(todo_model)
 
