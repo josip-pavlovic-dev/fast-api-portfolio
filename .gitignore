@@ -10,6 +10,9 @@ __pycache__/
 .idea/
 .vscode/
 
+# Local database snapshots can contain personal data and password hashes.
+/fast-api-course-my-work/backups/
+
 # Scratch folder for temporary files
 scratch/
 scratch/fast-api-course/

@@ -394,3 +394,112 @@ Ovo nije samo predloženi postupak; sledeći koraci su zaista izvršeni:
 Trenutno stanje: aktivna je grana `refactor/sqlalchemy-2.0-todoapp`. Snapshot je sačuvan na remote-u. SQL dump je i dalje samo lokalni fajl i nije deo Git istorije.
 
 Sledeći korak je Faza 1, stavka 2: aktiviraj `.venv`, pokreni TodoApp i potvrdi da trenutna aplikacija radi pre izmena SQLAlchemy modela.
+
+---
+
+## Pitanje 3
+
+PITANJE: Šta radimo sa backup-om baze, da li je to SQL dump i kako se grane odnose prema `main` grani?
+
+---
+
+## Odgovor 3
+
+ODGOVOR: Fajl `todosapp_snapshot_2026-10-02.sql` jeste SQL dump SQLite baze. Treba da ostane lokalni backup i da bude ignorisan preko `.gitignore`, a ne commit-ovan ili push-ovan. Grane dele zajedničku istoriju do tačke odvajanja, ali novi commit-i na jednoj grani ne pojavljuju se automatski na drugim granama.
+
+### 1. Šta je fajl sa `.sql` ekstenzijom?
+
+Backup je napravljen komandom `sqlite3 ... ".dump"`. SQLite je iz baze izgenerisao tekstualne SQL naredbe, na primer:
+
+```sql
+CREATE TABLE users (...);
+INSERT INTO users VALUES (...);
+CREATE TABLE todos (...);
+```
+
+Takav fajl se zove SQL dump. On nije SQLite baza u svom aktivnom binarnom formatu; on je tekstualna skripta koja sadrži naredbe za ponovno kreiranje tabela i upisivanje podataka.
+
+Možeš ga pregledati kao tekst, ali nemoj deliti sadržaj javno. U dump-u koji smo proverili nalaze se korisnička imena, email adrese, imena i hash-evi lozinki. Hash nije plaintext lozinka, ali je i dalje osetljiv autentifikacioni podatak. Zato dump tretiraj kao poverljiv čak i ako si očekivao da nema privatnih podataka.
+
+### 2. Šta radimo sa backup-om i zašto ga stavljamo u `.gitignore`?
+
+Da, lokalne database backup-e držimo van Git istorije. Dodato je pravilo u `.gitignore`:
+
+```gitignore
+/fast-api-course-my-work/backups/
+```
+
+Ovo ignoriše lokalni backup folder, uključujući SQL dump. Backup ostaje na tvom računaru, ali se neće nuditi kao promena za commit i neće otići na GitHub kroz uobičajeni `git add .`.
+
+Važno: `.gitignore` sprečava praćenje novih/nepraćenih fajlova. Ako bi fajl već bio commit-ovan, samo dodavanje pravila ne bi ga uklonilo iz Git istorije. Tada bi bio potreban poseban postupak za uklanjanje iz praćenja, a kod osetljivih podataka i eventualno čišćenje istorije. U našem slučaju backup nije bio commit-ovan; bio je neupraćen, pa je pravilo dovoljno da ga lokalno ignoriše.
+
+Provera da li je ignorisan:
+
+```bash
+git status --short --branch
+git check-ignore -v fast-api-course-my-work/backups/db_snapshots/todosapp_snapshot_2026-10-02.sql
+```
+
+Backup možeš sačuvati na privatnom, zaštićenom mestu. Za projekat je korisno da Git prati eventualnu dokumentaciju o tome kako se backup pravi i vraća, ali ne nužno i sam dump sa stvarnim podacima.
+
+### 3. Da li je svaka grana potpuno nezavisna?
+
+Tvoje razumevanje je uglavnom tačno: commit koji napraviš na `refactor/sqlalchemy-2.0-todoapp` neće se sam pojaviti na `main` ili na drugim granama.
+
+Preciznije:
+
+1. Grana je pokretni pokazivač na određeni commit.
+2. Kada napraviš novu granu sa `main`, obe grane u početku pokazuju na isti commit.
+3. Novi commit na refactor grani pomera samo pokazivač refactor grane.
+4. `main` ostaje na svom commitu dok se na njoj ne napravi commit ili dok se u nju ne unesu promene iz druge grane.
+5. Fajlovi koje vidiš u radnom direktorijumu odgovaraju grani koja je trenutno checkout-ovana.
+
+Dakle, grane su odvojeni razvojni pravci, ali nisu nezavisne kopije celog repozitorijuma: dele zajedničke commit-e iz prošlosti. To omogućava Git-u da izračuna razliku i kasnije spoji promene.
+
+Pojednostavljen primer:
+
+```text
+A---B                 main
+     \
+	C---D           refactor/sqlalchemy-2.0-todoapp
+```
+
+`A` i `B` su zajednička istorija. `C` i `D` postoje samo na refactor grani dok ih ne uneseš u `main` ili drugu granu.
+
+### 4. Kako promene dolaze sa jedne grane na drugu?
+
+Promene se prenose eksplicitnom Git operacijom, najčešće:
+
+- `merge`: spoji istoriju jedne grane u drugu;
+- `cherry-pick`: prenese izabrani commit;
+- `rebase`: premesti commit-e grane tako da se zasnivaju na novijem vrhu druge grane.
+
+U tvom osnovnom toku najlakše je da refaktor radiš na `refactor/sqlalchemy-2.0-todoapp`, testiraš ga, pa kasnije spojiš u `main` kroz merge ili pull request. Push grane šalje tu granu na remote, ali sam po sebi ne menja `main`.
+
+Primer merge postupka, kada budeš spreman da spojiš završen i proveren refaktor:
+
+```bash
+git switch main
+git merge refactor/sqlalchemy-2.0-todoapp
+```
+
+Ovaj primer opisuje budući korak; ne treba ga izvršavati dok refaktor nije završen i proveren.
+
+### 5. Konkretno stanje tvojih grana
+
+U trenutku ove dopune:
+
+1. `main` je na commitu `39006ac`.
+2. `snapshot/todoapp-pre-sqlalchemy2-2026-10-02` ima snapshot commit `c282031`, koji nije automatski deo `main` istorije.
+3. `refactor/sqlalchemy-2.0-todoapp` je napravljena iz `main` i ima svoj commit `d708e67`, kojim je sačuvan završni izveštaj u `dan_12.md`.
+4. SQL dump je isključen iz svih commit-a i push-a; nakon dodavanja `.gitignore` pravila Git ga ignoriše.
+
+Snapshot commit `c282031` ne ulazi u refactor granu samo zato što su obe grane u istom repozitorijumu. Ako bi ti ubuduće zatrebao neki određeni commit iz snapshot grane, mogao bi ga eksplicitno preneti, ali za početak SQLAlchemy refaktora nije potrebno.
+
+### Kratak zaključak
+
+1. Da, `todosapp_snapshot_2026-10-02.sql` je SQLite SQL dump.
+2. Backup ostaje lokalno i sada je ignorisan kroz `.gitignore`; pregledani dump sadrži lične podatke i hash-eve, pa ga tretiramo kao poverljiv.
+3. Commit-i na refactor grani ne menjaju `main` automatski.
+4. Grane dele istoriju do zajedničkog pretka, a promene se prenose tek eksplicitnim merge-om, cherry-pick-om ili rebase-om.
+5. Za sada nastavljaš rad na `refactor/sqlalchemy-2.0-todoapp`; `main` ostaje stabilna.
