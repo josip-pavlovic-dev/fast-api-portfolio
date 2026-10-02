@@ -111,8 +111,8 @@ async def create_users(
         )
     db.refresh(create_user_model)
 
-    # response_model=UserResponse filtrira i serializuje (pretvara ORM objekat u Pydantic model zbog specificiranog response_model-a) odgovor, pa možemo bezbedno vratiti ORM objekat.
-    return create_user_model
+    # Eksplicitna konverzija usklađuje ORM objekat sa tipom UserResponse.
+    return UserResponse.model_validate(create_user_model)
 
 
 # Endpoint za prijavu i dobijanje pristupnog tokena (JWT)
