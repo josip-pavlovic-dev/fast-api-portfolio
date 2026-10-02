@@ -1,6 +1,6 @@
 # SQLAlchemy 2.0 - Putanja ucenja (od nule do tvog refaktora)
 
-Ovaj mini-kurs je napravljen za tvoj trenutni nivo: zavrsio si auth deo, razumes klasican SQLAlchemy stil (`Column`, `query()`, `filter()`, `first()`), i sledeci korak ti je prelazak na SQLAlchemy 2.0 pre ozbiljnog production DB setup-a.
+Ovaj mini-kurs je napravljen za tvoj trenutni nivo: završio si auth deo, razumeš klasičan SQLAlchemy stil (`Column`, `query()`, `filter()`, `first()`), i sledeći korak ti je prelazak na SQLAlchemy 2.0 pre ozbiljnog production DB setup-a.
 
 ## Redosled rada
 
@@ -17,18 +17,24 @@ Ovaj mini-kurs je napravljen za tvoj trenutni nivo: zavrsio si auth deo, razumes
 11. `05_refaktor_todoapp/03_checklista_pre_oblasti_12.md`
 12. `05_refaktor_todoapp/04_plan_7_dana_sqlalchemy2_alembic.md`
 
+---
+
 ## Kako koristiti ovaj materijal
 
-- Prvo procitaj lekciju, pa odmah uporedi sa svojim trenutnim kodom u `TodoApp`.
+- Prvo pročitaj lekciju, pa odmah uporedi sa svojim trenutnim kodom u `TodoApp`.
 - Ne refaktorisi sve odjednom.
-- Radi male, proverljive korake: modeli -> query stil -> routeri -> test smoke -> Alembic.
-- Ako neki korak nije jasan, vrati se jednu lekciju nazad i napravi mini vezbu.
+- Radi male, proverljive korake: `modeli` -> `query stil` -> `routeri` -> `test smoke` -> `Alembic`.
+- Ako neki korak nije jasan, vrati se jednu lekciju nazad i napravi mini vežbu.
+
+---
 
 ## Krajnji cilj
 
-Da pre oblasti 12 imas:
+Da pre oblasti 12 imaš:
 
 - SQLAlchemy 2.0 modele (`Mapped`, `mapped_column`),
 - 2.0 query stil (`select`, `Session.execute`, `scalars`),
-- jasan plan migracije na Alembic bez gubitka podataka,
-- i stabilan FastAPI auth/todo tok na novom stilu.
+- jasan plan migracije na `Alembic` bez gubitka podataka,
+- i stabilan FastAPI `auth/todo` tok na novom stilu.
+
+---

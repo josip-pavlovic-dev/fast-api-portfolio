@@ -89,6 +89,8 @@ Nauči:
 - funkcija
 - return
 
+---
+
 ### Korak 2
 
 Nauči:
@@ -97,6 +99,8 @@ Nauči:
 - response
 - JSON
 - path/query parametri
+
+---
 
 ### Korak 3
 

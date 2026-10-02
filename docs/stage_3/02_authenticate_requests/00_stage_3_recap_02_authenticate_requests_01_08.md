@@ -13,16 +13,16 @@ Oblast 02 sada taj temelj pretvara u dosledna pravila pristupa podacima:
 
 ```text
 Pre:
-ulogovan korisnik -> moze da pozove endpoint
+ulogovan korisnik -> može da pozove endpoint
 
 Sada:
 ulogovan korisnik -> proveri ownership/ulogu -> tek onda CRUD nad podacima
 ```
 
-Glavni cilj ove oblasti nije samo da endpointi budu "zakljucani" tokenom, vec da API jasno zna:
+Glavni cilj ove oblasti nije samo da endpointi budu "zaključani" tokenom, već da API jasno zna:
 
 - kome resurs pripada
-- da li korisnik sme da cita/menja/brise bas taj resurs
+- da li korisnik sme da čita/menja/briše bas taj resurs
 - kada je potrebna user-level, a kada admin-level dozvola
 - kako da auth i authorization ostanu pregledni i odvojeni po routerima
 
@@ -49,13 +49,13 @@ GET /admin/todos
 DELETE /admin/todos/{todo_id}
 ```
 
-Kljucne potvrde iz aktivnog koda:
+Ključne potvrde iz aktivnog koda:
 
 1. Ownership CRUD u `todos.py` je implementiran kroz `owner_id == current_user.id` filter.
-2. `get_current_user()` u `core/security.py` vraca ORM `Users` instancu nakon JWT decode + DB lookup.
+2. `get_current_user()` u `core/security.py` vraća ORM `Users` instancu nakon JWT decode + DB lookup.
 3. `users.py` sadrzi self-service tok (`/users/me`, promena lozinke).
 4. `admin.py` koristi role proveru (`current_user.role == "admin"`) za admin-only endpoint-e.
-5. U `auth.py` create-user endpoint koristi alias `CreateUserPayload` (umesto direktnog imena schema klase) radi stabilnijeg type-check ponasanja u editoru.
+5. U `auth.py` create-user endpoint koristi alias `CreateUserPayload` (umesto direktnog imena schema klase) radi stabilnijeg type-check ponašanja u editoru.
 
 ---
 
@@ -71,7 +71,7 @@ Ishod:
 - identitet dolazi iz JWT-a
 - ownership se upisuje na serveru
 
-Kljucno pravilo:
+Ključno pravilo:
 
 ```text
 owner_id dolazi iz current_user.id

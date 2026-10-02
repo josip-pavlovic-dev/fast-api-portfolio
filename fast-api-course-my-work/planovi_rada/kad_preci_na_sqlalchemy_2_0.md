@@ -81,9 +81,14 @@ Na šta tačno treba da se skoncentrisem u mojoj trenutnoj verziji TodoApp a št
 ## Na šta tačno da se skoncentrišeš sada (trenutni TodoApp)
 
 1. `Security` pravila, ne sintaksa.
-2. Invariant da klijent nikad ne određuje `owner_id`.
-3. Invariant da svuda ostane `id` + `owner_id` zaštita za read by id, update, delete.
+2. Invarianta (pravilo koje se uvek poštuje) da klijent nikad ne određuje `owner_id`.
+3. Invarianta da svuda ostane `id` + `owner_id` zaštita za `read by id`, `update`, `delete`.
 4. Dosledni status kodovi `401`, `403`, `404` prema istoj logici.
+
+`401` - Unauthorized, kada korisnik nije autentifikovan. Ovu grešku vraćamo kada JWT token nije prisutan ili nije validan.
+`403` - Forbidden, kada korisnik nema pravo pristupa resursu. Ovu grešku vraćamo kada JWT token postoji i validan je, ali korisnik nema odgovarajuće dozvole.
+`404` - Not Found, kada resurs ne postoji ili nije dostupan korisniku. Ovu grešku vraćamo kada resurs sa datim ID-om ne postoji ili pripada drugom korisniku.
+
 5. Users ruta kao minimalno zatvaranje oblasti 02:
    `get current user`, `change password`, bez vraćanja `hashed_password`.
 
@@ -96,7 +101,7 @@ Na šta tačno treba da se skoncentrisem u mojoj trenutnoj verziji TodoApp a št
 2. Menja se stil upita:
    `query/filter/first/all` prelazi na `select/where/execute/scalars`.
 3. Menja se način razmišljanja o rezultatima:
-   `execute` vraća rezultat `set`, pa onda `scalars` za `ORM instance`.
+   `execute` vraća rezultat `set`, pa onda `scalars` koji vraća `ORM instance`.
 4. Menja se postepeno i bez menjanja API ugovora:
    `rute`, `URL`, `auth pravila`, `response semantika` treba da ostanu isti.
 
@@ -113,7 +118,22 @@ Na šta tačno treba da se skoncentrisem u mojoj trenutnoj verziji TodoApp a št
 
 ## Najbolji redosled od danas
 
-1. Implementiraj users rutu (1 fokus sesija).
-2. Napravi mali smoke test auth + todos + users.
-3. Kreni SQLAlchemy 2.0 refaktor prvo na read upitima, pa write.
+1. Implementiraj users rutu (1 fokus sesija). Prvo minimalno zatvori oblast 02 sa `get current user` i `change password`.
+
+2. Napravi mali smoke test `auth` + `todos` + `users`. Primer:
+   - Registracija novog korisnika
+   - Login i dobijanje JWT tokena
+   - Kreiranje novog Todo zapisa
+   - Dohvatanje liste Todo zapisa
+   - Dohvatanje trenutnog korisnika (`/users/me`)
+   - Promena lozinke (`/users/password`)
+   - Provera da li su svi odgovori i status kodovi u skladu sa očekivanjima (`401`, `403`, `404`).
+   - Provera da li su ownership i role pravila pravilno primenjena.
+   - Provera da li su svi endpointi u skladu sa očekivanim sigurnosnim pravilima.
+
+3. Kreni SQLAlchemy 2.0 refaktor. Počni prvo sa read upitima (`select/where/execute/scalars`), a zatim pređi na write operacije (`insert/update/delete`). Redosled je bitan da bi se prvo osigurala stabilnost čitanja podataka pre nego što se menja baza. Pravilan redosled skripti i testova je ključan za bezbedan prelazak na novi ORM stil:
+
+   - Refaktorisanje read upita u svim servisima i endpointima. (`get/list` endpoints -> `select/where/execute/scalars`)
+   - Refaktorisanje write operacija u svim servisima i endpointima. (`post/put/delete` endpoints -> `insert/update/delete`)
+
 4. Tek kada to radi stabilno, ulazi dublje u Alembic migracije.
