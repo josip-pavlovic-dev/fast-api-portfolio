@@ -16,7 +16,7 @@ ODGOVOR: U ovoj fazi promenjen je način na koji `SQLAlchemy` definiše `deklara
 
 `NULL` vrednost u bazi predstavlja odsustvo podataka u toj koloni. Kada je `nullable=True`, kolona može da sadrži `NULL` vrednosti (može biti prazna ili nepopunjena); kada je `nullable=False`, kolona mora da sadrži validne podatke (ne može biti prazna).
 
-`Primary key` kolona mora da ima validnu vrednost i ne može da bude `NULL`. Ona je jedinstvena za svaki red u tabeli. Obično se koristi za identifikaciju i povezivanje redova između tabela. Najčešće je to `id` kolona jer je jedinstvena za svaki red i automatski se inkrementira (`auto-increment`). U SQLAlchemy 2.0, ovo se obično postiže kombinacijom `primary_key=True` i `nullable=False` (implicitno za primarni ključ i ne mora se eksplicitno navoditi ali se može navesti radi jasnoće). Ovo osigurava integritet podataka i omogućava efikasno indeksiranje primarnih ključeva.
+`Primary key` kolona mora da ima validnu vrednost i ne može da bude `NULL`. Ona je jedinstvena za svaki red u tabeli. Obično se koristi za identifikaciju i povezivanje redova između tabela. Najčešće je to `id` kolona jer je jedinstvena za svaki red i automatski se inkrementira (`auto-increment`). U SQLAlchemy 2.0, ovo se obično postiže kombinacijom `primary_key=True`, `nullable=False` i `index=True` (implicitno za primarni ključ i ne mora se eksplicitno navoditi ali se može navesti radi jasnoće). Ovo osigurava integritet podataka i omogućava efikasno indeksiranje primarnih ključeva.
 
 `auto-increment` označava da se vrednost primarnog ključa automatski povećava za svaki novi red u tabeli. U SQLAlchemy 2.0, ovo se obično postiže korišćenjem `Integer` tipa sa `primary_key=True`, što automatski omogućava auto-inkrement.
 
@@ -46,7 +46,7 @@ Pylance provera je pokazala i jednu neophodnu prateću promenu u `TodoApp/api/ro
 ```python
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+Base = declarative_ba
 ```
 
 Ovim se pozivala funkcija koja pravi `deklarativnu osnovu` za ORM modele.
@@ -60,6 +60,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
+  """
+  Deklarativna baza za SQLAlchemy ORM modele.
+  Svi ORM modeli treba da nasleđuju ovu klasu.
+  Ova klasa služi kao centralno mesto za definisanje zajedničkih osobina svih ORM modela.
+  """
 	pass
 ```
 
@@ -112,7 +117,7 @@ class Todos(Base):
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 ```
 
-NAPOMENA: Koristimo `None` i `nullable=True` za sve kolone u bazi osim za primarni ključ (`id`). Iako nije logično da `pririty`, `complete`, ili `owner_id` budu `None`, ovo koristimo u početnoj fazi razvoja. Kada se aplikacija stabilizuje i pređemo na Alembic migracije, tada ćemo ažurirati kolone da budu striktno `NOT NULL` gde je to potrebno. Za sada ne obraćamo previše pažnje na ovo i stavljamo sve koline osim primarnog ključa kao nullable vrednosti (tj. dozvoljavamo `None` u Python kodu i `NULL` u bazi).
+NAPOMENA: Koristimo `None` i `nullable=True` za sve kolone u bazi osim za primarni ključ (`id`). Iako nije logično da `priority`, `complete`, ili `owner_id` budu `None`, ovo koristimo u početnoj fazi razvoja. Kada se aplikacija stabilizuje i pređemo na Alembic migracije, tada ćemo ažurirati kolone da budu striktno `NOT NULL` gde je to potrebno. Za sada ne obraćamo previše pažnje na ovo i stavljamo sve koline osim primarnog ključa kao nullable vrednosti (tj. dozvoljavamo `None` u Python kodu i `NULL` u bazi).
 
 Kod primarnog ključa (`Primary Key`) ne koristimo `None` a `nullable` je implicitno `False` i ne mora se eksplicitno navoditi. To znači da možemo jednostavno definisati primarni ključ bez dodatnih parametara za nullable. Primer:
 
@@ -129,7 +134,7 @@ id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 3. `SQLAlchemy` koristi deklaraciju (`Base klasu`) da napravi `mapiranje ORM objekta` i `metadata` (Base.metadata) za tabelu.
 4. Tipovi pomažu editoru i type checker-u da razumeju kakve vrednosti očekujemo na atributima modela.
 
-`Mapped` nije SQL tip i ne kreira kolonu sam. On služi samo za tipizaciju u Python kodu. Jednostavno, leva strana anotacije (`id: Mapped[int]`) govori Pythonu i editoru kakav tip vrednosti očekujemo, dok `mapped_column(...)` definiše stvarnu SQL kolonu. Dakle, oba dela rade zajedno da bi se postigla `tipizacija` (`Mapped`) i mapiranje ORM modela (`mapped_column`).
+`Mapped` nije SQL tip i ne kreira kolonu sam. On služi samo za tipizaciju u Python kodu. Jednostavno, leva strana je anotacija (`id: Mapped[int]`) i govori `Pythonu` i `editoru` kakav tip vrednosti očekujemo, dok `mapped_column(...)` definiše stvarnu `SQL kolonu`. Dakle, oba dela rade zajedno da bi se postigla `tipizacija` (`Mapped`) i mapiranje ORM modela (`mapped_column`).
 
 NAPOMENA: Sam `mapped_column` nije zamena za Python tip anotaciju; u SQLAlchemy 2.0 koristi se zajedno sa `Mapped` koji služi kao Python tip anotacija za ORM atribute.
 
@@ -150,15 +155,11 @@ Primeri novog mapiranja:
 ```python
 id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 title: Mapped[str | None] = mapped_column(String, nullable=True)
-complete: Mapped[bool | None] = mapped_column(
-	Boolean, default=False, nullable=True
-)
-owner_id: Mapped[int | None] = mapped_column(
-	ForeignKey("users.id"), nullable=True
-)
+complete: Mapped[bool | None] = mapped_column(Boolean, default=False, nullable=True)
+owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 ```
 
-`ForeignKey("users.id")` i dalje postavlja vezu na tabelu i kolonu baze. U ovoj fazi nismo dodavali ORM `relationship()`; za postojeće upite i ownership filtere foreign key je dovoljan, a ORM relacije nisu potrebne da bismo prešli na 2.0 mapiranje.
+`ForeignKey("users.id")` i dalje postavlja ve. U ovoj fazi nismo dodavali ORM `relationship()`; za postojeće upite i ownership filtere foreign key je dovoljan, a ORM relacije nisu potrebne da bismo prešli na 2.0 mapiranje.
 
 ---
 
@@ -189,7 +190,7 @@ is_active: Mapped[bool | None] = mapped_column(
 
 ## 5) Zašto se koristi `str | None` i `nullable=True`?
 
-U starom kodu većina `Column(...)` deklaracija nije navodila `nullable=False`. Za SQLAlchemy kolone je podrazumevano ponašanje zato nullable kolona, osim kada je kolona primarni ključ ili je nullable drugačije podešen.
+U starom kodu većina `Column(...)` deklaracija nije navodila `nullable=False`. Za SQLAlchemy kolone to je podrazumevano ponašanje da budu nullable, osim kada je kolona primarni ključ ili je drugačije podešeno.
 
 U tipizovanom mapiranju SQLAlchemy koristi i Python anotaciju da zaključi nullable ponašanje:
 
