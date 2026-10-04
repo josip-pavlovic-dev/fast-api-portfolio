@@ -21,14 +21,14 @@ Dok se dizajnira baza, ono o čemu sistem čuva podatke naziva se entitet. Entit
 
 ### Python klasa
 
-Klasa je Python konstrukcija koja opisuje zajedničko ponašanje i strukturu objekata. Ime klase mora biti validan Python identifikator. Uobičajena konvencija je PascalCase: `Category`, `PromotionEvent`, `StockManagement`.
+Klasa je Python konstrukcija koja opisuje zajedničko ponašanje i strukturu objekata. Ime klase mora biti validan Python identifikator. Uobičajena konvencija je PascalCase: `Kategorija`, `PromotivniDogadjaj`, `StanjeZaliha`. Kursni snapshot-i koriste engleska imena; naš praktični paket koristi srpska ASCII imena.
 
 ### SQLAlchemy model
 
 ORM model je Python klasa koja je uključena u SQLAlchemy mapiranje. Za deklarativni stil, konkretni modeli nasleđuju kursnu bazu:
 
 ```python
-class Category(Base):
+class Kategorija(Base):
 	...
 ```
 
@@ -44,8 +44,8 @@ Klasa može da bude definisana u Python kodu, a da tabela još ne postoji u bazi
 
 Transkript pokazuje ovaj tok:
 
-1. Izaberi entitet iz ERD-a, na primer `category`.
-2. Definiši Python klasu sa čitljivim imenom, na primer `Category`.
+1. Izaberi entitet iz ERD-a, na primer kategoriju (`category` u kursnom source-u).
+2. Definiši Python klasu sa čitljivim imenom, na primer `Kategorija`.
 3. Nasledi zajednički `Base`.
 4. Postavi `__tablename__` na željeni naziv tabele.
 5. U narednim koracima dodaj kolone, tipove, ključeve, ograničenja i odnose.
@@ -54,19 +54,19 @@ Transkript pokazuje ovaj tok:
 Primer za prvu tabelu:
 
 ```python
-class Category(Base):
-	__tablename__ = "category"
+class Kategorija(Base):
+	__tablename__ = "kategorija"
 	pass
 ```
 
-`Category` je Python naziv klase, dok je vrednost `__tablename__` (`"category"`) naziv tabele. Donje crte se obično koriste za nazive tabela koji imaju više reči, na primer `promotion_event`.
+`Kategorija` je Python naziv klase, dok je vrednost `__tablename__` (`"kategorija"`) naziv praktične tabele. U kursnom snapshot-u odgovarajući par je `Category` i `"category"`. Donje crte se koriste za višerečne nazive tabela, na primer `stanje_zaliha`.
 
 ## Objašnjenje sintakse
 
-### `class Category(Base):`
+### `class Kategorija(Base):`
 
 - `class` započinje definiciju Python klase.
-- `Category` je ime klase. Uobičajeno se piše PascalCase i često je u jednini jer predstavlja jedan objekat, odnosno jedan red.
+- `Kategorija` je ime naše praktične klase. Uobičajeno se piše PascalCase i često je u jednini jer predstavlja jedan objekat, odnosno jedan red. Kursni snapshot za isti model koristi ime `Category`.
 - `(Base)` označava nasleđivanje od deklarativne baze uvedene u prethodnoj lekciji.
 
 ### `__tablename__ = "category"`
@@ -75,20 +75,20 @@ class Category(Base):
 
 Ime tabele je string i zato mora biti pod navodnicima. SQLAlchemy ne zaključuje uvek ime tabele iz imena klase. Eksplicitni naziv olakšava da se Python stil i konvencije baze razlikuju.
 
-Primeri iz fajla povezuju:
+Kursni snapshot i naš praktični paket koriste iste domenske entitete, ali različite jezičke nazive:
 
-| Python model            | Naziv tabele              |
-| ----------------------- | ------------------------- |
-| `Category`              | `category`                |
-| `PromotionEvent`        | `promotion_event`         |
-| `Product`               | `product`                 |
-| `ProductPromotionEvent` | `product_promotion_event` |
-| `StockManagement`       | `stock_management`        |
-| `User`                  | `user`                    |
-| `Order`                 | `order`                   |
-| `OrderProduct`          | `order_product`           |
+| Kursna klasa            | Kursna tabela             | Praktična klasa           | Praktična tabela             |
+| ----------------------- | ------------------------- | ------------------------- | ---------------------------- |
+| `Category`              | `category`                | `Kategorija`              | `kategorija`                 |
+| `PromotionEvent`        | `promotion_event`         | `PromotivniDogadjaj`      | `promotivni_dogadjaj`        |
+| `Product`               | `product`                 | `Proizvod`                | `proizvod`                   |
+| `ProductPromotionEvent` | `product_promotion_event` | `VezaProizvodaIPromocije` | `veza_proizvoda_i_promocije` |
+| `StockManagement`       | `stock_management`        | `StanjeZaliha`            | `stanje_zaliha`              |
+| `User`                  | `user`                    | `Korisnik`                | `korisnik`                   |
+| `Order`                 | `order`                   | `Porudzbina`              | `porudzbina`                 |
+| `OrderProduct`          | `order_product`           | `StavkaPorudzbine`        | `stavka_porudzbine`          |
 
-Ova imena prate strukturu kursnog ERD-a. Nazivi modela su PascalCase, a višerečni nazivi tabela snake_case.
+U oba stila nazivi klasa su PascalCase, a višerečni nazivi tabela snake_case. Srpski identifikatori koriste ASCII transliteraciju (`dj`, `z`) da bi ostali jednostavni za unos i kompatibilni sa alatima.
 
 ### `pass`
 
@@ -98,7 +98,7 @@ Ova imena prate strukturu kursnog ERD-a. Nazivi modela su PascalCase, a višere�
 
 ## Šta sadrži skripta `2_defining_database_models.py`?
 
-Skripta ponovo definiše `Base`, a zatim deklaracije za osam entiteta: `Category`, `PromotionEvent`, `Product`, `ProductPromotionEvent`, `StockManagement`, `User`, `Order` i `OrderProduct`. Svaka klasa nasleđuje `Base` i postavlja odgovarajući `__tablename__`.
+Kursna skripta ponovo definiše `Base`, a zatim deklaracije za osam entiteta pod engleskim imenima: `Category`, `PromotionEvent`, `Product`, `ProductPromotionEvent`, `StockManagement`, `User`, `Order` i `OrderProduct`. U našem praktičnom paketu odgovarajuće klase su `Kategorija`, `PromotivniDogadjaj`, `Proizvod`, `VezaProizvodaIPromocije`, `StanjeZaliha`, `Korisnik`, `Porudzbina` i `StavkaPorudzbine`. Svaka klasa nasleđuje zajednički `Base` i postavlja odgovarajući `__tablename__`.
 
 Ponavljanje klase `Base` u tom fajlu omogućava da je izvorni primer samostalan. U većem projektu bi se `Base` obično definisao jednom u zajedničkom modulu, a modeli bi ga uvozili umesto da svaka datoteka pravi novu bazu.
 
@@ -139,13 +139,13 @@ Transkript preporučuje da se, kada je moguće, radi tabela po tabela umesto da 
 - razdvoji problem nove tabele od problema već testiranih tabela;
 - nauči tok od modela do tabele, unosa i upita u manjim koracima.
 
-Primer toka za entitet `Category`:
+Primer toka za entitet `Kategorija` (kursni naziv: `Category`):
 
-1. Definiši model i njegov primarni ključ.
+1. Definiši model `Kategorija` i njegov primarni ključ.
 2. Dodaj kolone koje su poznate iz ERD-a.
 3. Napravi tabelu u razvojnoj bazi.
 4. Unesi nekoliko testnih kategorija i proveri čitanje i ograničenja.
-5. Tek zatim dodaj povezane modele, kao što je `Product`.
+5. Tek zatim dodaj povezane modele, kao što je `Proizvod` (kursni naziv: `Product`).
 
 To je nastavna strategija, a ne univerzalno pravilo da produkciona šema uvek mora da se isporučuje po jednoj tabeli. Povezane tabele često se planiraju i menjaju zajedno. Uz to, u modernom projektu se promene postojeće šeme obično uvode kontrolisanim migracijama, a ne ručnim brisanjem i ponovnim kreiranjem podataka.
 

@@ -73,7 +73,7 @@ Zato se ovaj fajl može uvesti bez pokretanja baze. Engine i operacije nad stvar
 
 Definišemo svoju klasu nazvanu `Base` koja nasleđuje `DeclarativeBase`. Naziv `Base` je uobičajena konvencija, ali nije rezervisana reč: tehnički bi klasa mogla da se zove i drugačije. Važan je odnos nasleđivanja.
 
-Kada kasnije napišemo, na primer, `class Product(Base):`, model će biti deo deklarativnog sistema koji je ova baza postavila.
+Kada kasnije napišemo, na primer, `class Proizvod(Base):`, model će biti deo deklarativnog sistema koji je ova baza postavila. U kursnom source-u isti model se zove `Product`; snapshot ostaje neizmenjen, dok u našem praktičnom paketu koristimo srpsko ime.
 
 ### `pass`
 
@@ -115,14 +115,14 @@ class Base(DeclarativeBase):
 	pass
 
 
-class Category(Base):
-	__tablename__ = "category"
+class Kategorija(Base):
+	__tablename__ = "kategorija"
 
 	id: Mapped[int] = mapped_column(primary_key=True)
 	name: Mapped[str] = mapped_column(String(50))
 ```
 
-Ovde `Category` predstavlja model koji će se mapirati na tabelu `category`. `__tablename__` daje ime tabele, a `Mapped[...]` i `mapped_column(...)` deklarišu mapirane kolone u SQLAlchemy 2.0 stilu. Tabela još nije nužno napravljena u bazi; za to su potrebni engine i naredni korak.
+Ovde `Kategorija` predstavlja model koji će se mapirati na tabelu `kategorija`; kursni snapshot koristi imena `Category` i `category`. `__tablename__` daje ime tabele, a `Mapped[...]` i `mapped_column(...)` deklarišu mapirane kolone u SQLAlchemy 2.0 stilu. Tabela još nije nužno napravljena u bazi; za to su potrebni engine i naredni korak.
 
 ## `DeclarativeBase` naspram `declarative_base()`
 

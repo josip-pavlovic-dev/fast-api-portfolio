@@ -140,6 +140,10 @@ Očekivani ispis verzije je `2.0.38`. U VS Code-u izaberi interpreter iz root `.
 
 Repozitorijum već ignoriše `.venv/`, tako da virtuelno okruženje ne bi trebalo da se pojavi među fajlovima za commit. Zavisnosti koje treba deliti ostaju u `requirement.txt`.
 
+### Imena u praktičnom SQLAlchemy paketu
+
+U `fast-api-course-my-work/sqlalchemy_orm_fundamentals/` nazive svojih domenskih modela pišemo na srpskom, ASCII slovima: na primer, klasa `Kategorija` mapira se na tabelu `kategorija`. Nazivi SQLAlchemy API-ja, kao što su `DeclarativeBase`, `Mapped` i `mapped_column`, ostaju nepromenjeni. Engleski nazivi iz kursnih snapshot-a ostaju sačuvani i koristićemo ih kao referencu pri poređenju lekcija sa našom implementacijom.
+
 ### Gde važi `.vscode/settings.json`?
 
 VS Code primenjuje workspace podešavanja iz `.vscode/settings.json` na korenu otvorenog workspace-a. Pošto se kursni fajl nalazi u `source_code/Models/.vscode/settings.json`, ta podešavanja važe kada se `Models/` otvori kao workspace folder; ne treba pretpostaviti da će se automatski primeniti dok je otvoren koren celog `fast-api-portfolio` repozitorijuma. Bez obzira na Ruff podešavanja, interpreter treba da bude root `.venv`.
