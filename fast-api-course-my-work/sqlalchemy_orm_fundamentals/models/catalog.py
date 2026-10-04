@@ -26,7 +26,12 @@ class Kategorija(Base):
         # Autoincrement zasebno generiše ID ako ga unos ne navede.
         autoincrement=True,
     )
+    # naziv kategorije, npr "Elektronika"
+    # za razliku od slug-a, naziv može sadržati razmake i specijalne karaktere
     naziv: Mapped[str | None] = mapped_column(String(50))
+    # slug predstavlja URL-friendly verziju naziva kategorije
+    # koristi se u URL-ovima
+    # npr "/kategorija/naziv-kategorije"
     slug: Mapped[str | None] = mapped_column(String(55))
     aktivna: Mapped[bool | None] = mapped_column(Boolean)
     nivo: Mapped[int | None] = mapped_column(SmallInteger)

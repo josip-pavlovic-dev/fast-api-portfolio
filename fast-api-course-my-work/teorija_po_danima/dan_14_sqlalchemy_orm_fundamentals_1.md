@@ -54,15 +54,13 @@ Pretpostavljam da modele kreiram u `fast-api-course-my-work/sqlalchemy_orm_funda
 
 ODGOVOR:
 
-Ne moraš ručno da kopiraš moje odgovore. Ja ću ih direktno unositi u ovaj dnevni fajl kada ih zajedno razjasnimo. Ovde čuvamo odgovore i zaključke za ponavljanje; teorija lekcija ostaje u `docs/`, a izvršivi kod u radnom paketu.
-
 `__init__.py` može da sadrži **module docstring**: kratak opis paketa kojem pripada. Taj tekst služi ljudima i alatima za dokumentovanje. Python ga ne koristi da automatski napravi modele ili strukturu foldera. Fajl može sadržati i `package-level importe` ili `javne izvoze`, ali ćemo to dodavati samo kada nam zatreba.
 
 Za modele `NE` preporučujem putanju `models/models.py`, jer se ime `models` ponavlja: import bi izgledao kao `sqlalchemy_orm_fundamentals.models.models`. Umesto toga ćemo koristiti postojeći `models/` paket i fajlove grupisane po domenu.
 
 Za početak `lekcije 05`, prvu klasu možemo staviti u `models/catalog.py`; u našem paketu to su `Kategorija`, `Proizvod` i `StanjeZaliha` (kursni nazivi: `Category`, `Product` i `StockManagement`). Promocije i porudžbine imaju svoje module sa srpskim imenima modela; kursni nazivi ostaju u snapshot-ima.
 
-Pošto je `SQLAlchemy ORM` modelu potreban primarni ključ (`Primary Key`) da bi se mapirao kao izvršiva klasa, naša praktična `Kategorija` klasa moraće da dobije minimalni `id` ranije nego što ga kurs formalno obrađuje. Označićemo ga kao tehnički preduslov, a lekciju o primarnim ključevima kasnije iskoristiti da ga detaljno obradimo. Kurski prazni modeli ostaju neizmenjeni kao snapshot-i.
+Pošto je `SQLAlchemy ORM` modelu potreban primarni ključ (`Primary Key`) da bi se mapirao kao izvršiva klasa (ako nema primarnog ključa, SQLAlchemy ne može jednoznačno da identifikuje redove i izvršava operacije nad njima pa dobijamo greške), naša praktična `Kategorija` klasa moraće da dobije minimalni `id` ranije nego što ga kurs formalno obrađuje. Označićemo ga kao tehnički preduslov, a lekciju o primarnim ključevima kasnije iskoristiti da ga detaljno obradimo. Kurski prazni modeli ostaju neizmenjeni kao snapshot-i.
 
 ---
 
@@ -76,11 +74,23 @@ PITANJE: Kreirao sam prazan `models/category.py`. Napravi `Category` klasu sa mi
 
 ODGOVOR:
 
-Dogovorili smo se da koristimo `models/catalog.py`, pa je prazan `category.py` uklonjen. `models/__init__.py` izvozi modele iz paketa. Za lekciju 05 definisali smo osam klasa sa minimalnim ID-jem: `Kategorija`, `Proizvod` i `StanjeZaliha` u `catalog.py`; `PromotivniDogadjaj` i `VezaProizvodaIPromocije` u `promotions.py`; `Korisnik`, `Porudzbina` i `StavkaPorudzbine` u `orders.py`. Njihove tabele koriste srpska snake_case imena. Kursni snapshot-i ostaju na engleskom; potpuna veza između kursnih i naših imena nalazi se u lekciji 05.
+Dogovorili smo se da koristimo `models/catalog.py`.
+
+`models/__init__.py` izvozi modele iz paketa.
+
+Za lekciju 05 definisali smo osam klasa sa minimalnim ID-jem:
+
+1. `Kategorija`, `Proizvod` i `StanjeZaliha` u `catalog.py`
+2. `PromotivniDogadjaj` i `VezaProizvodaIPromocije` u `promotions.py`
+3. `Korisnik`, `Porudzbina` i `StavkaPorudzbine` u `orders.py`
+
+Njihove tabele koriste srpska snake_case imena. Kursni snapshot-i ostaju na engleskom; potpuna veza između kursnih i naših imena nalazi se u lekciji 05.
 
 ### Zašto model trenutno ima samo `id`
 
-Lekcija 05 uvodi vezu između Python klase i tabele; ne obrađuje još sve kolone. Ipak, ORM klasa koja se mapira na tabelu mora imati primarni ključ da SQLAlchemy može jednoznačno da prepozna svaki red. Zato u praktičnom modelu unapred dodajemo minimalni `id`, a ostatak kolona ćemo dodavati u lekcijama koje ih objašnjavaju.
+Lekcija 05 uvodi samo vezu između Python klase i tabele (ne obrađuje još sve kolone).
+
+VAŽNO: `ORM klasa` koja se `mapira na tabelu mora imati primarni ključ` da SQLAlchemy može jednoznačno da prepozna svaki red. Zato u praktičnom modelu unapred dodajemo minimalni `id`, a ostatak kolona ćemo dodavati u lekcijama koje ih objašnjavaju.
 
 ```python
 from sqlalchemy import Integer
@@ -102,12 +112,39 @@ class Kategorija(Base):
 - `__tablename__` je eksplicitno ime tabele u bazi.
 - `Mapped[int]` označava Python tip atributa za tipizovani SQLAlchemy 2.x ORM.
 - `Integer` je tip kolone za celobrojne identifikatore.
-- `primary_key=True` označava kolonu kao primarni ključ. Primarni ključ mora biti jedinstven i ne može biti `NULL`; zato ovde ne navodimo dodatne `nullable=False` i `unique=True` opcije.
+- `primary_key=True` označava kolonu kao primarni ključ. Primarni ključ mora biti `jedinstven` i `ne može biti NULL` pa zato ovde ne navodimo dodatne `nullable=False` i `unique=True` opcije.
 - `autoincrement=True` traži od baze da generiše naredni celobrojni ID kada se napravi novi red bez eksplicitno zadate vrednosti.
 
-`primary_key=True` i `autoincrement=True` imaju različite uloge: primarni ključ obezbeđuje identitet, jedinstvenost i zabranu `NULL` vrednosti; autoincrement generiše ID kada ga unos ne zada. Autoincrement sam po sebi ne zabranjuje `NULL`, a primarni ključ ne znači da svaka moguća strategija mora automatski generisati vrednost.
+`primary_key=True` i `autoincrement=True` imaju različite uloge:
+
+- Primarni ključ (`primary_key=True`) obezbeđuje identitet, jedinstvenost i zabranu `NULL` vrednosti
+- `autoincrement=True` generiše ID kada ga unos(request) ne zada.
+
+**Napomena:** `autoincrement=True` sam po sebi ne zabranjuje `NULL` (možete eksplicitno postaviti `nullable=True` ako želite), a `primary_key=True` ne znači da svaka moguća strategija mora automatski generisati vrednost (npr. možete imati primarni ključ koji se popunjava ručno). Primer:
+
+```python
+# Primer koji pokazuje razliku između automatski generisanog ID-a i ručno unetog primarnog ključa
+class Primer(Base):
+    __tablename__ = "primer"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    ručno_unet_id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=False,
+    )
+```
+
+ZAKLJUČAK: Automatski generisani ID i ručno uneti primarni ključ mogu koegzistirati u istoj tabeli. `autoincrement=True` omogućava automatsko generisanje vrednosti kada nije eksplicitno navedena, dok `autoincrement=False` zahteva ručno unošenje vrednosti.
 
 Kasnije ćemo detaljno obraditi vrste primarnih ključeva. Ovaj ID dodajemo sada kao tehnički uslov da klasa bude ispravan, izvršiv ORM model; izvorni kurski snapshot ostaje neizmenjen.
+
+---
 
 ### Kolone koje ćemo dodavati po lekcijama
 
@@ -146,7 +183,7 @@ To su pojmovi iz različitih slojeva:
 
 `nullable=False` znači da baza odbija `NULL`. To **ne** znači automatski da odbija `""` ili samo razmake. Na primer, obavezni naziv koji ne sme biti prazan može zahtevati i `nullable=False` i dodatnu validaciju ili `CheckConstraint` koji odbija prazan string. Ako su dozvoljeni stringovi samo od razmaka, pravilo mora izričito da ih proveri ili ukloni razmake pre čuvanja.
 
-U SQL upitima se `NULL` ne proverava pomoću `= NULL`; koristi se `IS NULL` ili `IS NOT NULL`, jer `NULL` nije obična vrednost koja se poredi kao broj ili tekst.
+U SQL upitima se `NULL` ne proverava pomoću `= NULL`; koristi se `IS NULL` ili `IS NOT NULL`, jer `NULL` nije obična vrednost koja se poredi kao broj ili tekst već predstavlja odsustvo vrednosti.
 
 ---
 
@@ -164,7 +201,7 @@ SQLAlchemy 2.x tipizacija nam omogućava da tip atributa i pravilo nullabilnosti
 
 ## Pitanje 3
 
-PITANJE: Hajde da nastavimo dalje. Pre toga bi bilo dobro da mi objasniš ukratko vezu između catalog.py, orders.py i promotion.py. Ne moraš biti detaljan ali da znam vezu i šta planiramo postići. Posle toga nastavljamo dalje ko si isplanirao. Poslao sam ti lekciju 06 ako smo završili lekciju 05.
+PITANJE: Hajde da nastavimo dalje. Pre toga bi bilo dobro da mi objasniš ukratko vezu između `catalog.py`, `orders.py` i `promotions.py`. Ne moraš biti detaljan ali da znam vezu i šta planiramo postići. Posle toga nastavljamo dalje ko si isplanirao. Poslao sam ti lekciju 06 ako smo završili lekciju 05.
 
 ---
 
@@ -178,7 +215,7 @@ Veza između fajlova je po domenu, ne po direktnim Python import-ima:
 2. `orders.py` korisnike/porudžbine/stavke.
 3. `promotions.py` drži promocije i vezu proizvoda sa promocijama.
 
-Cilj nam je da svaki koncept (kategorija, proizvod, stanje zaliha, promocija, korisnik, porudžbina, stavka porudžbine) uvedemo u odgovarajući model, a kasnije povežemo tabele stranim ključevima i ORM relacijama.
+Cilj nam je da svaki koncept (`kategorija`, `proizvod`, `stanje zaliha`, `promocija`, `korisnik`, `porudžbina`, `stavka porudžbine`) uvedemo u odgovarajući model, a kasnije povežemo tabele stranim ključevima i ORM relacijama.
 
 Planirano povezivanje domena je: **kategorija → proizvodi**, **proizvod → stanje zaliha**, promocije preko spojne klase, i **korisnik → porudžbine → stavke → proizvodi**.
 
@@ -186,16 +223,16 @@ Trenutno su to odvojeni modeli sa `ID`-jevima; strani ključevi i ORM relacije d
 
 `catalog.py` sadrži **katalog i zalihe**: kategorije, proizvode i stanje zaliha.
 
-`promotions.py` sadrži **promotivne događaje** i spojni model za vezu proizvoda sa promocijama.
+`promotions.py` sadrži **promotivne događaje** i spojni model za vezu `proizvoda` sa `promocijama`.
 
 `orders.py` sadrži **korisnike, porudžbine i stavke porudžbine**.
 
 Kasnije ćemo ih povezati otprilike ovako:
 
-- kategorija ima proizvode putem stranog ključa `kategorija_id` u tabeli `Proizvod`)
-- proizvod ima stanje zaliha i može učestvovati u više promocija putem spojne tabele `VezaProizvodaIPromocije`
-- korisnik ima porudžbine (`Porudzbina` tabela ima strani ključ `korisnik_id`)
-- porudžbina ima stavke koje upućuju na proizvode (`StavkaPorudzbine` tabela ima strani ključ `proizvod_id`)
+- `kategorija` ima `proizvode` putem stranog ključa `kategorija_id` u tabeli `Proizvod`)
+- `proizvod` ima `stanje zaliha` i može učestvovati u više `promocija` putem spojne tabele `VezaProizvodaIPromocije`
+- `korisnik` ima `porudžbine` (`Porudzbina` tabela ima strani ključ `korisnik_id`)
+- `porudžbina` ima `stavke` koje upućuju na `proizvode` (`StavkaPorudzbine` tabela ima strani ključ `proizvod_id`)
 
 To povezivanje još nismo implementirali: sadašnji modeli su odvojeni, a strani ključevi i ORM relacije dolaze u narednim lekcijama.
 
@@ -212,7 +249,7 @@ To povezivanje još nismo implementirali: sadašnji modeli su odvojeni, a strani
 
 `Mapped[str | None]`, `Mapped[bool | None]` i slični opcioni tipovi čuvaju nullable ponašanje source kolona. Korisničko ime i email ostaju jedinstveni i obavezni, lozinka je obavezna, kao i količina stavke porudžbine. Cena koristi `Decimal` uz `Numeric(10, 2)`, a ne `float`. Modeli `Porudzbina` i `VezaProizvodaIPromocije` u ovoj lekciji još nemaju dodatna polja.
 
-Ova lekcija dodaje opise kolona, ali još ne povezuje modele stranim ključevima niti ORM relacijama. Veze kategorija–proizvod, proizvod–zalihe, promocija–proizvod i korisnik–porudžbina obrađivaćemo u kasnijim lekcijama.
+Ova lekcija dodaje opise kolona, ali još ne povezuje modele stranim ključevima niti ORM relacijama. Veze `kategorija–proizvod`, `proizvod–zalihe`, `promocija–proizvod` i `korisnik–porudžbina` obrađivaćemo u kasnijim lekcijama.
 
 ---
 
@@ -226,3 +263,51 @@ Dodali smo datum početka i završetka na `PromotivniDogadjaj` (`Date`), vreme k
 - Ova podešavanja nisu `server_default` niti trigger; ne važe automatski za upise drugih klijenata koji zaobilaze odgovarajući SQLAlchemy model.
 
 Source snapshot za lekciju ostaje neizmenjen, a strani ključevi i ORM relacije još nisu uvedeni.
+
+---
+
+## Pitanje 4
+
+PITANJE: Zašto u `Mapped[...]` koristimo `None` za neka polja? Ako `naziv` ne treba da bude `None`, zašto uz `mapped_column(String(50))` nismo napisali `nullable=True` ili `nullable=False`?
+
+## Odgovor 4
+
+ODGOVOR:
+
+U SQLAlchemy 2.x tipizovanom deklarativnom stilu, uz pomoć anotacije `Mapped[...]` SQLAlchemy može da odredi i `Python tip atributa` i da li kolona prihvata SQL `NULL`. Zato `nullable` ne mora uvek da se navede ručno.
+
+```python
+# Python atribut može biti str ili None; SQLAlchemy pravi nullable kolonu.
+naziv: Mapped[str | None] = mapped_column(String(50))
+
+# Atribut je obavezni str; SQLAlchemy podrazumevano pravi NOT NULL kolonu.
+naziv: Mapped[str] = mapped_column(String(50))
+```
+
+- `Mapped[str | None]` znači da atribut može sadržati `str` ili Python `None`. SQLAlchemy iz toga zaključuje `nullable=True`.
+- `Mapped[str]` znači da atribut ne treba da sadrži `None`. Ako se `nullable` ne navede, SQLAlchemy iz anotacije zaključuje `nullable=False`.
+- `nullable=True` i `nullable=False` mogu se navesti eksplicitno, ali anotaciju i podešavanje kolone treba držati usklađenim.
+- Primarni ključ je poseban slučaj: ne može biti `NULL`, nezavisno od uobičajenog pravila za ostale kolone.
+
+Dakle, `naziv: Mapped[str | None] = mapped_column(String(50))` zaista dozvoljava `NULL`, iako u pozivu `mapped_column()` nema napisanog `nullable=True`. To je namerno za trenutno stanje lekcije 06: kursni `3_common_field_types.py` koristi `name = Column(String(50))`, a običan `Column` bez `nullable=False` podrazumevano dozvoljava `NULL`.
+
+Tvoje zapažanje o domenskom pravilu je dobro: naziv kategorije u završenom modelu treba da bude obavezan. Kurs to uvede u narednom koraku, source fajlu `5_required.py`, gde `Category.name` i `Category.slug` dobijaju `nullable=False`. Kada obradimo tu lekciju, praktični model treba ažurirati dosledno:
+
+```python
+naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+slug: Mapped[str] = mapped_column(String(55), nullable=False)
+```
+
+Za sada čuvamo ponašanje izvora `lekcije 06`, umesto da unapred primenimo ograničenja iz sledeće lekcije. Runtime provera je potvrdila da je `Kategorija.naziv.nullable` trenutno `True`, dok je `Korisnik.korisnicko_ime.nullable` `False`.
+
+---
+
+### Kratak odgovor: podrazumevani `nullable` i primarni ključ
+
+Nije sasvim tačno da je `nullable=True` uvek podrazumevana vrednost; zavisi od deklaracije:
+
+- Kod običnog `Column(...)`, ne-primarni stubac je podrazumevano nullable, osim ako se ne navede `nullable=False`.
+- Kod SQLAlchemy 2.x `Mapped[...]`, SQLAlchemy zaključuje nullability iz anotacije: `Mapped[str | None]` znači `nullable=True` (nullable), a `Mapped[str]` znači `nullable=False` (non-nullable), osim ako se `nullable=` navede eksplicitno.
+- `Primarni ključ` je non-nullable i jedinstven po definiciji primarnog ključa. Ne moraš dodavati `unique=True` uz `primary_key=True`.
+
+Jedna tehnička nijansa: metadata prikazuje `column.unique` kao `None` za naš `id`, a ne kao `True`. To ne znači da ID može da se ponovi: jedinstvenost garantuje `PrimaryKeyConstraint`, a ne zasebna `UNIQUE` opcija. Kod složenog primarnog ključa jedinstvena je kombinacija vrednosti svih njegovih kolona ali o tome više detalja u dokumentaciji SQLAlchemy-a.
