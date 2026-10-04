@@ -1,4 +1,6 @@
-from sqlalchemy import Integer
+from datetime import date
+
+from sqlalchemy import Date, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.base import Base
@@ -12,6 +14,10 @@ class PromotivniDogadjaj(Base):
         primary_key=True,
         autoincrement=True,
     )
+    naziv: Mapped[str | None] = mapped_column(String(50))
+    datum_pocetka: Mapped[date | None] = mapped_column(Date)
+    datum_zavrsetka: Mapped[date | None] = mapped_column(Date)
+    umanjenje_cene: Mapped[int | None] = mapped_column(Integer)
 
 
 class VezaProizvodaIPromocije(Base):

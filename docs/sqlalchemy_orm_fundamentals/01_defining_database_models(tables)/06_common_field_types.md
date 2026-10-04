@@ -62,6 +62,21 @@ class Category(Base):
 
 U klasi modela atribut kao `name` izgleda kao uobičajen Python atribut, ali nije obična promenljiva klase. SQLAlchemy ga mapira na kolonu i obezbeđuje ORM instrumentaciju. Na instanci modela čitaš i menjaš vrednost, dok se nad atributom klase mogu graditi SQL izrazi.
 
+### Nazivi u našem praktičnom paketu
+
+Kursni primeri i snapshot-i zadržavaju engleska imena. U praktičnim modelima koristimo srpske ASCII identifikatore, a SQLAlchemy tipove i API nazive ostavljamo nepromenjene:
+
+| Kursni model      | Praktični model      | Kursna polja                                                      | Praktična polja                                         |
+| ----------------- | -------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| `Category`        | `Kategorija`         | `name`, `slug`, `is_active`, `level`                              | `naziv`, `slug`, `aktivna`, `nivo`                      |
+| `PromotionEvent`  | `PromotivniDogadjaj` | `name`, `price_reduction`                                         | `naziv`, `umanjenje_cene`                               |
+| `Product`         | `Proizvod`           | `name`, `slug`, `description`, `is_digital`, `is_active`, `price` | `naziv`, `slug`, `opis`, `digitalni`, `aktivan`, `cena` |
+| `StockManagement` | `StanjeZaliha`       | `quantity`                                                        | `kolicina`                                              |
+| `User`            | `Korisnik`           | `username`, `email`, `password`                                   | `korisnicko_ime`, `email`, `lozinka`                    |
+| `OrderProduct`    | `StavkaPorudzbine`   | `quantity`                                                        | `kolicina`                                              |
+
+`Order`/`Porudzbina` i `ProductPromotionEvent`/`VezaProizvodaIPromocije` u ovoj lekciji još nemaju dodatna polja. Prevod naziva ne menja tipove ni pravila iz source-a.
+
 ## `String`: tekst sa poznatom dužinom
 
 `String(length)` opisuje tekstualnu kolonu promenljive dužine sa navedenom dužinom. Primeri iz koda su:
@@ -187,6 +202,8 @@ Skripta `3_common_field_types.py` dodaje tipove na nekoliko modela:
 
 `ProductPromotionEvent` i `Order` u ovom koraku još nemaju polja. Datumska polja i ključevi izostavljeni su jer se obrađuju u drugim lekcijama.
 
+U praktičnom kodu `Mapped[...]` tipovi prate nullabilnost kolona: na primer, `Mapped[str | None]` za kursna polja koja nemaju `nullable=False`, dok `Korisnik.korisnicko_ime` koristi `Mapped[str]` uz `nullable=False` i `unique=True`. Ova pravila su preneta iz source-a; njihovo detaljno značenje obrađujemo u narednim lekcijama.
+
 ## Razlike između ERD-a i source koda
 
 Kod treba porediti sa ERD-om; kod u ovoj fazi nije potpuno usklađen sa svim prikazanim detaljima:
@@ -213,19 +230,23 @@ Kurs koristi `Column(...)`, što je i dalje podržano u SQLAlchemy 2.0. Za tipiz
 ```python
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Numeric, String
+from sqlalchemy import Boolean, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Product(Base):
-		__tablename__ = "product"
+class Proizvod(Base):
+	__tablename__ = "proizvod"
 
-		name: Mapped[str] = mapped_column(String(50))
-		is_active: Mapped[bool] = mapped_column(Boolean)
-		price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+	id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+	naziv: Mapped[str | None] = mapped_column(String(50))
+	slug: Mapped[str | None] = mapped_column(String(55))
+	opis: Mapped[str | None] = mapped_column(Text)
+	digitalni: Mapped[bool | None] = mapped_column(Boolean)
+	aktivan: Mapped[bool | None] = mapped_column(Boolean)
+	cena: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
 ```
 
-Ovo je dopunski primer, ne zamena za tačan kod transkripta. Tipizacija Python atributa dopunjuje deklaraciju kolone; precizno ponašanje `NULL` vrednosti i dalje zavisi od mapiranja i `nullable` podešavanja.
+Ovo je dopunski primer našeg tipizovanog modela, ne zamena za tačan kod transkripta. Uključuje minimalni `id` potreban našem izvršivom ORM modelu. Tipizacija Python atributa dopunjuje deklaraciju kolone; precizno ponašanje `NULL` vrednosti prati `Mapped[...]` i `nullable` podešavanja.
 
 ## Provera razumevanja
 

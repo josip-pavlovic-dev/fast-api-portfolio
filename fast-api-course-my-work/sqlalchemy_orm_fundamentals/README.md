@@ -17,7 +17,7 @@ sqlalchemy_orm_fundamentals/
         orders.py        # korisnici i porudžbine
 ```
 
-Lekcija 05 definiše osam ORM klasa sa minimalnim autogenerisanim `id` ključem, raspoređenih po domenima u `catalog.py`, `promotions.py` i `orders.py`: `Kategorija`, `Proizvod`, `StanjeZaliha`, `PromotivniDogadjaj`, `VezaProizvodaIPromocije`, `Korisnik`, `Porudzbina` i `StavkaPorudzbine`. Njihove tabele koriste odgovarajuća srpska snake_case imena. Engleski nazivi iz kursnih snapshot-a ostaju neizmenjeni; mapiranje između dva skupa naziva nalazi se u teoriji lekcije 05. Ostale kolone, strani ključevi i veze dodavaćemo kada ih obradimo. Engine i sesije još nisu implementirani.
+Lekcija 05 definiše osam ORM klasa sa minimalnim autogenerisanim `id` ključem, raspoređenih po domenima u `catalog.py`, `promotions.py` i `orders.py`: `Kategorija`, `Proizvod`, `StanjeZaliha`, `PromotivniDogadjaj`, `VezaProizvodaIPromocije`, `Korisnik`, `Porudzbina` i `StavkaPorudzbine`. Lekcija 06 dodaje kolone i SQLAlchemy tipove, a lekcija 07 dodaje datume promocije, `default`/`onupdate` vremenske oznake za proizvod i porudžbinu i timezone-aware vreme provere zaliha. Tabele i polja koriste srpska ASCII imena, uz zadržavanje tipova i nullability/unique pravila iz kursnog source-a. Engleski nazivi ostaju neizmenjeni u snapshot-ima, a prevod je dokumentovan u teoriji lekcija 05–07. Strani ključevi i ORM veze dodavaćemo kada ih obradimo; engine i sesije još nisu implementirani.
 
 `Base` je na jednom mestu da bi svi ORM modeli nasleđivali istu baznu klasu i registrovali svoje tabele u zajedničkom `Base.metadata`. Modeli će biti grupisani po domenu umesto da se pravi poseban fajl za svaku malu klasu.
 

@@ -1,4 +1,6 @@
-from sqlalchemy import Integer
+from datetime import datetime
+
+from sqlalchemy import DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.base import Base
@@ -12,6 +14,9 @@ class Korisnik(Base):
         primary_key=True,
         autoincrement=True,
     )
+    korisnicko_ime: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    lozinka: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class Porudzbina(Base):
@@ -22,6 +27,8 @@ class Porudzbina(Base):
         primary_key=True,
         autoincrement=True,
     )
+    kreirano_u: Mapped[datetime | None] = mapped_column(DateTime, default=func.now())
+    izmenjeno_u: Mapped[datetime | None] = mapped_column(DateTime, onupdate=func.now())
 
 
 class StavkaPorudzbine(Base):
@@ -32,3 +39,4 @@ class StavkaPorudzbine(Base):
         primary_key=True,
         autoincrement=True,
     )
+    kolicina: Mapped[int] = mapped_column(Integer, nullable=False)

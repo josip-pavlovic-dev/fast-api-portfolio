@@ -1,4 +1,16 @@
-from sqlalchemy import Integer
+from datetime import datetime
+from decimal import Decimal
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Integer,
+    Numeric,
+    SmallInteger,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.base import Base
@@ -14,6 +26,10 @@ class Kategorija(Base):
         # Autoincrement zasebno generiše ID ako ga unos ne navede.
         autoincrement=True,
     )
+    naziv: Mapped[str | None] = mapped_column(String(50))
+    slug: Mapped[str | None] = mapped_column(String(55))
+    aktivna: Mapped[bool | None] = mapped_column(Boolean)
+    nivo: Mapped[int | None] = mapped_column(SmallInteger)
 
 
 class Proizvod(Base):
@@ -24,6 +40,14 @@ class Proizvod(Base):
         primary_key=True,
         autoincrement=True,
     )
+    naziv: Mapped[str | None] = mapped_column(String(50))
+    slug: Mapped[str | None] = mapped_column(String(55))
+    opis: Mapped[str | None] = mapped_column(Text)
+    digitalni: Mapped[bool | None] = mapped_column(Boolean)
+    aktivan: Mapped[bool | None] = mapped_column(Boolean)
+    kreirano_u: Mapped[datetime | None] = mapped_column(DateTime, default=func.now())
+    izmenjeno_u: Mapped[datetime | None] = mapped_column(DateTime, onupdate=func.now())
+    cena: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
 
 
 class StanjeZaliha(Base):
@@ -34,3 +58,5 @@ class StanjeZaliha(Base):
         primary_key=True,
         autoincrement=True,
     )
+    kolicina: Mapped[int | None] = mapped_column(Integer)
+    poslednja_provera: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

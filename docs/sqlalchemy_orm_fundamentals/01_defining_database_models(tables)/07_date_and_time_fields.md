@@ -64,6 +64,22 @@ class StockManagement(Base):
 
 U punoj skripti i model `Order` ima kolone `created_at` i `updated_at` sa istim podešavanjima kao `Product`.
 
+### Nazivi u našem praktičnom paketu
+
+Kursni snapshot ostaje na engleskom. U praktičnim modelima koristimo sledeće srpske ASCII nazive, uz ista SQLAlchemy podešavanja:
+
+| Kursni model i polje              | Praktični model i polje              | Tip i ponašanje                   |
+| --------------------------------- | ------------------------------------ | --------------------------------- |
+| `PromotionEvent.start_date`       | `PromotivniDogadjaj.datum_pocetka`   | `Date`                            |
+| `PromotionEvent.end_date`         | `PromotivniDogadjaj.datum_zavrsetka` | `Date`                            |
+| `Product.created_at`              | `Proizvod.kreirano_u`                | `DateTime`, `default=func.now()`  |
+| `Product.updated_at`              | `Proizvod.izmenjeno_u`               | `DateTime`, `onupdate=func.now()` |
+| `StockManagement.last_checked_at` | `StanjeZaliha.poslednja_provera`     | `DateTime(timezone=True)`         |
+| `Order.created_at`                | `Porudzbina.kreirano_u`              | `DateTime`, `default=func.now()`  |
+| `Order.updated_at`                | `Porudzbina.izmenjeno_u`             | `DateTime`, `onupdate=func.now()` |
+
+Source ne postavlja `nullable=False` za ova polja, pa praktične deklaracije koriste `Mapped[date | None]` ili `Mapped[datetime | None]`. Za `updated_at` je sačuvano i to da nema `default`: pri kreiranju reda polje može ostati `NULL` do prve izmene.
+
 ## Automatsko vreme pri kreiranju: `default`
 
 U skripti je polje `created_at` definisano ovako:

@@ -159,3 +159,70 @@ SQLAlchemy 2.x tipizacija nam omogućava da tip atributa i pravilo nullabilnosti
 - Obavezni primarni ID: `Mapped[int]` uz `primary_key=True`.
 
 `Mapped[str | None]` samo po sebi ne zabranjuje prazan string. `nullable=True` dopušta `NULL`, ali ne pretvara prazan string u `NULL`.
+
+---
+
+## Pitanje 3
+
+PITANJE: Hajde da nastavimo dalje. Pre toga bi bilo dobro da mi objasniš ukratko vezu između catalog.py, orders.py i promotion.py. Ne moraš biti detaljan ali da znam vezu i šta planiramo postići. Posle toga nastavljamo dalje ko si isplanirao. Poslao sam ti lekciju 06 ako smo završili lekciju 05.
+
+---
+
+## Odgovor 3
+
+ODGOVOR: Da, lekciju 05 smo završili. Pošto smo to završili, sada možemo da se fokusiramo na lekciju 06 i dodavanje tipova kolona u modele.
+
+Veza između fajlova je po domenu, ne po direktnim Python import-ima:
+
+1. `catalog.py` drži kategorije/proizvode/zalihe.
+2. `orders.py` korisnike/porudžbine/stavke.
+3. `promotions.py` drži promocije i vezu proizvoda sa promocijama.
+
+Cilj nam je da svaki koncept (kategorija, proizvod, stanje zaliha, promocija, korisnik, porudžbina, stavka porudžbine) uvedemo u odgovarajući model, a kasnije povežemo tabele stranim ključevima i ORM relacijama.
+
+Planirano povezivanje domena je: **kategorija → proizvodi**, **proizvod → stanje zaliha**, promocije preko spojne klase, i **korisnik → porudžbine → stavke → proizvodi**.
+
+Trenutno su to odvojeni modeli sa `ID`-jevima; strani ključevi i ORM relacije dolaze kasnije.
+
+`catalog.py` sadrži **katalog i zalihe**: kategorije, proizvode i stanje zaliha.
+
+`promotions.py` sadrži **promotivne događaje** i spojni model za vezu proizvoda sa promocijama.
+
+`orders.py` sadrži **korisnike, porudžbine i stavke porudžbine**.
+
+Kasnije ćemo ih povezati otprilike ovako:
+
+- kategorija ima proizvode putem stranog ključa `kategorija_id` u tabeli `Proizvod`)
+- proizvod ima stanje zaliha i može učestvovati u više promocija putem spojne tabele `VezaProizvodaIPromocije`
+- korisnik ima porudžbine (`Porudzbina` tabela ima strani ključ `korisnik_id`)
+- porudžbina ima stavke koje upućuju na proizvode (`StavkaPorudzbine` tabela ima strani ključ `proizvod_id`)
+
+To povezivanje još nismo implementirali: sadašnji modeli su odvojeni, a strani ključevi i ORM relacije dolaze u narednim lekcijama.
+
+---
+
+| Praktični model      | Polja i SQLAlchemy tipovi                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `Kategorija`         | `naziv: String(50)`, `slug: String(55)`, `aktivna: Boolean`, `nivo: SmallInteger`                                       |
+| `Proizvod`           | `naziv: String(50)`, `slug: String(55)`, `opis: Text`, `digitalni: Boolean`, `aktivan: Boolean`, `cena: Numeric(10, 2)` |
+| `PromotivniDogadjaj` | `naziv: String(50)`, `umanjenje_cene: Integer`                                                                          |
+| `StanjeZaliha`       | `kolicina: Integer`                                                                                                     |
+| `Korisnik`           | `korisnicko_ime: String(50)`, `email: String(255)`, `lozinka: String(100)`                                              |
+| `StavkaPorudzbine`   | `kolicina: Integer`                                                                                                     |
+
+`Mapped[str | None]`, `Mapped[bool | None]` i slični opcioni tipovi čuvaju nullable ponašanje source kolona. Korisničko ime i email ostaju jedinstveni i obavezni, lozinka je obavezna, kao i količina stavke porudžbine. Cena koristi `Decimal` uz `Numeric(10, 2)`, a ne `float`. Modeli `Porudzbina` i `VezaProizvodaIPromocije` u ovoj lekciji još nemaju dodatna polja.
+
+Ova lekcija dodaje opise kolona, ali još ne povezuje modele stranim ključevima niti ORM relacijama. Veze kategorija–proizvod, proizvod–zalihe, promocija–proizvod i korisnik–porudžbina obrađivaćemo u kasnijim lekcijama.
+
+---
+
+## Lekcija 07: Datumska i vremenska polja
+
+Dodali smo datum početka i završetka na `PromotivniDogadjaj` (`Date`), vreme kreiranja i izmene na `Proizvod` i `Porudzbina` (`DateTime`), kao i timezone-aware vreme poslednje provere na `StanjeZaliha` (`DateTime(timezone=True)`). Srpska imena polja i njihovi kursni ekvivalenti navedeni su u teoriji lekcije 07.
+
+- `kreirano_u` koristi `default=func.now()`: SQLAlchemy dodaje SQL izraz pri unosu kada vrednost nije prosleđena.
+- `izmenjeno_u` koristi `onupdate=func.now()`, ali nema početni default; zato pri prvom unosu može biti `NULL`.
+- `poslednja_provera` koristi `timezone=True`, što traži podršku vremenske zone od dijalekta, ali samo po sebi ne pretvara vrednost u UTC.
+- Ova podešavanja nisu `server_default` niti trigger; ne važe automatski za upise drugih klijenata koji zaobilaze odgovarajući SQLAlchemy model.
+
+Source snapshot za lekciju ostaje neizmenjen, a strani ključevi i ORM relacije još nisu uvedeni.
