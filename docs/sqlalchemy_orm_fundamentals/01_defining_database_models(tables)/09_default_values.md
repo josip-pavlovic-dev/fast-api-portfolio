@@ -30,6 +30,27 @@ quantity = Column(Integer, nullable=False, default=0)
 created_at = Column(DateTime, default=func.now(), nullable=False)
 ```
 
+### Isti obrazac u SQLAlchemy 2.x
+
+U našem praktičnom paketu koristimo tipizovanu deklaraciju. Default-i su isti koncepti; menja se oblik deklaracije:
+
+```python
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, SmallInteger, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+kreirano_u: Mapped[datetime] = mapped_column(
+	DateTime,
+	default=func.now(),
+	nullable=False,
+)
+```
+
+`default` nije ograničen samo na ORM `Session`: SQLAlchemy ga primenjuje na SQL iskaze koje generiše, uključujući ORM i Core `INSERT` operacije. Direktan SQL koji zaobilazi SQLAlchemy ne koristi ovaj client-side default.
+
 Kada SQLAlchemy priprema `INSERT` i kolona nema prosleđenu vrednost, `default` obezbeđuje podrazumevanu vrednost. U prva tri primera to su Python vrednosti odgovarajućeg tipa: `False` ili `0`. Vrednost se šalje kao deo upita koji SQLAlchemy izvršava.
 
 Default se izvršava pri upisu, a ne nužno u trenutku kada se ORM objekat napravi u Python-u. Zato se ne treba oslanjati na to da će atribut na novom objektu odmah prikazivati `False` ili `0` pre `flush()`/`INSERT` operacije.
@@ -77,6 +98,19 @@ is_active = Column(
 )
 ```
 
+U našem SQLAlchemy 2.x stilu:
+
+```python
+from sqlalchemy import Boolean, text
+from sqlalchemy.orm import Mapped, mapped_column
+
+aktivna: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    server_default=text("false"),
+)
+```
+
 Za PostgreSQL i SQLite `false` je uobičajen SQL izraz za boolean default; tačan literal i ponašanje treba proveriti za ciljni dijalekt. Integer primer je `server_default=text("0")`, a vremenski default može se zadati SQLAlchemy izrazom `server_default=func.now()`.
 
 Default baze je deo DDL šeme i može da se primeni i kada upit dolazi iz drugog programa, pod uslovom da taj upit izostavi kolonu. Ako `INSERT` eksplicitno pošalje `NULL`, server default se ne koristi; uz `NOT NULL` baza će odbiti taj red. Default-i ne opravdavaju prosleđivanje `NULL` vrednosti.
@@ -92,6 +126,8 @@ Default baze je deo DDL šeme i može da se primeni i kada upit dolazi iz drugog
 
 Za aplikaciju koja ima samo jedan put upisa, `default` može biti dovoljan. Ako pravilo treba da važi za sve klijente baze, `server_default` je jača garancija na nivou šeme. Mogu se koristiti i zajedno, ali tada treba namerno uskladiti njihova značenja i vrednosti.
 
+`server_default` je deo DDL metapodataka za kreiranje šeme. Ako tabela već postoji, sama izmena Python modela ne menja automatski postojeću bazu; promena šeme se primenjuje migracijom, na primer Alembic migracijom kada je uvedemo u projekat. `create_all()` takođe nije zamena za upravljanje izmenama postojeće šeme.
+
 ## Python callable kao default
 
 Kada vrednost treba da se generiše u Python-u za svaki novi upis, prosleđuje se callable, odnosno funkcija bez pozivanja:
@@ -100,6 +136,21 @@ Kada vrednost treba da se generiše u Python-u za svaki novi upis, prosleđuje s
 import uuid
 
 token = Column(String(36), default=lambda: str(uuid.uuid4()))
+```
+
+Tipizovana SQLAlchemy 2.x varijanta izgleda ovako:
+
+```python
+import uuid
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+token: Mapped[str] = mapped_column(
+	String(36),
+	default=lambda: str(uuid.uuid4()),
+	nullable=False,
+)
 ```
 
 SQLAlchemy poziva callable kada mu je potreban default. Ne treba unapred pozvati funkciju, kao `default=str(uuid.uuid4())`, jer bi se tada jedna vrednost napravila pri učitavanju modula i koristila za sve redove.
@@ -115,6 +166,8 @@ Skripta `6_default_values.py` postavlja sledeće default-e:
 - `Product.is_digital` i `Product.is_active`: `False`;
 - `Product.created_at` i `Order.created_at`: `func.now()`;
 - `StockManagement.quantity`: `0`.
+
+U našem praktičnom paketu odgovarajuća polja su `Kategorija.aktivna=False`, `Kategorija.nivo=0`, `Proizvod.digitalni=False`, `Proizvod.aktivan=False`, `StanjeZaliha.kolicina=0` i `kreirano_u=func.now()` kod proizvoda i porudžbine. Imena su prevedena, ali su namena i SQLAlchemy default-i sačuvani.
 
 Ostala polja nemaju default u ovoj verziji. Zato, na primer, aplikacija mora da prosledi `last_checked_at`, `PromotionEvent` datume i `OrderProduct.quantity`.
 

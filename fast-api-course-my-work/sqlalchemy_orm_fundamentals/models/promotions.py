@@ -14,7 +14,7 @@ class PromotivniDogadjaj(Base):
         primary_key=True,
         autoincrement=True,
     )
-    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     datum_pocetka: Mapped[date] = mapped_column(Date, nullable=False)
     datum_zavrsetka: Mapped[date] = mapped_column(Date, nullable=False)
     umanjenje_cene: Mapped[int] = mapped_column(Integer, nullable=False)

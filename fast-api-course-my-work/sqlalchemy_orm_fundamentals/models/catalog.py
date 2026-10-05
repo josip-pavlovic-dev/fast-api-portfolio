@@ -28,11 +28,11 @@ class Kategorija(Base):
     )
     # naziv kategorije, npr "Elektronika"
     # za razliku od slug-a, naziv može sadržati razmake i specijalne karaktere
-    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     # slug predstavlja URL-friendly verziju naziva kategorije
     # koristi se u URL-ovima
     # npr "/kategorija/naziv-kategorije"
-    slug: Mapped[str] = mapped_column(String(55), nullable=False)
+    slug: Mapped[str] = mapped_column(String(55), nullable=False, unique=True)
     aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
@@ -45,8 +45,8 @@ class Proizvod(Base):
         primary_key=True,
         autoincrement=True,
     )
-    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
-    slug: Mapped[str] = mapped_column(String(55), nullable=False)
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(String(55), nullable=False, unique=True)
     opis: Mapped[str] = mapped_column(Text, nullable=False)
     digitalni: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     aktivan: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

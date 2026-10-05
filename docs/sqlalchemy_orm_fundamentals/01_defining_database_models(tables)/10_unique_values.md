@@ -16,7 +16,45 @@ U klasičnom SQLAlchemy stilu iz kursa pravilo se navodi ovako:
 name = Column(String(50), nullable=False, unique=True)
 ```
 
+U našem SQLAlchemy 2.x stilu isti atribut se zapisuje pomoću `Mapped[...]` i `mapped_column()`:
+
+```python
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+naziv: Mapped[str] = mapped_column(
+	String(50),
+	nullable=False,
+	unique=True,
+)
+```
+
 `unique=True` traži od SQLAlchemy-ja da za kolonu napravi ograničenje jedinstvenosti u šemi baze. Baza proverava pravilo pri upisu ili izmeni reda. Aplikacija može ranije proveriti da li vrednost već postoji radi korisnije poruke, ali provera u aplikaciji ne zamenjuje ograničenje baze.
+
+### Ograničenje nad više kolona u SQLAlchemy 2.x
+
+Za kombinaciju kolona koristi se `UniqueConstraint` u `__table_args__`. U tipizovanom declarative modelu to izgleda ovako:
+
+```python
+from sqlalchemy import Integer, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+class Membership(Base):
+	__tablename__ = "membership"
+	__table_args__ = (
+		UniqueConstraint(
+			"organization_id",
+			"user_id",
+			name="uq_membership_organization_user",
+		),
+	)
+
+	organization_id: Mapped[int] = mapped_column(Integer, nullable=False)
+	user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+```
+
+Ime ograničenja je opciono, ali eksplicitna i dosledna imena olakšavaju čitanje migracija i kasniju izmenu ili uklanjanje ograničenja. Veće aplikacije često postave `MetaData.naming_convention`; naš projekat to još nije uveo, pa za sada ne dodajemo globalnu konvenciju.
 
 ## Zašto ograničenje treba da proverava baza
 
@@ -91,6 +129,8 @@ SQLAlchemy takođe omogućava eksplicitni jedinstveni indeks, na primer `Index("
 
 Indeks birati prema pravilima integriteta i stvarnim obrascima upita, a ne samo zato što kolona „deluje važna“. Konkretan efekat na performanse treba proveriti na ciljnoj bazi.
 
+`unique=True` i `UniqueConstraint` opisuju šemu preko SQLAlchemy metapodataka. Ako tabela već postoji, sama izmena Python klase ne dodaje ograničenje u bazu; potrebna je migracija. Pre dodavanja unique ograničenja na postojeće podatke treba pronaći i razrešiti duplikate, inače migracija neće moći da se primeni.
+
 ## Razlike u source snapshot-ovima
 
 - U `5_required.py` su `User.username` i `User.email` bili unique; u `6_default_values.py` to ograničenje je izostavljeno; `7_unique_column.py` ga ponovo postavlja.
@@ -117,3 +157,4 @@ Indeks birati prema pravilima integriteta i stvarnim obrascima upita, a ne samo 
 - Ponašanje poređenja teksta, uključujući velika i mala slova i nullable unique kolone, zavisi od baze i njenih podešavanja.
 - `UniqueConstraint` može da ograniči kombinaciju kolona; `unique=True` na pojedinačnim kolonama ovde pravi odvojena pravila.
 - Unique indeks može da sprovodi jedinstvenost, ali ga ne treba redundantno dodavati uz postojeće ograničenje.
+- U postojećoj bazi unique pravilo se primenjuje migracijom, nakon provere da već upisani podaci nemaju duplikate.

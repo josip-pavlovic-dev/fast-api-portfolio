@@ -23,21 +23,45 @@ Redosled može da se pomeri ako neka provera pokaže da treba dodatno utvrditi p
 
 U `models/catalog.py` i `models/promotions.py` polja koja su u lekciji obavezna više ne koriste opcione anotacije poput `Mapped[str | None]`. Prešla su na `Mapped[str]`, `Mapped[date]`, `Mapped[int]`, `Mapped[bool]` ili `Mapped[datetime]`, a deklaracije navode i `nullable=False`. Time Python tip i ograničenje kolone opisuju isto pravilo.
 
-U `catalog.py` su obavezni naziv i slug kategorije; aktivnost i nivo kategorije ostaju nenullable i imaju početne vrednosti `False` i `0`. Proizvod sada zahteva tekstualna polja, boolean statuse, cenu i vremenske oznake. Količina zaliha ima default `0`, dok `poslednja_provera` mora biti prosleđena. U `promotions.py` naziv, datumi i iznos umanjenja cene promotivnog događaja postali su obavezni.
+U `catalog.py`:
 
-U `models/orders.py` korisničko ime, email, lozinka i količina stavke već su bili nenullable, pa su ostali neizmenjeni. Vremena kreiranja i izmene porudžbine sada su tipizovana kao obavezna.
+- U klasi/tabeli `Kategorija` obavezni su `naziv` i `slug` kategorije, dok `aktivnost` i `nivo kategorije` ostaju `ne-nullable` i imaju početne vrednosti `default=False` i `0`.
+
+- Klasa/tabela `Proizvod` sada zahteva `tekstualna polja` za `naziv` i `opis`, `boolean statuse` za `aktivan` i `digitalni`, `vremenske oznake` za `kreirano_u` i `izmenjeno_u` i `numerička polja` za `cenu`.
+
+- U klasi/tabeli `StanjeZaliha` kolona `količina` ima default `0` i `nullable=False`, kao i `poslednja_provera` koja tako ima `nullable=False` i samim time kao i `količina` mora biti prosleđena. `poslednja_provera` za registrovanje vremena promene koristi `DateTime(timezone=True)` način definisanja kolone. Ovaj model osigurava da se svaka promena stanja zaliha beleži sa vremenskom oznakom.
+
+U `models/promotions.py` imamo klasu/tabelu `PromotivniDogadjaj` gde su `naziv`, `datum_pocetka`, `datum_zavrsetka` i `umanjenja cene` promotivnog događaja postali obavezni.
+
+Ne navodi se `Mapped[... | None]` za ova polja, već koristi `Mapped[...]` sa `nullable=False`. Napomena da `nullable=False` ne sprečava prazan string; to je samo ograničenje baze. Takođe, ne navođenje `None` u anotaciji automatski govori SQLAlchemy-ju da polje ne može biti `NULL` pa je `nullable=False` redundantno, i ne mora se eksplicitno navoditi osim radi jasnoće.
+
+Takođe imamo i klasu/tabelu `VezaProizvodaIPromocije` koja povezuje proizvode sa promotivnim događajima. Оna je trenutno prazna u smislu da ima samo primarni ključ (kolona `id`) i još uvek nema dodatnih kolona za strane ključeve koji bi povezivali proizvode i promotivne događaje. Kasnija uloga ove tabele će biti da uspostavi mnogostruku vezu između proizvoda i promotivnih događaja, omogućavajući da jedan proizvod može biti deo više promocija (`one-to-many`), a jedna promocija može obuhvatiti više proizvoda (`many-to-one`).
+
+U `models/orders.py` imamo klasu/tabelu `Korisnik` i `Porudzbina` gde su korisnicko_ime, email, lozinka i količina stavke već bili ne-nullable, pa su ostali neizmenjeni. Vremena kreiranja i izmene porudžbine sada su tipizovana kao obavezna.
+
+---
 
 ### Zašto postoje dva signala
 
-SQLAlchemy 2.x može da zaključi nullability iz `Mapped[T]` i `Mapped[T | None]`. Ipak, ovde navodimo `nullable=False` eksplicitno zato što je lekcija upravo o ograničenju baze. Anotacija pomaže da se Python kod i alati za tipove slažu sa ograničenjem; nullable metapodatak definiše SQL kolonu. `None` nije dozvoljen za `Mapped[T]` obavezno polje, a `nullable=False` će sprečiti bazu da sačuva SQL `NULL`.
+SQLAlchemy 2.x može da zaključi nullability iz `Mapped[T]` i `Mapped[T | None]`. Ipak, ovde navodimo `nullable=False` eksplicitno zato što je lekcija upravo o ograničenju baze.
 
-Ovo ne odbija prazan string niti tekst sastavljen od razmaka. To je posebna validacija; u ovoj lekciji još ne dodajemo Pydantic validatore niti `CHECK` ograničenja.
+`Anotacija` pomaže da se Python kod i alati za tipove slažu sa ograničenjem
+
+`nullable metapodatak` definiše SQL kolonu.
+
+`None` nije dozvoljen za `Mapped[T]` obavezno polje, a `nullable=False` će sprečiti bazu da sačuva SQL vrednost `NULL`.
+
+Ovo `ne` odbija `prazan string niti tekst sastavljen od razmaka`. To je posebna validacija. U ovoj lekciji još ne dodajemo `Pydantic` validatore niti `CHECK` ograničenja.
+
+---
 
 ### Praktična korekcija za `izmenjeno_u`
 
 Kurski source postavlja `updated_at` kao `nullable=False` uz `onupdate=func.now()`, ali nema početni default. Sam `onupdate` ne daje vrednost pri `INSERT`, pa bi zapis bez eksplicitnog `updated_at` pao na `NOT NULL` ograničenju.
 
 U praktičnim modelima sam zato postavio `default=func.now()` uz postojeći `onupdate=func.now()` za `Proizvod.izmenjeno_u` i `Porudzbina.izmenjeno_u`. Polje dobija početnu vrednost pri unosu, a kasniji SQLAlchemy `UPDATE` može da osveži vreme. Ovo je namerna praktična popravka, nije tvrdnja da je tako napisano u kurskom source-u. Kasnije ćemo kroz lekciju 09 detaljnije razdvojiti default ponašanja.
+
+---
 
 ## Koraci implementacije
 
@@ -49,12 +73,78 @@ U praktičnim modelima sam zato postavio `default=func.now()` uz postojeći `onu
 6. **Porudžbina:** `kreirano_u` je obavezno sa `default=func.now()`. `izmenjeno_u` je obavezno i dobija praktični početni default uz `onupdate`.
 7. **README:** ažuriran je pregled implementiranih lekcija i zabeležena korekcija za `izmenjeno_u`.
 
-Nismo unapred dodavali `unique=True`, nove primarne ključeve, strane ključeve, roditeljski ID niti ORM relacije. To pripada narednim lekcijama; postojeći `id` ključevi ostaju tehnički preduslov za ORM modele.
+Nismo unapred dodavali `unique=True`, `nove primarne ključeve`, `strane ključeve`, `roditeljski ID` niti `ORM relacije`. To pripada narednim lekcijama; postojeći `id` ključevi ostaju tehnički preduslov za ORM modele.
+
+---
 
 ## Provera
 
 Provereno je da se paket modela uvozi i da sva polja osim primarnih ključeva imaju `nullable=False` u SQLAlchemy metapodacima. Ovo proverava mapiranje, ali još ne izvršava INSERT nad bazom; engine i sesije nisu deo ovog projekta u ovoj fazi.
 
+---
+
 ## Beleške i pitanja
 
 Odgovore na pitanja iz lekcije 08 dodaćemo ovde nakon provere razumevanja. Sledeća tema je lekcija 09: kada SQLAlchemy primenjuje `default`, kada bazu koristi `server_default` i kako callable default utiče na vrednost.
+
+## Lekcija 09: Podrazumevane vrednosti
+
+### Šta smo naučili
+
+Default određuje vrednost za INSERT koji ne navede vrednost kolone. `nullable=False` i dalje zasebno zabranjuje `NULL`; default ne zamenjuje to ograničenje niti predstavlja poslovno obrazloženje za izabranu vrednost.
+
+- `default=False` i `default=0` prosleđuju Python vrednost kroz SQLAlchemy-generisani upit.
+- `default=func.now()` je SQLAlchemy client-side default koji ubacuje SQL izraz u INSERT; bazni server izvršava `now()`.
+- Python callable, na primer `default=lambda: str(uuid.uuid4())`, poziva se u Python-u kada SQLAlchemy-u zatreba vrednost. Prosleđuje se funkcija, ne rezultat njenog poziva pri učitavanju modula.
+- `server_default=...` opisuje `DEFAULT` u DDL-u; baza ga koristi i za klijente koji ne koriste ovaj SQLAlchemy model, ako izostave kolonu.
+
+SQLAlchemy `default` važi za SQLAlchemy ORM i Core iskaze, ali ne i za SQL koji direktno izvršava drugi klijent. `server_default` važi na nivou baze. Ako se šema već kreira, dodavanje ili promena serverskog default-a zahteva migraciju; promena modela sama ne prepravlja postojeću tabelu.
+
+### Kako se to odnosi na naše modele
+
+Default-i za ovu lekciju već su bili prisutni u modelima posle prethodne implementacije, pa nije bilo potrebno ponovo menjati njihove deklaracije. Sada smo proverili njihovo značenje i zabeležili ih uz odgovarajuće kursne primere:
+
+| Praktično polje                                  | Default                              | Razlog                                                                                 |
+| ------------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `Kategorija.aktivna`                             | `False`                              | nova kategorija počinje neaktivna                                                      |
+| `Kategorija.nivo`                                | `0`                                  | početni nivo kategorije                                                                |
+| `Proizvod.digitalni`, `Proizvod.aktivan`         | `False`                              | početni boolean statusi                                                                |
+| `StanjeZaliha.kolicina`                          | `0`                                  | početno stanje je nula evidentiranih komada                                            |
+| `Proizvod.kreirano_u`, `Porudzbina.kreirano_u`   | `func.now()`                         | vreme unosa računa baza kroz SQL izraz u SQLAlchemy INSERT-u                           |
+| `Proizvod.izmenjeno_u`, `Porudzbina.izmenjeno_u` | `func.now()` i `onupdate=func.now()` | obavezno polje dobija početno vreme i može da se osveži pri narednoj SQLAlchemy izmeni |
+
+Nismo dodali `server_default` modelima: ova lekcija/source koristi SQLAlchemy `default`, a server default bi promenio ugovor tako da direktni upisi drugih klijenata dobijaju vrednost iz šeme. Teorija sada prikazuje i SQLAlchemy 2.x `mapped_column()` oblik za obe opcije, ali primer server default-a ostaje objašnjavajući i ne menja praktični model.
+
+### Provera ponašanja
+
+U memorijskoj SQLite bazi proveravamo da se ORM objekti mogu upisati bez ručnog zadavanja polja koja imaju default, da se boolean/integer vrednosti popune i da `func.now()` obezbedi vreme. Ova provera pokriva ponašanje SQLAlchemy default-a u testnoj bazi; ne dokazuje da isti SQL literal ili tip radi identično u svakoj produkcionoj bazi.
+
+Lekcija 10 o jedinstvenim vrednostima obrađena je u nastavku. Sledeća je lekcija 11: primarni ključevi, koje naši modeli već imaju kao tehnički preduslov.
+
+## Lekcija 10: Jedinstvene vrednosti
+
+### Šta znači `unique=True`
+
+Unique ograničenje sprečava bazu da sačuva ponovljenu vrednost u koloni. To je pravilo integriteta koje baza proverava pri INSERT-u i UPDATE-u. Aplikaciona provera može ranije da pronađe zauzet slug ili email i prikaže bolju poruku, ali ne zamenjuje ograničenje: dva paralelna zahteva mogu istovremeno proći proveru, dok baza garantuje da samo jedan može da sačuva istu vrednost.
+
+`unique=True` na jednoj koloni pravi pravilo za tu kolonu. Ako su dve kolone svaka zasebno unique, kao `naziv` i `slug`, njihove vrednosti se proveravaju odvojeno; ne radi se o jedinstvenosti samo njihovog para. Za jedinstvenu kombinaciju više kolona koristi se `UniqueConstraint`.
+
+### Izmene u praktičnim modelima
+
+1. `Kategorija.naziv` i `Kategorija.slug` su dobili `unique=True` jer naziv i URL slug kategorije treba pojedinačno da identifikuju jednu kategoriju.
+2. `Proizvod.naziv` i `Proizvod.slug` su dobili `unique=True` prema pravilima priloženog source primera.
+3. `PromotivniDogadjaj.naziv` je dobio `unique=True` da bi nazivi promocija bili jedinstveni.
+4. `Korisnik.korisnicko_ime` i `Korisnik.email` već su bili unique i ostali su takvi. Lozinka nije unique: različiti korisnici smeju imati istu lozinku.
+5. Nismo dodali unique ograničenja na druge kolone, složeni `UniqueConstraint` ili poseban unique indeks; source ove lekcije ne traži takva pravila.
+
+Sva navedena polja su već `nullable=False`, pa sada istovremeno važe dva nezavisna pravila: vrednost mora postojati i ne sme se ponoviti. Jedinstvenost ne normalizuje tekst. Da li su, na primer, `"TV"` i `"tv"` jednaki zavisi od baze i kolacije; normalizaciju slug-a/email-a treba definisati odvojeno.
+
+### Ograničenje naspram indeksa i migracije
+
+`unique=True` izražava pravilo integriteta. Unique indeks takođe može da sprovodi jedinstvenost i koristiti se za pretragu, ali ga ne treba dodavati redundantno uz već postojeće ograničenje. Za poslovno pravilo nad više kolona koristi se `UniqueConstraint`; u teoriji je prikazan imenovan SQLAlchemy 2.x primer.
+
+Pošto se modeli trenutno ne koriste za održavanje postojeće baze kroz migracije, menjali smo samo SQLAlchemy metapodatke. Kada uvedemo migracije, unique ograničenje moraće da se primeni na šemu, a postojeći duplikati moraju prvo da se razreše. Samo promenjen Python model ne menja već kreiranu tabelu.
+
+### Provera ponašanja
+
+U privremenoj SQLite bazi proveriću da li duplikate odbijaju sva nova unique polja, kao i već postojeći `Korisnik.korisnicko_ime` i `Korisnik.email`. Takva provera potvrđuje ograničenja u tom testnom dijalektu; poređenje velikih/malih slova i kolacije ostaje zavisno od produkcione baze.
