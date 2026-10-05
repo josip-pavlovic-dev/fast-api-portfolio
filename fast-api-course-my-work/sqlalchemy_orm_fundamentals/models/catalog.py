@@ -28,13 +28,13 @@ class Kategorija(Base):
     )
     # naziv kategorije, npr "Elektronika"
     # za razliku od slug-a, naziv može sadržati razmake i specijalne karaktere
-    naziv: Mapped[str | None] = mapped_column(String(50))
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
     # slug predstavlja URL-friendly verziju naziva kategorije
     # koristi se u URL-ovima
     # npr "/kategorija/naziv-kategorije"
-    slug: Mapped[str | None] = mapped_column(String(55))
-    aktivna: Mapped[bool | None] = mapped_column(Boolean)
-    nivo: Mapped[int | None] = mapped_column(SmallInteger)
+    slug: Mapped[str] = mapped_column(String(55), nullable=False)
+    aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
 
 class Proizvod(Base):
@@ -45,14 +45,23 @@ class Proizvod(Base):
         primary_key=True,
         autoincrement=True,
     )
-    naziv: Mapped[str | None] = mapped_column(String(50))
-    slug: Mapped[str | None] = mapped_column(String(55))
-    opis: Mapped[str | None] = mapped_column(Text)
-    digitalni: Mapped[bool | None] = mapped_column(Boolean) # digitalni proizvod (npr. e-knjiga, softver, muzika) stavlajmo Boolean vrednost po kojoj ćemo razlikovati digitalne proizvode od fizičkih.
-    aktivan: Mapped[bool | None] = mapped_column(Boolean)
-    kreirano_u: Mapped[datetime | None] = mapped_column(DateTime, default=func.now())
-    izmenjeno_u: Mapped[datetime | None] = mapped_column(DateTime, onupdate=func.now())
-    cena: Mapped[Decimal | None] = mapped_column(Numeric(10, 2)) # cena proizvoda sa 8 cifara i 2 decimale
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+    slug: Mapped[str] = mapped_column(String(55), nullable=False)
+    opis: Mapped[str] = mapped_column(Text, nullable=False)
+    digitalni: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    aktivan: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    kreirano_u: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=func.now(),
+        nullable=False,
+    )
+    izmenjeno_u: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    cena: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
 
 class StanjeZaliha(Base):
@@ -63,5 +72,8 @@ class StanjeZaliha(Base):
         primary_key=True,
         autoincrement=True,
     )
-    kolicina: Mapped[int | None] = mapped_column(Integer)
-    poslednja_provera: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    kolicina: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    poslednja_provera: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )

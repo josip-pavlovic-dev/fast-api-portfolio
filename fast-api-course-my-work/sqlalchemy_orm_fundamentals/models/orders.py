@@ -27,8 +27,17 @@ class Porudzbina(Base):
         primary_key=True,
         autoincrement=True,
     )
-    kreirano_u: Mapped[datetime | None] = mapped_column(DateTime, default=func.now())
-    izmenjeno_u: Mapped[datetime | None] = mapped_column(DateTime, onupdate=func.now())
+    kreirano_u: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=func.now(),
+        nullable=False,
+    )
+    izmenjeno_u: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
 
 class StavkaPorudzbine(Base):

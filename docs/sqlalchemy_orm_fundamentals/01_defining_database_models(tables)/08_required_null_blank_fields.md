@@ -39,6 +39,26 @@ parent_id = Column(Integer, nullable=True)
 
 `nullable=True` dozvoljava `NULL`, ali ne zahteva da vrednost bude izostavljena. Može se proslediti i konkretan roditeljski ID.
 
+### Tipizovani ORM u SQLAlchemy 2.x
+
+U našem praktičnom kodu koristimo `Mapped[...]` i `mapped_column()`:
+
+```python
+from sqlalchemy import String, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+opis: Mapped[str | None] = mapped_column(Text, nullable=True)
+```
+
+Kada `nullable` nije naveden, SQLAlchemy 2.x ga po pravilu zaključuje iz `Mapped` anotacije: `Mapped[str]` označava nenullable kolonu, a `Mapped[str | None]` nullable kolonu. U nastavku lekcije navodimo `nullable=False` eksplicitno da bi ograničenje baze bilo jasno na mestu deklaracije. Anotacija opisuje očekivanu Python vrednost i pomaže alatima za tipove; `nullable` podešava SQL kolonu. Ta dva pravila treba držati usklađenim. Primarni ključ je nenullable zbog `primary_key=True`.
+
+Za opcionog roditelja, SQLAlchemy 2.x zapis izgleda ovako:
+
+```python
+parent_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+```
+
 ## `NULL` nije isto što i prazan tekst
 
 Za tekstualnu kolonu treba razlikovati nekoliko stanja:
@@ -64,6 +84,14 @@ Skripta, na primer, navodi:
 is_active = Column(Boolean, nullable=False, default=False)
 level = Column(SmallInteger, nullable=False, default=0)
 quantity = Column(Integer, nullable=False, default=0)
+```
+
+U tipizovanom SQLAlchemy 2.x modelu ista pravila zapisujemo ovako:
+
+```python
+aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+kolicina: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 ```
 
 Ako vrednost nije prosleđena, navedeni SQLAlchemy default-i obezbeđuju `False` ili `0` pri unosu preko SQLAlchemy-ja. U tabeli se i dalje ne dozvoljava `NULL`. U ovom stilu `default=False` je SQLAlchemy-jev podrazumevani izraz, a ne automatski serverski default koji baza primenjuje na upise svih mogućih klijenata. Za serverski default koristi se `server_default`.
@@ -129,7 +157,7 @@ Više slojeva može zato da dopunjuje jedno drugo:
 
 Osnovna razlika `NULL`/`NOT NULL` podržana je u relacijskim bazama, ali detalji ponašanja za prazne stringove i pojedina ograničenja mogu se razlikovati među bazama. Posebno ne treba zaključiti da je `""` isto što i `NULL` u svakom sistemu.
 
-Kurs koristi klasični `Column(...)` stil. U SQLAlchemy 2.0 declarative kodu tipizovane anotacije `Mapped[...]` mogu da utiču na zaključivanje nullable-a; ako želiš eksplicitno ponašanje, može se navesti `nullable=False`. To ne menja osnovno značenje ograničenja.
+Kurski snapshot koristi klasični `Column(...)` stil, dok praktični paket koristi SQLAlchemy 2.x `Mapped[...]` i `mapped_column()`. Tipizovana anotacija može da utiče na zaključivanje nullable-a, ali ne menja osnovno značenje ograničenja. Pri prelasku između stilova proveriti i anotaciju i SQLAlchemy metapodatke kolone.
 
 ## Ograničenja priloženog snapshot-a
 

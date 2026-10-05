@@ -14,10 +14,10 @@ class PromotivniDogadjaj(Base):
         primary_key=True,
         autoincrement=True,
     )
-    naziv: Mapped[str | None] = mapped_column(String(50))
-    datum_pocetka: Mapped[date | None] = mapped_column(Date)
-    datum_zavrsetka: Mapped[date | None] = mapped_column(Date)
-    umanjenje_cene: Mapped[int | None] = mapped_column(Integer)
+    naziv: Mapped[str] = mapped_column(String(50), nullable=False)
+    datum_pocetka: Mapped[date] = mapped_column(Date, nullable=False)
+    datum_zavrsetka: Mapped[date] = mapped_column(Date, nullable=False)
+    umanjenje_cene: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class VezaProizvodaIPromocije(Base):
