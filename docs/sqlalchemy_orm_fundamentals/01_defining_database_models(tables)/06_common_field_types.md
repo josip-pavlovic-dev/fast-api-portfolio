@@ -329,12 +329,34 @@ Ovo je dopunski primer našeg tipizovanog modela, ne zamena za tačan kod transk
 ## Provera razumevanja
 
 1. Koja je razlika između `String(50)` i `Text`?
+
+ODGOVOR: `String(50)` ima ograničenje dužine na 50 karaktera, dok `Text` može da sadrži proizvoljno dug tekst. `PostgreSQL` tretira ove tipove kao različite kolone: `String(n)` kao `VARCHAR(n)`, a `Text` kao `TEXT`.
+
 2. Zašto broj koji predstavlja cenu nije najbolje čuvati kao `Float`?
+
+ODGOVOR: `Float` može da uvede greške zbog ograničene preciznosti pri reprezentaciji decimalnih brojeva. Za novac je bolje koristiti `Numeric` ili `Decimal` tipove koji čuvaju tačne vrednosti.
+
 3. Šta znače precision i scale u `Numeric(10, 2)`?
+
+ODGOVOR: `precision` označava ukupan broj cifara koje broj može imati, dok `scale` označava broj cifara iza decimalnog separatora. Na primer, `Numeric(10, 2)` može da čuva brojeve sa ukupno 10 cifara, od kojih su 2 iza decimalnog separatora.
+
 4. Da li `SmallInteger` sam po sebi ograničava `level` na vrednosti od 0 do 10?
+
+ODGOVOR: Ne, `SmallInteger` samo definiše manji opseg celih brojeva u odnosu na `Integer`, ali ne nameće konkretna ograničenja na vrednosti. Ograničenja poput 0 do 10 treba eksplicitno definisati kroz dodatne provere ili `CheckConstraint`.
+
 5. Koja je razlika između tipa `Boolean` i obaveznosti kolone?
+
+ODGOVOR: `Boolean` definiše tip podatka koji može biti `True` ili `False`, dok obaveznost kolone (`nullable=False`) određuje da li kolona može imati `NULL` vrednost. Dakle, kolona može biti tipa `Boolean` i istovremeno biti obavezna ili opciona.
+
 6. Zašto PostgreSQL i SQLite mogu različito da se ponašaju iako model koristi isti SQLAlchemy tip?
+
+ODGOVOR: SQLAlchemy tipovi se prevode kroz dijalekte u tipove specifične za bazu. PostgreSQL i SQLite imaju različite implementacije i ograničenja za iste tipove, pa se ponašanje može razlikovati.
+
 7. Koje razlike postoje između dužina polja u ERD-u i skripti?
+
+ODGOVOR: ERD često prikazuje apstraktne dužine polja, dok skripta sa SQLAlchemy tipovima može imati konkretna ograničenja (`String(50)`). Takođe, neke baze (`PostgreSQL`, `SQLite`) ignorišu dužinu za tipove poput `Text`.
+
+---
 
 ## Sažetak
 

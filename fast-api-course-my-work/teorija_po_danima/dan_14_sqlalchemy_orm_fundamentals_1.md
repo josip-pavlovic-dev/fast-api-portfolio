@@ -234,9 +234,7 @@ Kasnije ćemo ih povezati otprilike ovako:
 - `korisnik` ima `porudžbine` (`Porudzbina` tabela ima strani ključ `korisnik_id`)
 - `porudžbina` ima `stavke` koje upućuju na `proizvode` (`StavkaPorudzbine` tabela ima strani ključ `proizvod_id`)
 
-To povezivanje još nismo implementirali: sadašnji modeli su odvojeni, a strani ključevi i ORM relacije dolaze u narednim lekcijama.
-
----
+To povezivanje još nismo implementirali: sadašnji modeli su odvojeni, a strani ključevi i ORM relacije dolaze---
 
 | Praktični model      | Polja i SQLAlchemy tipovi                                                                                               |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -311,3 +309,52 @@ Nije sasvim tačno da je `nullable=True` uvek podrazumevana vrednost; zavisi od 
 - `Primarni ključ` je non-nullable i jedinstven po definiciji primarnog ključa. Ne moraš dodavati `unique=True` uz `primary_key=True`.
 
 Jedna tehnička nijansa: metadata prikazuje `column.unique` kao `None` za naš `id`, a ne kao `True`. To ne znači da ID može da se ponovi: jedinstvenost garantuje `PrimaryKeyConstraint`, a ne zasebna `UNIQUE` opcija. Kod složenog primarnog ključa jedinstvena je kombinacija vrednosti svih njegovih kolona ali o tome više detalja u dokumentaciji SQLAlchemy-a.
+
+---
+
+## Pitanje 5
+
+PITANJE: Da li se `kolicina` u `StavkaPorudzbine` i `StanjeZaliha` namerno razlikuje? Zašto `StavkaPorudzbine.kolicina` ima `nullable=False` ako `Mapped[int]` već označava obaveznu vrednost?
+
+## Odgovor 5
+
+ODGOVOR:
+
+Obe kolone imaju isto ime i SQLAlchemy tip `Integer`, ali predstavljaju različite podatke:
+
+- `StavkaPorudzbine.kolicina` je broj jedinica proizvoda u konkretnoj porudžbini. Stavka bez količine nema upotrebljivo značenje, pa je obavezna.
+- `StanjeZaliha.kolicina` je broj jedinica koje su trenutno na zalihama. Ime je isto, ali je kontekst određuje tabela. Imena kolona ne moraju biti jedinstvena između različitih tabela.
+
+U SQLAlchemy 2.x, `Mapped[int]` bez `nullable=` podrazumevano daje `nullable=False`. Zato je ovo:
+
+```python
+kolicina: Mapped[int] = mapped_column(Integer, nullable=False)
+```
+
+po pitanju nullability-ja ekvivalentno ovome:
+
+```python
+kolicina: Mapped[int] = mapped_column(Integer)
+```
+
+Eksplicitni `nullable=False` u `StavkaPorudzbine` je, dakle, tehnički redundantan, ali jasno ističe pravilo i prati kursni source `Column(Integer, nullable=False)`.
+
+U trenutnom modelu `StanjeZaliha.kolicina` je `Mapped[int | None]`, pa je nullable. To prati raniji source primer, gde kolona nema `nullable=False`. Kasniji source `5_required.py` uvodi `nullable=False` i `default=0`; kada obradimo lekciju o obaveznim poljima i podrazumevanim vrednostima, ažuriraćemo i naš model na to pravilo. Razlika je zato namerna za trenutnu fazu kursa, ali nije nužno konačno pravilo zaliha.
+
+---
+
+## Pitanje 6
+
+PITANJE: Zašto je `umanjenje_cene` tipa `Integer`, a ne `Numeric(11, 3)`? Da li `Numeric` ne bi omogućio i procente i celobrojne vrednosti? Da li je odluka o tome za kasnije?
+
+## Odgovor 6
+
+ODGOVOR:
+
+Kursni source i ERD prikazuju `price_reduction` kao `Integer`, ali ne objašnjavaju da li je vrednost fiksni iznos popusta, procenat ili nešto drugo. Zato ne možemo pouzdano zaključiti poslovno značenje samo iz naziva i tipa.
+
+`Numeric(11, 3)` može čuvati i celobrojne i decimalne vrednosti, na primer `10` ili `10.125`. Međutim, tip ne označava jedinicu: vrednost `10` može značiti deset novčanih jedinica ili deset procenata. `Numeric` sam po sebi ne rešava tu dvosmislenost.
+
+Ako sistem podržava obe vrste popusta, model mora da sačuva i njihovo značenje, na primer poljem `vrsta_umanjenja` (`iznos` ili `procenat`) uz polje za vrednost, ili odvojenim poljima za iznos i procenat. Zatim se mogu dodati pravila: procenat, na primer, mora biti u dozvoljenom opsegu, dok novčani iznos ima valutu i pravila preciznosti. Za decimalne novčane iznose uobičajen je `Numeric` uz Python `Decimal`; konkretna preciznost zavisi od valute i poslovnih pravila.
+
+Za sada zadržavamo `Integer`, jer je to tip koji kurs izričito navodi. U ovoj lekciji učimo tipove kolona, ne konačan dizajn popusta. Zabeleži nedorečeno značenje, ali ne moraš sada da odlučiš da li polje predstavlja procenat ili novčani iznos; vratićemo se tome kada budemo određivali pravila domena i validaciju.
