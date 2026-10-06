@@ -148,3 +148,66 @@ Pošto se modeli trenutno ne koriste za održavanje postojeće baze kroz migraci
 ### Provera ponašanja
 
 U privremenoj SQLite bazi proveriću da li duplikate odbijaju sva nova unique polja, kao i već postojeći `Korisnik.korisnicko_ime` i `Korisnik.email`. Takva provera potvrđuje ograničenja u tom testnom dijalektu; poređenje velikih/malih slova i kolacije ostaje zavisno od produkcione baze.
+
+---
+
+## Kako da razmišljamo o SQLAlchemy-ju: klijent ili server?
+
+Da, kao početni mentalni model možeš da kažeš da se `SQLAlchemy nalazi na strani aplikacije i ponaša se kao deo klijentskog sloja koji pristupa bazi`. SQLAlchemy nije sam server baze i obično nije zaseban proces: to je Python biblioteka koju koristi naša aplikacija.
+
+Preciznije, SQLAlchemy ORM/Core pravi i prati rad sa SQL iskazima. `Engine` povezuje SQLAlchemy sa konkretnom bazom: koristi dijalekt da SQL i vrednosti prilagodi bazi, a DBAPI drajver obavlja konkretno izvršavanje kroz odgovarajući interfejs (npr. `psycopg2` za PostgreSQL, `mysqlclient` za MySQL, `sqlite3` za SQLite). Kod PostgreSQL-a ili MySQL-a drajver komunicira sa odvojenim serverom baze. Kod SQLite-a baza je obično ugrađena u aplikacioni proces, pa nema nužno odvojenog serverskog procesa.
+
+Pojednostavljen tok upisa:
+
+1. Python aplikacija napravi ORM objekat i doda ga u `Session`.
+2. Pri `flush()` ili `commit()`, ORM pripremi potrebne INSERT/UPDATE iskaze.
+3. `Engine` i njegov dijalekt kompajliraju iskaz za izabranu bazu, a DBAPI drajver ga izvršava.
+4. Baza izvršava SQL i sprovodi ograničenja kao što su `NOT NULL` i `UNIQUE`.
+5. SQLAlchemy preuzima vraćene vrednosti i sinhronizuje stanje objekta u sesiji.
+
+### Client-side i server-side default
+
+U ovom primeru:
+
+```python
+aktivna: Mapped[bool] = mapped_column(
+	Boolean,
+	default=False,
+	nullable=False,
+)
+```
+
+- `aktivna` je ime Python atributa u ORM klasi.
+- `Mapped[bool]` označava da se atribut mapira kao ORM polje sa Python vrednošću tipa `bool`; SQLAlchemy može iz anotacije da zaključi tip i nullable pravilo.
+- `mapped_column(...)` zadaje SQLAlchemy konfiguraciju kolone.
+- `Boolean` je tip kolone.
+- `default=False` je SQLAlchemy client-side default podešavanje: SQLAlchemy ga primenjuje pri svom INSERT-u kada upis ne navede vrednost.
+- `nullable=False` je pravilo kolone u šemi baze; bazu treba migrirati ili kreirati iz ažuriranih metapodataka da bi se pravilo stvarno sprovelo.
+
+Zato se ne kaže da je cela desna strana „client-side default“. Konkretno, `default=False` jeste client-side default, dok `Boolean` i `nullable=False` opisuju druge osobine kolone.
+
+Client-side govori gde je default definisan i ko ga primenjuje; ne mora da govori gde se vrednost izračunava. Na primer, `default=func.now()` je podešen kao SQLAlchemy default, ali SQLAlchemy ubacuje SQL izraz `now()` u INSERT, a bazni server izvršava tu funkciju. Nasuprot tome, `default=False` je obična Python vrednost koju SQLAlchemy prosleđuje u upitu.
+
+`server_default=...` definiše `DEFAULT` u DDL-u baze. Tada bazni server obezbeđuje vrednost i klijentima koji ne koriste SQLAlchemy, pod uslovom da izostave kolonu ili navedu `DEFAULT`. Ako upit eksplicitno pošalje `NULL`, default se ne koristi; odlučujuće je da li kolona dozvoljava `NULL`.
+
+### Python tip u `Mapped[...]` i SQL tip kolone
+
+U deklaraciji:
+
+```python
+aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+```
+
+`Mapped[bool]` opisuje Python vrednost atributa. SQLAlchemy može iz `bool` da zaključi SQLAlchemy tip `Boolean`, pa je u ovom primeru eksplicitni `Boolean` delom radi jasnoće. `mapped_column(...) zadaje kolonu i njene postavke`, kao što su `tip`, `default`, `nullability`, `primary key` i `unique` ograničenja.
+
+U anotiranom declarative modelu kolona se u mnogim slučajevima može zaključiti i samo iz `Mapped[...]`, ali `mapped_column()` nam omogućava da njenu SQLAlchemy konfiguraciju navedemo neposredno.
+
+Razlika je važnija kod celih brojeva:
+
+```python
+nivo: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+```
+
+Python vrednost je i dalje `int`; Python nema poseban ugrađeni tip `SmallInteger`. SQLAlchemy `SmallInteger` precizira SQL tip kolone, dok bi `Mapped[int]` bez eksplicitnog SQL tipa obično vodio do SQLAlchemy `Integer` tipa. Dijalekt zatim prevodi SQLAlchemy tip u odgovarajući DDL tip za izabranu bazu.
+
+Ukratko: `Mapped[T]` govori koji Python tip vrednosti očekujemo i mapiramo; `mapped_column(SQLAlchemyType, ...)` eksplicitno zadaje tip i pravila SQL kolone. Nisu suvišni jedan drugom, iako SQLAlchemy često može da zaključi deo konfiguracije iz anotacije.
