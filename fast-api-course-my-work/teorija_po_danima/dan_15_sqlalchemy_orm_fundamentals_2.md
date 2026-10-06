@@ -211,3 +211,161 @@ nivo: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 Python vrednost je i dalje `int`; Python nema poseban ugrađeni tip `SmallInteger`. SQLAlchemy `SmallInteger` precizira SQL tip kolone, dok bi `Mapped[int]` bez eksplicitnog SQL tipa obično vodio do SQLAlchemy `Integer` tipa. Dijalekt zatim prevodi SQLAlchemy tip u odgovarajući DDL tip za izabranu bazu.
 
 Ukratko: `Mapped[T]` govori koji Python tip vrednosti očekujemo i mapiramo; `mapped_column(SQLAlchemyType, ...)` eksplicitno zadaje tip i pravila SQL kolone. Nisu suvišni jedan drugom, iako SQLAlchemy često može da zaključi deo konfiguracije iz anotacije.
+
+## Dodatak: `DateTime(timezone=True)` i `DateTime()`
+
+Ova razlika je važna zato što Python, SQLAlchemy i baza imaju odvojene uloge. Python predstavlja datum i vreme kao `datetime` objekat; SQLAlchemy tipom opisuje kakvu kolonu želimo; dijalekt prevodi taj tip u oblik koji konkretna baza razume. Zato `timezone=True` nije obećanje da će svaka baza sačuvati vremensku zonu na isti način.
+
+### Naivni i timezone-aware Python `datetime`
+
+Python `datetime` može biti naivan ili timezone-aware:
+
+```python
+from datetime import datetime, timezone, timedelta
+
+naive = datetime(2025, 1, 15, 12, 0, 0)
+aware = datetime(
+	2025, 1, 15, 12, 0, 0,
+	tzinfo=timezone(timedelta(hours=2)),
+)
+
+print(naive, naive.tzinfo)
+print(aware, aware.tzinfo)
+```
+
+Izlaz:
+
+```text
+2025-01-15 12:00:00 None
+2025-01-15 12:00:00+02:00 UTC+02:00
+```
+
+Naivni objekat nema podatak koji kaže kojoj zoni ili UTC offset-u pripada `12:00`. To nije automatski „lokalno vreme“: on samo nema informaciju o zoni. Aware objekat ima offset i zato predstavlja određeni trenutak u vremenu. Za stvarne civilne zone, koje imaju pravila za letnje i zimsko računanje vremena, Python nudi `zoneinfo.ZoneInfo`, na primer `ZoneInfo("Europe/Belgrade")`.
+
+### Šta podešava SQLAlchemy tip
+
+```python
+DateTime()
+```
+
+isto je što i:
+
+```python
+DateTime(timezone=False)
+```
+
+To traži tip kolone bez podrške za vremensku zonu. Python vrednosti namenjene toj koloni uobičajeno treba da budu naivni `datetime` objekti.
+
+```python
+DateTime(timezone=True)
+```
+
+traži tip kolone koji podržava vremensku zonu, ako takav tip postoji u ciljnoj bazi i njenom SQLAlchemy dijalektu. To samo po sebi ne dodaje zonu na naivnu Python vrednost, ne pretvara automatski svaku vrednost u UTC i ne čuva nužno naziv zone kao `Europe/Belgrade`. Aplikacija treba da odluči kako pravi i normalizuje vrednosti, a rezultat čuvanja zavisi od baze i drajvera.
+
+### Šta je dijalekt i zašto je bitan?
+
+SQLAlchemy koristi generičke tipove kao `DateTime`, `String` i `Integer`; svaka baza ima svoj SQL jezik i skup tipova. Dijalekt je deo SQLAlchemy-ja koji zna kako da te generičke tipove i iskaze prilagodi izabranoj bazi. Njega određuju URL i drajver u konfiguraciji engine-a. Isti Python model zato može da proizvede različit DDL za SQLite i PostgreSQL.
+
+Za SQLAlchemy 2.0.38, kompajlirani tipovi su:
+
+| SQLAlchemy deklaracija    | SQLite DDL tip | PostgreSQL DDL tip            |
+| ------------------------- | -------------- | ----------------------------- |
+| `DateTime()`              | `DATETIME`     | `TIMESTAMP WITHOUT TIME ZONE` |
+| `DateTime(timezone=True)` | `DATETIME`     | `TIMESTAMP WITH TIME ZONE`    |
+
+SQLite-ov `DATETIME` nema ugrađenu PostgreSQL-sličnu semantiku vremenske zone. U ovom dijalektu `timezone=True` ne stvara poseban tip kolone koji čuva offset. PostgreSQL ima odvojene tipove bez i sa podrškom za vremensku zonu, pa dijalekt može da prenese tu razliku u DDL.
+
+### Proveren primer sa SQLite-om
+
+Ovaj primer upisuje naivnu vrednost u `DateTime()` kolonu, a vrednost sa offset-om `+02:00` u `DateTime(timezone=True)` kolonu. Zatim ispisuje sirove vrednosti koje čuva SQLite i Python objekte koje SQLAlchemy vraća:
+
+```python
+from datetime import datetime, timezone, timedelta
+
+from sqlalchemy import Column, DateTime, MetaData, Table, create_engine, select
+
+metadata = MetaData()
+primer = Table(
+	"datetime_primer",
+	metadata,
+	Column("bez_zone", DateTime()),
+	Column("sa_zone", DateTime(timezone=True)),
+)
+
+engine = create_engine("sqlite://")
+metadata.create_all(engine)
+
+naivno_vreme = datetime(2025, 1, 15, 12, 0, 0)
+vreme_sa_offsetom = datetime(
+	2025, 1, 15, 12, 0, 0,
+	tzinfo=timezone(timedelta(hours=2)),
+)
+
+with engine.begin() as connection:
+	connection.execute(
+		primer.insert().values(
+			bez_zone=naivno_vreme,
+			sa_zone=vreme_sa_offsetom,
+		)
+	)
+	sirovo = connection.exec_driver_sql(
+		"SELECT bez_zone, sa_zone FROM datetime_primer"
+	).one()
+	ucitano = connection.execute(select(primer)).one()
+
+	print("SQLite raw:", sirovo)
+	print("SQLite loaded:", ucitano)
+	print(
+		"SQLite tzinfo:",
+		ucitano._mapping["bez_zone"].tzinfo,
+		ucitano._mapping["sa_zone"].tzinfo,
+	)
+```
+
+Izlaz na SQLite-u:
+
+```text
+SQLite raw: ('2025-01-15 12:00:00.000000', '2025-01-15 12:00:00.000000')
+SQLite loaded: (datetime.datetime(2025, 1, 15, 12, 0), datetime.datetime(2025, 1, 15, 12, 0))
+SQLite tzinfo: None None
+```
+
+Obrati pažnju: druga Python vrednost je pre INSERT-a imala `+02:00`, ali SQLite zapis nema taj offset, a učitani Python objekat nema `tzinfo`. Dakle, u ovoj kombinaciji SQLite-a i SQLAlchemy-ja oba polja su sačuvala isti zidni sat `12:00`, ne informaciju koja bi omogućila da se izračuna da aware vrednost predstavlja `10:00 UTC`. Sam naziv `timezone=True` nije dovoljan da spreči taj gubitak.
+
+### Poređenje sa PostgreSQL-om
+
+PostgreSQL dijalekt generiše različite tipove:
+
+```python
+from sqlalchemy import DateTime
+from sqlalchemy.dialects import postgresql, sqlite
+
+print(sqlite.dialect().type_compiler_instance.process(DateTime()))
+print(sqlite.dialect().type_compiler_instance.process(DateTime(timezone=True)))
+print(postgresql.dialect().type_compiler_instance.process(DateTime()))
+print(postgresql.dialect().type_compiler_instance.process(DateTime(timezone=True)))
+```
+
+Izlaz:
+
+```text
+DATETIME
+DATETIME
+TIMESTAMP WITHOUT TIME ZONE
+TIMESTAMP WITH TIME ZONE
+```
+
+U PostgreSQL-u `TIMESTAMP WITH TIME ZONE` se često naziva `timestamptz`. Baza koristi offset iz ulazne vrednosti da bi odredila trenutak, normalizuje ga interno i pri čitanju prikazuje taj trenutak u vremenskoj zoni tekuće PostgreSQL sesije. Na primer, `2025-01-15 12:00:00+02:00` predstavlja isti trenutak kao `2025-01-15 10:00:00+00:00`; uz sesiju podešenu na UTC, rezultat bi bio prikazan približno kao `2025-01-15 10:00:00+00:00`. Tačan prikaz zavisi od postavke zone sesije.
+
+PostgreSQL ne čuva originalni naziv zone, poput `Europe/Belgrade`, niti garantuje da će vratiti isti tekstualni offset koji je poslat. Čuva trenutak, a prikaz prilagođava zoni sesije. Ako aplikaciji treba i originalni naziv zone, njega treba čuvati u posebnoj tekstualnoj koloni.
+
+Nasuprot tome, `TIMESTAMP WITHOUT TIME ZONE` čuva datum i sat bez zone i bez konverzije u UTC. Vrednost `12:00` ostaje `12:00`, ali bez dodatnog pravila nije moguće znati na koji trenutak se odnosi. Zato ne treba mešati aware Python vrednosti sa kolonama bez zone: baza može zanemariti njihov offset, pa je bolje držati Python vrednosti i SQL kolonu semantički usklađenim.
+
+### Praktično pravilo za izbor
+
+- Za događaj koji predstavlja jedan stvarni trenutak, kao što je vreme kreiranja zapisa ili poslednja provera zaliha, najčešće koristimo aware Python vrednost, čuvamo je dosledno kao UTC i biramo bazni tip koji zaista podržava vremensku zonu. PostgreSQL `TIMESTAMP WITH TIME ZONE` je jedan takav tip.
+- Za lokalni raspored koji je po nameri „svakog dana u 09:00“ nije uvek dovoljan jedan UTC trenutak. Čuvamo lokalni datum/vreme i, ako pravila letnjeg računanja vremena imaju značaj, zasebno čuvamo IANA naziv zone.
+- Za SQLite testove ne treba zaključiti da timezone vrednosti rade isto kao u PostgreSQL-u. Primer iznad pokazuje da se offset gubi. Ako aplikacija mora da čuva timezone-aware trenutke u SQLite-u, treba izabrati i testirati eksplicitnu strategiju, na primer normalizaciju u UTC pre upisa i dosledno ponovno dodavanje UTC zone pri čitanju, ili namenski SQLAlchemy tip.
+- `DateTime(timezone=True)` ne znači „sačuvaj lokalnu zonu“, a `DateTime()` ne znači „sačuvaj lokalno vreme“. Prvi traži podršku tipa sa zonom; drugi opisuje vrednost bez zone. Značenje lokalnog vremena mora doći iz pravila aplikacije.
+
+U našem modelu `StanjeZaliha.poslednja_provera` je deklarisana kao `DateTime(timezone=True)`, ali projekat još nema engine ni produkcionu bazu. Zasad je to namera izražena u SQLAlchemy metapodacima; stvarno ponašanje moći ćemo da potvrdimo tek kada izaberemo dijalekt i proverimo njegov SQL tip i ponašanje bind/rezultat vrednosti.

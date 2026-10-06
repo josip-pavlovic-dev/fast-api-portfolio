@@ -35,7 +35,7 @@ Ova postavka je deo SQLAlchemy metapodataka kolone. Kada se tabela kreira iz tih
 
 `ORM objekat` može postojati u Python-u sa nepostavljenim atributom (npr. `name` je `None`), ali se ograničenje proverava tek kada se promena pošalje bazi, tipično pri `flush()` ili `commit()`.
 
-`flush()` je metoda koja šalje promene ORM objekata bazi, a `commit()` trajno čuva te promene.
+`flush()` je metoda koja šalje promene ORM objekata bazi, a `commit()` trajno čuva te promene. `commit()` takođe implicitno poziva `flush()` pre nego što trajno sačuva promene tako da nema potrebe koristiti `flush()` ručno pre svakog `commit()`.
 
 Kod obične `Column` kolone koja nije primarni ključ, `nullable` je podrazumevano `True` ako nije drugačije navedeno.
 
@@ -102,7 +102,7 @@ ZAKLJUČAK: Pravilo za prazan tekst je odvojeno od `NOT NULL` ograničenja.
 
 ## Obaveznost i default vrednosti
 
-Polje može biti obavezno, a da aplikacija ipak ne mora svaki put eksplicitno da prosledi vrednost: SQLAlchemy ili baza mogu imati default koji je obezbeđuje pri unosu.
+Polje može biti obavezno, a da aplikacija ipak ne mora svaki put eksplicitno da prosledi vrednost: `SQLAlchemy` ili `baza` mogu imati default koji je obezbeđuje pri unosu.
 
 Skripta, na primer, navodi:
 
@@ -122,17 +122,31 @@ kolicina: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 Ako vrednost nije prosleđena, navedeni SQLAlchemy default-i obezbeđuju `False` ili `0` pri unosu preko SQLAlchemy-ja. U tabeli se i dalje ne dozvoljava `NULL`.
 
-Ovde je `default=False` SQLAlchemy client-side default podešavanje čija je vrednost običan Python `bool`; nije SQL izraz niti serverski default. SQLAlchemy koristi tu default vrednost pri pripremi INSERT-a kada upis preko SQLAlchemy-ja ne prosledi vrednost za kolonu.
+Ovde je `default=False` SQLAlchemy client-side default podešavanje čija je vrednost običan Python `bool`
 
-Ako upis zaobiđe SQLAlchemy, SQLAlchemy client-side default nije dostupan; drugi klijent šalje vrednost koju je sam pripremio. Ako SQL iskaz eksplicitno prosledi `NULL`, client-side default se ne primenjuje: baza dobija `NULL` i prihvata ga samo ako kolona dozvoljava null vrednosti. Važna ORM nijansa: dodela Python `None` atributu nije uvek isto što i eksplicitno slanje SQL `NULL`. Za kolonu sa default-om ORM najčešće tretira `None` kao izostavljenu vrednost i izostavi kolonu iz INSERT-a, tako da SQLAlchemy default može da se primeni. Ako je namera da se zaista pošalje SQL `NULL`, to treba eksplicitno označiti, na primer SQLAlchemy izrazom `null()`; `nullable=False` će tada dovesti do odbijanja upisa u bazi.
+NAPOMENA:Nije `SQL izraz` niti `serverski default`. SQLAlchemy koristi tu default vrednost pri pripremi `INSERT`-a kada upis preko SQLAlchemy-ja ne prosledi vrednost za kolonu.
 
-Za serverski default koristi se `server_default`. On definiše vrednost u DDL šemi baze i može da je primeni na upis iz SQLAlchemy-ja, SQL konzole, skripte ili drugog klijenta, ali samo ako taj INSERT izostavi kolonu ili navede `DEFAULT`. Ako INSERT eksplicitno prosledi `NULL`, server default se ne koristi; `NOT NULL` ograničenje tada odbija upis.
+Ako upis zaobiđe (ne koristi) `SQLAlchemy`, SQLAlchemy client-side default nije dostupan. U tom slučaju imamo situaciju u kojoj drugi klijent (npr. `psql` za PostgreSQL, `sqlite3` CLI za SQLite itd.) šalje vrednost koju je sam pripremio.
+
+Ako SQL iskaz (npr. `INSERT INTO product (name) VALUES (NULL)`) eksplicitno prosledi `NULL`, client-side default se ne primenjuje: baza dobija `NULL` i prihvata ga samo ako kolona dozvoljava null vrednosti.
+
+---
+
+### Veoma važna ORM nijansa
+
+Važna ORM nijansa: dodela Python `None` atributu nije uvek isto što i eksplicitno slanje SQL `NULL`. Za kolonu sa default-om ORM najčešće tretira `None` kao izostavljenu vrednost i izostavi kolonu iz INSERT-a, tako da SQLAlchemy default može da se primeni. Ako je namera da se zaista pošalje SQL `NULL`, to treba eksplicitno označiti, na primer SQLAlchemy izrazom `null()`; `nullable=False` će tada dovesti do odbijanja upisa u bazi.
+
+Za serverski default koristi se `server_default`. On definiše vrednost u `DDL šemi baze` i može da primeni tu vrednost na upis iz `SQLAlchemy`-ja, `SQL konzole`, `skripte` ili `drugog klijenta`, ali samo ako taj INSERT izostavi kolonu ili navede `DEFAULT`. Ako INSERT eksplicitno prosledi `NULL`, server default se ne koristi; `NOT NULL` ograničenje tada odbija upis.
 
 Ovo pravilo opisuje SQL koji stiže do baze. Kod ORM objekta sa atributom postavljenim na `None`, ORM može izostaviti kolonu iz INSERT-a kada postoji server default, pa baza primeni taj default. Eksplicitni SQL `NULL` i ORM atribut `None` zato ne treba automatski smatrati istim slučajem.
 
-`DDL` (Data Definition Language) šema baze definiše strukturu tabele, uključujući kolone, tipove podataka, ograničenja i default vrednosti. Serverski default se definiše u DDL šemi i primenjuje se na upise koji ne prosleđuju vrednost za kolonu.
+`DDL` (Data Definition Language) šema baze `definiše strukturu tabele`, uključujući `kolone`, `tipove podataka`, `ograničenja` i `default vrednosti`. Serverski default se definiše u DDL šemi i primenjuje se na upise koji ne prosleđuju vrednost za kolonu.
 
-Polje kao `name` nema default u source kodu, pa aplikacija treba da mu dodeli vrednost. Sama Python anotacija nije runtime validacija: obaveznost trajno sprovodi `NOT NULL` ograničenje u bazi.
+Polje kao `name` nema default u source kodu, pa aplikacija treba da mu dodeli vrednost.
+
+Sama `Python anotacija` nije `runtime validacija`: obaveznost trajno sprovodi `NOT NULL` ograničenje u bazi preko `DDL` šeme.
+
+---
 
 ### Šta se dešava od Python objekta do INSERT-a?
 
@@ -156,15 +170,17 @@ session.add(product)
 
 `flush()` se poziva zasebno kada želimo da se iskazi pošalju bazi pre završetka transakcije, na primer da bismo dobili generisani primarni ključ; sam flush ne potvrđuje transakciju i promene se i dalje mogu poništiti pozivom `session.rollback()`.
 
-4. **Dijalekt i kompajliranje:** engine već ima dijalekt izabran prema URL-u i drajveru baze. SQLAlchemy koristi taj dijalekt dok kompajlira iskaz u odgovarajući SQL i prilagođava bind parametre i rezultate konkretnom DBAPI drajveru. Dijalekt nije nešto što se prvi put uključuje tek nakon generisanja SQL-a.
+4. **Dijalekt i kompajliranje:** engine već ima dijalekt izabran prema URL-u i drajveru baze. SQLAlchemy koristi taj dijalekt dok kompajlira iskaz u odgovarajući SQL i prilagođava bind parametre i rezultate konkretnom `DBAPI` (Database API) drajveru. Dijalekt nije nešto što se prvi put uključuje tek nakon generisanja SQL-a. On se definiše prilikom kreiranja engine-a i ostaje konstantan tokom životnog veka konekcije.
 
 5. **Client-side default-i:** tokom pripreme/izvršavanja SQLAlchemy INSERT-a, SQLAlchemy primenjuje `default` za kolone za koje upis nije dao vrednost. `default=False` obezbeđuje Python vrednost `False`; `default=func.now()` ubacuje SQL izraz `now()` u INSERT, koji zatim izvršava baza. Python callable se poziva u Python-u. Ovi default-i se ne moraju pojaviti na atributu objekta odmah posle njegovog kreiranja.
 
-6. **Izvršavanje i ograničenja baze:** SQLAlchemy šalje iskaz preko konekcije, a baza izvršava INSERT. Baza primenjuje `server_default` za izostavljenu kolonu ili `DEFAULT` i sprovodi ograničenja kao što su `NOT NULL`, `UNIQUE` i strani ključevi. SQLAlchemy ne proverava unapred svako `nullable=False` polje na instanci; ako INSERT pokuša da upiše `NULL`, baza odbija red i greška se obično prijavi tokom flush-a.
+6. **Izvršavanje i ograničenja baze:** SQLAlchemy šalje iskaz preko konekcije (`Connection` objekat), a baza izvršava INSERT. Baza primenjuje `server_default` za izostavljenu kolonu ili `DEFAULT` i sprovodi ograničenja kao što su `NOT NULL`, `UNIQUE` i strani ključevi. SQLAlchemy ne proverava unapred svako `nullable=False` polje na instanci; ako INSERT pokuša da upiše `NULL`, baza odbija red i greška se obično prijavi tokom flush-a.
 
 7. **Rezultat i ORM stanje:** nakon uspeha SQLAlchemy preuzima generisani primarni ključ i druge vrednosti koje podržani dijalekt može da vrati, na primer pomoću `RETURNING`. Vrednosti serverskih default-a mogu zahtevati vraćanje kroz `RETURNING` ili dodatno učitavanje; nije garantovano da će svaki dijalekt automatski vratiti svaku takvu vrednost. Sesija zatim usklađuje stanje mapiranog objekta sa rezultatom upisa.
 
-ORM stanje ima preciznije nazive od `CREATED`, `UPDATED` i `DELETED`. Na primer, nov objekat je najpre `transient`, posle `session.add()` postaje `pending`, a posle uspešnog flush-a `persistent`. Izmenjeni persistent objekat sesija prati kao dirty; brisanje se takođe evidentira kroz sesiju. Ova stanja opisuju ORM objekat i njegov odnos sa sesijom, ne vrednosti kolona u tabeli.
+ORM stanje ima preciznije nazive od `CREATED`, `UPDATED` i `DELETED`. Na primer, nov objekat je najpre `transient` (nije povezan ni sa jednom sesijom), posle `session.add()` postaje `pending` (čeka da bude upisan u bazu), a posle uspešnog flush-a `persistent` (povezan sa sesijom i upisan u bazu).
+
+Izmenjeni persistent objekat sesija prati kao `dirty`; brisanje se takođe evidentira kroz sesiju. Ova stanja opisuju ORM objekat i njegov odnos sa sesijom, ne vrednosti kolona u tabeli.
 
 Ako baza odbije flush zbog ograničenja integriteta, transakcija sesije ne može normalno da se nastavi dok aplikacija ne pozove `session.rollback()` ili ne zatvori sesiju.
 

@@ -74,6 +74,8 @@ class StanjeZaliha(Base):
     )
     kolicina: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     poslednja_provera: Mapped[datetime] = mapped_column(
+        # Traži timezone-aware SQL tip ako ga dijalekt baze podržava.
+        # Ne garantuje čuvanje originalne vremenske zone ili offset-a.
         DateTime(timezone=True),
         nullable=False,
     )
