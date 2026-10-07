@@ -1,4 +1,4 @@
-# Dan 15: SQLAlchemy ORM Fundamentals 1
+# Dan 15: SQLAlchemy ORM Fundamentals 2
 
 ## Cilj rada
 
@@ -35,7 +35,7 @@ U `models/promotions.py` imamo klasu/tabelu `PromotivniDogadjaj` gde su `naziv`,
 
 Ne navodi se `Mapped[... | None]` za ova polja, već koristi `Mapped[...]` sa `nullable=False`. Napomena da `nullable=False` ne sprečava prazan string; to je samo ograničenje baze. Takođe, ne navođenje `None` u anotaciji automatski govori SQLAlchemy-ju da polje ne može biti `NULL` pa je `nullable=False` redundantno, i ne mora se eksplicitno navoditi osim radi jasnoće.
 
-Takođe imamo i klasu/tabelu `VezaProizvodaIPromocije` koja povezuje proizvode sa promotivnim događajima. Оna je trenutno prazna u smislu da ima samo primarni ključ (kolona `id`) i još uvek nema dodatnih kolona za strane ključeve koji bi povezivali proizvode i promotivne događaje. Kasnija uloga ove tabele će biti da uspostavi mnogostruku vezu između proizvoda i promotivnih događaja, omogućavajući da jedan proizvod može biti deo više promocija (`one-to-many`), a jedna promocija može obuhvatiti više proizvoda (`many-to-one`).
+U početnom stanju pre lekcije 12, `VezaProizvodaIPromocije` je imala samo primarni ključ. Nakon implementacije lekcije 12 dobila je FK kolone `proizvod_id` i `promotivni_dogadjaj_id`, kao i složeni unique constraint da se isti par ne unese dvaput. Time se proizvod može povezati sa više promocija, a promocija sa više proizvoda. U Python-u tu mnogostruku vezu pratimo kroz asocijativni ORM model.
 
 U `models/orders.py` imamo klasu/tabelu `Korisnik` i `Porudzbina` gde su korisnicko_ime, email, lozinka i količina stavke već bili ne-nullable, pa su ostali neizmenjeni. Vremena kreiranja i izmene porudžbine sada su tipizovana kao obavezna.
 
@@ -73,13 +73,13 @@ U praktičnim modelima sam zato postavio `default=func.now()` uz postojeći `onu
 6. **Porudžbina:** `kreirano_u` je obavezno sa `default=func.now()`. `izmenjeno_u` je obavezno i dobija praktični početni default uz `onupdate`.
 7. **README:** ažuriran je pregled implementiranih lekcija i zabeležena korekcija za `izmenjeno_u`.
 
-Nismo unapred dodavali `unique=True`, `nove primarne ključeve`, `strane ključeve`, `roditeljski ID` niti `ORM relacije`. To pripada narednim lekcijama; postojeći `id` ključevi ostaju tehnički preduslov za ORM modele.
+U tadašnjem stanju projekta nisu još bili dodati `unique=True`, strani ključevi niti ORM relacije; te izmene su naknadno obrađene u lekcijama 10 i 12. `id` primarni ključevi su već postojali, zato lekcija 11 objašnjava njihovu ulogu bez dodavanja novih kolona. Samoreferencirajući `roditelj_id` za kategoriju i dalje čeka lekciju 13.
 
 ---
 
 ## Provera
 
-Provereno je da se paket modela uvozi i da sva polja osim primarnih ključeva imaju `nullable=False` u SQLAlchemy metapodacima. Ovo proverava mapiranje, ali još ne izvršava INSERT nad bazom; engine i sesije nisu deo ovog projekta u ovoj fazi.
+Provereno je da se paket modela uvozi i da se mapiranje ispravno konfiguriše. Nakon lekcije 12 dodatno je testirana privremena memorijska SQLite baza sa uključenim FK enforcement-om: svih šest FK-ova je kreirano, ORM navigacija radi, nepostojeći roditeljski red i dupli par proizvoda/promocije bivaju odbijeni. Projekat i dalje nema trajni engine/session modul; provera koristi zaseban privremeni engine i ne menja trajnu bazu.
 
 ---
 
@@ -369,3 +369,268 @@ Nasuprot tome, `TIMESTAMP WITHOUT TIME ZONE` čuva datum i sat bez zone i bez ko
 - `DateTime(timezone=True)` ne znači „sačuvaj lokalnu zonu“, a `DateTime()` ne znači „sačuvaj lokalno vreme“. Prvi traži podršku tipa sa zonom; drugi opisuje vrednost bez zone. Značenje lokalnog vremena mora doći iz pravila aplikacije.
 
 U našem modelu `StanjeZaliha.poslednja_provera` je deklarisana kao `DateTime(timezone=True)`, ali projekat još nema engine ni produkcionu bazu. Zasad je to namera izražena u SQLAlchemy metapodacima; stvarno ponašanje moći ćemo da potvrdimo tek kada izaberemo dijalekt i proverimo njegov SQL tip i ponašanje bind/rezultat vrednosti.
+
+---
+
+## Samostalna implementacija: lekcije 11 i 12
+
+Ovaj vodič je redosled za samostalno prekucavanje i razumevanje izmena u projektnim modelima. Kod u postojećim `.py` fajlovima služi kao referenca za poređenje tek nakon što pokušaš sam. Radimo od jednog odnosa do sledećeg i proveravamo svaku stranu veze. Nemoj ponovo dodavati kolone koje već postoje.
+
+### Korak 1: pregledaj polazno stanje i nacrtaj veze
+
+Pre koda otvori `db/base.py` i tri fajla u `models/`. Svaka od osam klasa već ima `id` sa `primary_key=True`; u lekciji 11 zato `ne praviš` još jedan `primarni ključ`. Zatim zapiši gde se nalazi FK. Pravilo je da se FK veze jedan-prema-više nalazi u tabeli „više“:
+
+| Odnos                                   | Tabela koja čuva FK          | FK kolona                | Cilj                     |
+| --------------------------------------- | ---------------------------- | ------------------------ | ------------------------ |
+| kategorija 1:N proizvodi                | `proizvod`                   | `kategorija_id`          | `kategorija.id`          |
+| korisnik 1:N porudžbine                 | `porudzbina`                 | `korisnik_id`            | `korisnik.id`            |
+| porudžbina 1:N stavke                   | `stavka_porudzbine`          | `porudzbina_id`          | `porudzbina.id`          |
+| proizvod 1:N stavke                     | `stavka_porudzbine`          | `proizvod_id`            | `proizvod.id`            |
+| proizvod 1:N zapisi veze sa promocijom  | `veza_proizvoda_i_promocije` | `proizvod_id`            | `proizvod.id`            |
+| promocija 1:N zapisi veze sa proizvodom | `veza_proizvoda_i_promocije` | `promotivni_dogadjaj_id` | `promotivni_dogadjaj.id` |
+
+Poslednja dva odnosa zajedno predstavljaju logičku vezu više-prema-više između proizvoda i promocija. U fizičkoj šemi ona je razložena na dve veze jedan-prema-više preko `VezaProizvodaIPromocije`.
+
+---
+
+### Korak 2: potvrdi ciljna imena
+
+`ForeignKey()` prima tekst oblika `"ime_tabele.ime_kolone"`, a ne ime Python klase. Pročitaj `__tablename__` u ciljnom modelu:
+
+```python
+class Kategorija(Base):
+	__tablename__ = "kategorija"
+```
+
+Zato FK ka njenom ID-ju glasi `ForeignKey("kategorija.id")`. Česta greška je da se napiše ime klase (`"Kategorija.id"`) ili staro englesko ime tabele (`"category.id"`); obe vrednosti bi bile pogrešne za naš projekat.
+
+---
+
+### Korak 3: dodaj FK u tabelu na strani „više“
+
+U `catalog.py`, unesi import `ForeignKey`, pa u `Proizvod` dodaj FK pored njegovih kolona:
+
+```python
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column
+
+from ..db import Base
+class Proizvod(Base):
+	__tablename__ = "proizvod"
+	id: Mapped[int] = mapped_column(
+		Integer,
+		primary_key=True,
+	)
+	kategorija_id: Mapped[int] = mapped_column(Integer,
+		ForeignKey("kategorija.id"),
+		nullable=False,
+	)
+```
+
+`Mapped[int]` kaže da je Python vrednost integer; `ForeignKey(...)` daje SQLAlchemy-ju cilj referenciranja (tj. kojoj tabeli i koloni FK kolone `kategorija_id` pripada, u našem slučaju kolona kategorija_id referencira na kolonu `id` iz tabele `kategorija` -> model class `Kategorija`: `kategorija.id`); `nullable=False` zahteva da `svaki proizvod` iz tabele `proizvod` ima svoju kategoriju. `FK` sam po sebi ne znači da je obavezan. U ovom domenu smo odlučili da proizvod bez kategorije nije dozvoljen.
+
+Dodaj odgovarajući komentar `Lekcija 12` uz novi FK prilikom vežbanja, kao što je urađeno u referentnom fajlu. Komentar treba da objasni pravilo, a ne samo da ponovi sintaksu!
+
+---
+
+### Korak 4: dodaj Python navigaciju na obe strane
+
+U `Kategorija` dodaj kolekciju proizvoda, a u `Proizvod` atribut jedne kategorije:
+
+```python
+# U Kategorija:
+proizvodi: Mapped[list[Proizvod]] = relationship(back_populates="kategorija")
+
+# U Proizvod:
+kategorija: Mapped[Kategorija] = relationship(back_populates="proizvodi")
+```
+
+Obe vrednosti `back_populates` moraju tačno da odgovaraju imenu atributa na suprotnoj klasi. `proizvodi` je kolekcija jer kategorija može imati više proizvoda; `kategorija` je jedan objekat jer svaki proizvod ima jednu obaveznu kategoriju. Nijedan od ovih `relationship()` atributa nije SQL kolona: kolona je `kategorija_id`.
+
+`back_populates = "<ime_atributa>"` predstavlja atribut na suprotnoj strani veze (npr. `proizvodi` u `Kategorija` ili `kategorija` u `Proizvod`) i on je obavezan za dvosmernu navigaciju između povezanih modela i predviđa da promena na jednoj strani automatski ažurira drugu stranu, čime se održava konzistentnost ORM objekata (npr. dodavanje proizvoda u `Kategorija.proizvodi` automatski postavlja `Proizvod.kategorija`).
+
+---
+
+### Korak 5: obradi korisnika i porudžbinu
+
+U `orders.py` dodaj `ForeignKey` i `relationship` importe. FK je na strani porudžbine, jer jedan korisnik može imati mnogo porudžbina:
+
+```python
+# U Porudzbina:
+korisnik_id: Mapped[int] = mapped_column(
+	ForeignKey("korisnik.id"),
+	nullable=False,
+)
+korisnik: Mapped[Korisnik] = relationship(back_populates="porudzbine")
+
+# U Korisnik:
+porudzbine: Mapped[list[Porudzbina]] = relationship(back_populates="korisnik")
+```
+
+Prati istu proveru kao u prethodnom koraku: stvarni FK je `korisnik_id`; `korisnik` i `porudzbine` su samo ORM putanje za rad sa objektima.
+
+---
+
+### Korak 6: poveži stavku sa porudžbinom i proizvodom
+
+`StavkaPorudzbine` je na strani „više“ u oba odnosa: porudžbina ima više stavki, a proizvod može biti u stavkama različitih porudžbina. U `StavkaPorudzbine` dodaj oba obavezna FK-a:
+
+```python
+porudzbina_id: Mapped[int] = mapped_column(
+	ForeignKey("porudzbina.id"),
+	nullable=False,
+)
+proizvod_id: Mapped[int] = mapped_column(
+	ForeignKey("proizvod.id"),
+	nullable=False,
+)
+```
+
+Zatim dodaj četiri ORM navigaciona atributa: `Porudzbina.stavke` ↔ `StavkaPorudzbine.porudzbina` i `Proizvod.stavke_porudzbine` ↔ `StavkaPorudzbine.proizvod`. Stavka čuva i svoju poslovnu kolonu `kolicina`, zato je modelujemo kao klasu, ne kao anonimnu direktnu many-to-many vezu.
+
+---
+
+### Korak 7: izgradi vezu proizvod–promocija preko asocijativnog modela
+
+U `VezaProizvodaIPromocije` dodaj `proizvod_id` i `promotivni_dogadjaj_id` kao `ForeignKey` kolone sa `nullable=False`. Dodaj `Proizvod.veze_promocija` ↔ `VezaProizvodaIPromocije.proizvod` i `PromotivniDogadjaj.veze_proizvoda` ↔ `VezaProizvodaIPromocije.promotivni_dogadjaj`.
+
+U `promotions.py` dodaj i `UniqueConstraint` nad parom kolona:
+
+```python
+__table_args__ = (
+	UniqueConstraint(
+		"proizvod_id",
+		"promotivni_dogadjaj_id",
+		name="uq_proizvod_promocija",
+	),
+)
+```
+
+Ovo sprečava samo da se isti proizvod i ista promocija povežu dvaput. Svaki FK zasebno sme da se ponavlja, inače bi proizvod mogao biti u samo jednoj promociji ili bi promocija mogla imati samo jedan proizvod. Constraint koristi SQL imena kolona, a ne Python atribute kroz tačku.
+
+---
+
+### Korak 8: razreši tipove između modula bez runtime ciklusa
+
+Nakon što definišemo sve modele i njihove veze, potrebno je razrešiti tipove između modula bez izazivanja runtime ciklusa. Ovo se postiže kombinacijom `from __future__ import annotations` i `TYPE_CHECKING` bloka za uvoz tipova samo tokom statičke analize.
+
+Pošto su `Proizvod`, `StavkaPorudzbine` i model promocione veze u različitim fajlovima, tipovi se međusobno pominju. U tim modulima koristi se:
+
+```python
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from .catalog import Proizvod
+```
+
+U svakom fajlu uvozi se samo klasa koja mu treba za anotaciju. `TYPE_CHECKING` blok služi statičkoj analizi i ne izvršava te importe tokom rada programa, čime izbegavamo runtime kružni import. `from __future__ import annotations` odlaže obradu anotacija, a SQLAlchemy zatim razrešava klase kada su modeli registrovani.
+
+---
+
+### Korak 9: ne dodaj još roditeljsku kategoriju ni kaskadno brisanje
+
+Ovde namerno stajemo na odnosima iz lekcije 12. `Kategorija.parent_id`/`roditelj_id` je samoreferencirajući FK i pripada lekciji 13. Takođe nismo dodali `ondelete="CASCADE"`, `delete-orphan` niti pravila brisanja. To su odvojene odluke; običan FK ne znači da brisanje roditelja automatski briše decu.
+
+---
+
+### Korak 10: proveri mapiranje, šemu i ponašanje
+
+Prvo pokreni konfiguraciju mappera iz root-a repozitorijuma:
+
+```bash
+PYTHONPATH=fast-api-course-my-work .venv/bin/python -c "from sqlalchemy.orm import configure_mappers; from sqlalchemy_orm_fundamentals import models; configure_mappers(); print('Mapperi su ispravni')"
+```
+
+Ovo hvata nepostojeće ciljne klase, pogrešan `back_populates` i greške u odnosima, ali samo po sebi ne proverava upis u bazu.
+
+Za proveru ograničenja koristi se nova memorijska SQLite baza, ne korisnička/produkcijska baza. Napravi engine sa `sqlite://`, uključi SQLite FK enforcement na konekciji (`PRAGMA foreign_keys=ON`), pa pozovi `Base.metadata.create_all(engine)`. SQLite foreign key provera nije uvek uključena po podrazumevanom podešavanju; bez `PRAGMA` test ne dokazuje da FK baza stvarno sprovodi.
+
+Proveri tri slučaja:
+
+1. Napravi kategoriju i proizvod preko `Proizvod(kategorija=kategorija)`, potvrdi da INSERT-i prolaze i da su `proizvod.kategorija_id` i `kategorija.proizvodi` povezani.
+
+```python
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy_orm_fundamentals import models
+from sqlalchemy import create_engine
+
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+with engine.connect() as conn:
+    conn.execute("PRAGMA foreign_keys=ON")
+with Session(engine) as session:
+    kategorija = models.Kategorija(naziv="Elektronika")
+    proizvod = models.Proizvod(naziv="Laptop", kategorija=kategorija)
+    session.add(proizvod)
+    session.commit()
+    assert proizvod.kategorija_id == kategorija.id
+    assert proizvod in kategorija.proizvodi
+```
+
+2. Napravi korisnika, porudžbinu i stavku preko ORM atributa; proveri navigaciju `korisnik.porudzbine`, `porudzbina.stavke` i `stavka.proizvod`.
+
+```python
+from sqlalchemy.orm import Session
+from sqlalchemy_orm_fundamentals import models
+from sqlalchemy import create_engine
+
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+with engine.connect() as conn:
+    conn.execute("PRAGMA foreign_keys=ON")
+with Session(engine) as session:
+    korisnik = models.Korisnik(ime="Pera", prezime="Peric")
+    porudzbina = models.Porudzbina(korisnik=korisnik)
+    stavka = models.Stavka(porudzbina=porudzbina, proizvod=models.Proizvod(naziv="Telefon", kategorija=models.Kategorija(naziv="Elektronika")))
+    session.add(stavka)
+    session.commit()
+    assert porudzbina in korisnik.porudzbine
+    assert stavka in porudzbina.stavke
+    assert stavka.proizvod is not None
+```
+
+3. Dodaj istu kombinaciju proizvoda/promocije dva puta i očekuj `IntegrityError`; zatim probaj FK ka ID-ju koji ne postoji i očekuj isto odbijanje baze. Posle neuspešnog flush-a/commit-a pozovi `session.rollback()` pre nastavka korišćenja sesije.
+
+```python
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy_orm_fundamentals import models
+from sqlalchemy import create_engine
+
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+with engine.connect() as conn:
+    conn.execute("PRAGMA foreign_keys=ON")
+with Session(engine) as session:
+    proizvod = models.Proizvod(naziv="Laptop", kategorija=models.Kategorija(naziv="Elektronika"))
+    promocija = models.Promocija(naziv="Popust 10%")
+    session.add(proizvod)
+    session.add(promocija)
+    session.commit()
+
+    # Dodaj istu kombinaciju proizvoda/promocije dva puta
+    try:
+        session.add(models.ProizvodPromocija(proizvod=proizvod, promocija=promocija))
+        session.add(models.ProizvodPromocija(proizvod=proizvod, promocija=promocija))
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+
+    # Probaj FK ka ID-ju koji ne postoji
+    try:
+        session.add(models.ProizvodPromocija(proizvod_id=999, promocija_id=999))
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+```
+
+Na kraju pokreni test suite, proveri model dijagnostikama i `git diff --check`, pa osveži README i ERD. U Python fajlovima ostavi kratke komentare `Lekcija 12` uz FK, relationship i unique promene. Ne menjaš stare kurske snapshot-e. Koristi `session.rollback()` posle neuspešnog commit-a.
+
+---
+
+### Kriterijum završetka
+
+- Svih osam postojećih ORM klasa i njihov po jedan `id` PK ostaju netaknuti.
+- Postoje tačno šest FK kolona iz tabele na početku ovog vodiča; sve su `nullable=False`.
+- Svaki `relationship()` ima odgovarajući `back_populates` na drugoj strani.
+- Isti par proizvoda/promocije ne može se sačuvati dvaput.
+- Mapper provera i SQLite provere prolaze; samoreferencirajući FK i pravila brisanja nisu dodati.

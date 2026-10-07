@@ -6,13 +6,15 @@ Priloženi transkript za lekciju 11 ponavlja sadržaj lekcije 10 o `unique=True`
 
 ## Cilj lekcije
 
-Svaki ORM model treba da ima način da jednoznačno prepozna svaki red. U ovoj verziji modela dodaje se kolona `id` kao primarni ključ:
+Svaki ORM model treba da ima način da jednoznačno prepozna svaki red. Kurski source u ovoj lekciji dodaje kolonu `id` kao primarni ključ:
 
 ```python
 id = Column(Integer, primary_key=True, autoincrement=True)
 ```
 
 Ovo je numerički, automatski generisan identifikator koji baza dodeljuje novom redu. U source kodu isti obrazac se ponavlja za `Category`, `PromotionEvent`, `Product`, `ProductPromotionEvent`, `StockManagement`, `User`, `Order` i `OrderProduct`.
+
+U našem praktičnom projektu ovih osam tabela već imaju `id` primarni ključ od ranijih vežbi. Zato u ovoj lekciji ne dodajemo duple ključeve: proveravamo šta postojeći `primary_key=True` znači i beležimo da ga SQLAlchemy ORM koristi za identitet svakog objekta.
 
 ## Šta je primarni ključ
 
@@ -49,6 +51,34 @@ Ovde:
 
 `primary_key=True` ujedno znači da je kolona obavezna i jedinstvena. Ne mora se dodatno navesti `nullable=False` ili `unique=True` za tu istu kolonu.
 
+## Zapis u našem SQLAlchemy 2.x projektu
+
+Praktični modeli koriste `Mapped[...]` i `mapped_column()`. Na primer, `Kategorija.id` je već definisan ovako:
+
+```python
+from sqlalchemy import Integer
+from sqlalchemy.orm import Mapped, mapped_column
+
+id: Mapped[int] = mapped_column(
+	Integer,
+	primary_key=True,
+	autoincrement=True,
+)
+```
+
+`Mapped[int]` opisuje Python vrednost ID-ja, `Integer` SQLAlchemy tip kolone, a `primary_key=True` njenu ulogu u tabeli. `autoincrement=True` traži automatsko generisanje integer ključa kada aplikacija ne prosledi ID. U našem kodu isti obrazac postoji za svaku od osam ORM klasa.
+
+| Projekat: klasa           | Tabela                       | Primarni ključ |
+| ------------------------- | ---------------------------- | -------------- |
+| `Kategorija`              | `kategorija`                 | `id: Integer`  |
+| `Proizvod`                | `proizvod`                   | `id: Integer`  |
+| `StanjeZaliha`            | `stanje_zaliha`              | `id: Integer`  |
+| `PromotivniDogadjaj`      | `promotivni_dogadjaj`        | `id: Integer`  |
+| `VezaProizvodaIPromocije` | `veza_proizvoda_i_promocije` | `id: Integer`  |
+| `Korisnik`                | `korisnik`                   | `id: Integer`  |
+| `Porudzbina`              | `porudzbina`                 | `id: Integer`  |
+| `StavkaPorudzbine`        | `stavka_porudzbine`          | `id: Integer`  |
+
 ## Kako se vrednost generiše i kada je dostupna
 
 Pri unosu novog reda aplikacija obično ne prosleđuje `id`; baza generiše vrednost prema mehanizmu koji koristi izabrani dijalekt. SQLAlchemy pribavlja generisani ključ nakon uspešnog `INSERT`-a, tako da je dostupan objektu nakon što je red upisan, na primer posle `flush()` ili `commit()`.
@@ -71,7 +101,7 @@ Naziv ili slug mogu se menjati u skladu sa poslovnim pravilima, ali `id` ostaje 
 
 ## Jedna kolona ili složeni primarni ključ
 
-Svi modeli u priloženom source kodu koriste jednu `Integer` kolonu `id`. Primarni ključ može, međutim, da se sastoji od više kolona; tada se svaka kolona označava sa `primary_key=True`:
+Svi modeli u source-u i našem projektu koriste jednu `Integer` kolonu `id`. Primarni ključ može, međutim, da se sastoji od više kolona; tada se svaka kolona označava sa `primary_key=True`:
 
 ```python
 class Membership(Base):
@@ -81,7 +111,7 @@ class Membership(Base):
 	user_id = Column(Integer, primary_key=True)
 ```
 
-U tom primeru identitet reda je par `(organization_id, user_id)`. Svaka vrednost pojedinačne kolone može se ponoviti, ali kombinacija ne može. Složeni ključevi su korisni u nekim veznim tabelama, ali zahtevaju da se u odnosima i upitima koristi ceo ključ. Izvor ove lekcije bira jednostavniji, surogatni `id`.
+U tom primeru identitet reda je par `(organization_id, user_id)`. Svaka vrednost pojedinačne kolone može se ponoviti, ali kombinacija ne može. Složeni ključevi su korisni u nekim veznim tabelama, ali zahtevaju da se u odnosima i upitima koristi ceo ključ. Naš projekat bira jednostavniji, surogatni `id`; buduća vezna tabela `VezaProizvodaIPromocije` zadržava svoj `id`, a dupliranje para proizvoda i promocije sprečava odvojeni složeni `UniqueConstraint`. To su dva različita pravila.
 
 ## Surogatni i prirodni ključevi
 
@@ -90,20 +120,20 @@ U tom primeru identitet reda je par `(organization_id, user_id)`. Svaka vrednost
 
 `name`, `slug`, `username` i `email` u ovoj skripti ostaju unique, ali ne postaju primarni ključevi. To zadržava stabilan tehnički identitet i istovremeno sprovodi poslovnu jedinstvenost.
 
-## Pregled modela iz source koda
+## Pregled modela iz projekta
 
-| Model                   | Primarni ključ                 |
-| ----------------------- | ------------------------------ |
-| `Category`              | `id`, `Integer`, autoincrement |
-| `PromotionEvent`        | `id`, `Integer`, autoincrement |
-| `Product`               | `id`, `Integer`, autoincrement |
-| `ProductPromotionEvent` | `id`, `Integer`, autoincrement |
-| `StockManagement`       | `id`, `Integer`, autoincrement |
-| `User`                  | `id`, `Integer`, autoincrement |
-| `Order`                 | `id`, `Integer`, autoincrement |
-| `OrderProduct`          | `id`, `Integer`, autoincrement |
+| Model                     | Primarni ključ                 |
+| ------------------------- | ------------------------------ |
+| `Kategorija`              | `id`, `Integer`, autoincrement |
+| `Proizvod`                | `id`, `Integer`, autoincrement |
+| `StanjeZaliha`            | `id`, `Integer`, autoincrement |
+| `PromotivniDogadjaj`      | `id`, `Integer`, autoincrement |
+| `VezaProizvodaIPromocije` | `id`, `Integer`, autoincrement |
+| `Korisnik`                | `id`, `Integer`, autoincrement |
+| `Porudzbina`              | `id`, `Integer`, autoincrement |
+| `StavkaPorudzbine`        | `id`, `Integer`, autoincrement |
 
-`ProductPromotionEvent` sada ima `id`, ali još nema kolone koje bi povezale proizvod i promotivni događaj. Sam primarni ključ ne uspostavlja relaciju; za to su potrebni strani ključevi i odgovarajuće relacione deklaracije, što pripada kasnijoj temi.
+Primarni ključ sam ne uspostavlja relaciju. U našem projektu smo nakon lekcije 12 dodali FK kolone i ORM veze; `VezaProizvodaIPromocije` zato sada ima sopstveni `id` i dva FK-a ka povezanim tabelama.
 
 ## Problemi u priloženom source fajlu
 
@@ -127,7 +157,8 @@ Ovo su zapažanja o dostavljenom kodu, bez izmene source fajla:
 
 - Primarni ključ jednoznačno identifikuje red; ne može biti `NULL` i mora biti jedinstven.
 - SQLAlchemy ORM koristi PK za identitet objekta i mapiranje promena na red u bazi.
-- Source kod dodaje `id = Column(Integer, primary_key=True, autoincrement=True)` u svih osam modela.
+- Svih osam modela u našem projektu već ima `id: Mapped[int]` sa `primary_key=True` i `autoincrement=True`; ovu lekciju koristimo da razumemo postojeći kod, ne da dodamo drugi PK.
 - Automatski generisani ID je tehnički identifikator; ne garantuje redosled bez praznina.
 - `unique=True` na nazivu, slug-u, korisničkom imenu ili email-u ostaje odvojeno poslovno ograničenje.
+- Složeni `UniqueConstraint` na FK paru u veznoj tabeli nije složeni primarni ključ.
 - Priloženi transkript je duplikat lekcije 10, a source sadrži tekst koji izaziva `SyntaxError`; obe stvari su eksplicitno zabeležene, bez izmene source fajla.

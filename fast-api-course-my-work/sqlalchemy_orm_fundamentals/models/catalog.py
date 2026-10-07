@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Integer,
     Numeric,
     SmallInteger,
@@ -11,9 +15,14 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base import Base
+
+if TYPE_CHECKING:
+    # Lekcija 12: uvozi služe tipovima veza bez runtime kružnih importa.
+    from .orders import StavkaPorudzbine
+    from .promotions import VezaProizvodaIPromocije
 
 
 class Kategorija(Base):
@@ -36,6 +45,9 @@ class Kategorija(Base):
     aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
+    # Lekcija 12: jedna kategorija može da ima više proizvoda.
+    proizvodi: Mapped[list[Proizvod]] = relationship(back_populates="kategorija")
+
 
 class Proizvod(Base):
     __tablename__ = "proizvod"
@@ -44,6 +56,11 @@ class Proizvod(Base):
         Integer,
         primary_key=True,
         autoincrement=True,
+    )
+    # Lekcija 12: svaki proizvod referencira postojeću obaveznu kategoriju.
+    kategorija_id: Mapped[int] = mapped_column(
+        ForeignKey("kategorija.id"),
+        nullable=False,
     )
     naziv: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     slug: Mapped[str] = mapped_column(String(55), nullable=False, unique=True)
@@ -62,6 +79,15 @@ class Proizvod(Base):
         nullable=False,
     )
     cena: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+
+    # Lekcija 12: ORM atributi omogućavaju navigaciju do povezanih objekata.
+    kategorija: Mapped[Kategorija] = relationship(back_populates="proizvodi")
+    stavke_porudzbine: Mapped[list[StavkaPorudzbine]] = relationship(
+        back_populates="proizvod"
+    )
+    veze_promocija: Mapped[list[VezaProizvodaIPromocije]] = relationship(
+        back_populates="proizvod"
+    )
 
 
 class StanjeZaliha(Base):
