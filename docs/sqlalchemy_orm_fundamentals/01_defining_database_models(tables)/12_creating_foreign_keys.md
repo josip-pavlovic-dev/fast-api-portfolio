@@ -143,7 +143,7 @@ class Proizvod(Base):
 
 Ovo je skraćeni prikaz stvarnih imena iz našeg projekta; kolone koje nisu važne za vezu izostavljene su.
 
-Na primer, preko ORM-a može se raditi sa `proizvod.kategorija` da bi se pristupilo kategoriji proizvoda ili sa `kategorija.proizvodi` da bi se pristupilo kolekciji proizvoda. SQLAlchemy koristi FK mapiranje i relationship konfiguraciju da izvede potrebna učitavanja i sinhronizuje vezu između objekata.
+Na primer, preko ORM-a može se raditi sa `Proizvod.kategorija` da bi se pristupilo kategoriji proizvoda ili sa `Kategorija.proizvodi` da bi se pristupilo kolekciji proizvoda. SQLAlchemy koristi FK mapiranje i relationship konfiguraciju da izvede potrebna učitavanja i sinhronizuje vezu između objekata.
 
 ### Uparivanje sa `back_populates`
 
