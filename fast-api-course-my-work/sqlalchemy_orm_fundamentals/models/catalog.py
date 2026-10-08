@@ -45,6 +45,20 @@ class Kategorija(Base):
     aktivna: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
+    # Lekcija 13: NULL dozvoljava korenskoj kategoriji da nema roditelja.
+    roditelj_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kategorija.id"),
+        nullable=True,
+    )
+
+    # Lekcija 13: remote_side označava ID roditelja u samoreferencirajućoj vezi.
+    roditelj: Mapped[Kategorija | None] = relationship(
+        back_populates="deca",
+        remote_side=lambda: [Kategorija.id],
+    )
+    # Lekcija 13: svaka kategorija može imati više direktnih potkategorija.
+    deca: Mapped[list[Kategorija]] = relationship(back_populates="roditelj")
+
     # Lekcija 12: jedna kategorija može da ima više proizvoda.
     proizvodi: Mapped[list[Proizvod]] = relationship(back_populates="kategorija")
 

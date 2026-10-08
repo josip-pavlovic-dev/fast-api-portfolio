@@ -6,6 +6,8 @@ Danas nastavljamo modelovanje tabela kroz lekcije 08–13. Cilj je da do samoref
 
 Kurski snapshot-i ostaju neizmenjeni. U praktičnom paketu koristimo SQLAlchemy 2.x stil (`Mapped[...]`, `mapped_column()`), srpske ASCII nazive i postojeći root `.venv`. Ako praktični model namerno odstupi od source primera, razlog beležimo ovde.
 
+---
+
 ## Plan za danas
 
 1. **Lekcija 08 – Obavezna polja:** uskladiti `Mapped` anotacije i `nullable=False`; razlikovati `NULL` od praznog teksta.
@@ -16,6 +18,8 @@ Kurski snapshot-i ostaju neizmenjeni. U praktičnom paketu koristimo SQLAlchemy 
 6. **Lekcija 13 – Samoreferencirajući FK:** dodati vezu kategorije sa roditeljskom kategorijom i razrešiti zašto root kategorija zahteva nullable FK.
 
 Redosled može da se pomeri ako neka provera pokaže da treba dodatno utvrditi prethodni pojam. Kriterijum za završetak nije samo da se kod učita: treba umeti objasniti koje pravilo sprovodi anotacija, koje SQLAlchemy metapodatak, a koje baza.
+
+---
 
 ## Lekcija 08: Obaveznost i `NULL`
 
@@ -87,6 +91,8 @@ Provereno je da se paket modela uvozi i da se mapiranje ispravno konfiguriše. N
 
 Odgovore na pitanja iz lekcije 08 dodaćemo ovde nakon provere razumevanja. Sledeća tema je lekcija 09: kada SQLAlchemy primenjuje `default`, kada bazu koristi `server_default` i kako callable default utiče na vrednost.
 
+---
+
 ## Lekcija 09: Podrazumevane vrednosti
 
 ### Šta smo naučili
@@ -99,6 +105,8 @@ Default određuje vrednost za INSERT koji ne navede vrednost kolone. `nullable=F
 - `server_default=...` opisuje `DEFAULT` u DDL-u; baza ga koristi i za klijente koji ne koriste ovaj SQLAlchemy model, ako izostave kolonu.
 
 SQLAlchemy `default` važi za SQLAlchemy ORM i Core iskaze, ali ne i za SQL koji direktno izvršava drugi klijent. `server_default` važi na nivou baze. Ako se šema već kreira, dodavanje ili promena serverskog default-a zahteva migraciju; promena modela sama ne prepravlja postojeću tabelu.
+
+---
 
 ### Kako se to odnosi na naše modele
 
@@ -190,6 +198,8 @@ Client-side govori gde je default definisan i ko ga primenjuje; ne mora da govor
 
 `server_default=...` definiše `DEFAULT` u DDL-u baze. Tada bazni server obezbeđuje vrednost i klijentima koji ne koriste SQLAlchemy, pod uslovom da izostave kolonu ili navedu `DEFAULT`. Ako upit eksplicitno pošalje `NULL`, default se ne koristi; odlučujuće je da li kolona dozvoljava `NULL`.
 
+---
+
 ### Python tip u `Mapped[...]` i SQL tip kolone
 
 U deklaraciji:
@@ -211,6 +221,8 @@ nivo: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 Python vrednost je i dalje `int`; Python nema poseban ugrađeni tip `SmallInteger`. SQLAlchemy `SmallInteger` precizira SQL tip kolone, dok bi `Mapped[int]` bez eksplicitnog SQL tipa obično vodio do SQLAlchemy `Integer` tipa. Dijalekt zatim prevodi SQLAlchemy tip u odgovarajući DDL tip za izabranu bazu.
 
 Ukratko: `Mapped[T]` govori koji Python tip vrednosti očekujemo i mapiramo; `mapped_column(SQLAlchemyType, ...)` eksplicitno zadaje tip i pravila SQL kolone. Nisu suvišni jedan drugom, iako SQLAlchemy često može da zaključi deo konfiguracije iz anotacije.
+
+---
 
 ## Dodatak: `DateTime(timezone=True)` i `DateTime()`
 
@@ -275,6 +287,8 @@ Za SQLAlchemy 2.0.38, kompajlirani tipovi su:
 
 SQLite-ov `DATETIME` nema ugrađenu PostgreSQL-sličnu semantiku vremenske zone. U ovom dijalektu `timezone=True` ne stvara poseban tip kolone koji čuva offset. PostgreSQL ima odvojene tipove bez i sa podrškom za vremensku zonu, pa dijalekt može da prenese tu razliku u DDL.
 
+---
+
 ### Proveren primer sa SQLite-om
 
 Ovaj primer upisuje naivnu vrednost u `DateTime()` kolonu, a vrednost sa offset-om `+02:00` u `DateTime(timezone=True)` kolonu. Zatim ispisuje sirove vrednosti koje čuva SQLite i Python objekte koje SQLAlchemy vraća:
@@ -331,6 +345,67 @@ SQLite tzinfo: None None
 ```
 
 Obrati pažnju: druga Python vrednost je pre INSERT-a imala `+02:00`, ali SQLite zapis nema taj offset, a učitani Python objekat nema `tzinfo`. Dakle, u ovoj kombinaciji SQLite-a i SQLAlchemy-ja oba polja su sačuvala isti zidni sat `12:00`, ne informaciju koja bi omogućila da se izračuna da aware vrednost predstavlja `10:00 UTC`. Sam naziv `timezone=True` nije dovoljan da spreči taj gubitak.
+
+Isti primer može da se napiše deklarativnim ORM stilom SQLAlchemy-ja 2.0. Dodajemo `id` jer ORM model mora imati primarni ključ; vremenske kolone i dalje imaju ista podešavanja kao u prethodnom primeru.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import DateTime, create_engine, select
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+
+
+class Base(DeclarativeBase):
+	pass
+
+
+class DateTimePrimer(Base):
+	__tablename__ = "datetime_primer"
+
+	id: Mapped[int] = mapped_column(primary_key=True)
+	bez_zone: Mapped[datetime] = mapped_column(DateTime())
+	sa_zone: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+engine = create_engine("sqlite://")
+Base.metadata.create_all(engine)
+
+naivno_vreme = datetime(2025, 1, 15, 12, 0, 0)
+vreme_sa_offsetom = datetime(
+	2025, 1, 15, 12, 0, 0,
+	tzinfo=timezone(timedelta(hours=2)),
+)
+
+with Session(engine) as session:
+	session.add(
+		DateTimePrimer(
+			bez_zone=naivno_vreme,
+			sa_zone=vreme_sa_offsetom,
+		)
+	)
+	session.commit()
+
+	ucitano = session.execute(select(DateTimePrimer)).scalar_one()
+	sirovo = session.connection().exec_driver_sql(
+		"SELECT bez_zone, sa_zone FROM datetime_primer"
+	).one()
+
+	print("SQLite raw:", sirovo)
+	print("SQLite loaded:", (ucitano.bez_zone, ucitano.sa_zone))
+	print("SQLite tzinfo:", ucitano.bez_zone.tzinfo, ucitano.sa_zone.tzinfo)
+```
+
+Očekivani izlaz:
+
+```text
+SQLite raw: ('2025-01-15 12:00:00.000000', '2025-01-15 12:00:00.000000')
+SQLite loaded: (datetime.datetime(2025, 1, 15, 12, 0), datetime.datetime(2025, 1, 15, 12, 0))
+SQLite tzinfo: None None
+```
+
+Ovde ORM klasa definiše tabelu, a `Session` dodaje objekat i izvršava upis. `select(DateTimePrimer)` vraća ORM objekat; sirovi SQL upit ostaje samo radi poređenja stvarnog SQLite zapisa sa vrednostima koje ORM učita.
+
+---
 
 ### Poređenje sa PostgreSQL-om
 
@@ -634,3 +709,70 @@ Na kraju pokreni test suite, proveri model dijagnostikama i `git diff --check`, 
 - Svaki `relationship()` ima odgovarajući `back_populates` na drugoj strani.
 - Isti par proizvoda/promocije ne može se sačuvati dvaput.
 - Mapper provera i SQLite provere prolaze; samoreferencirajući FK i pravila brisanja nisu dodati.
+
+---
+
+## Plan rada posle dana 15 (korak po korak)
+
+Ovaj plan je nastavak tacno iz stanja koje sada imamo: lekcije 08-12 su implementirane, a lekcija 13 (samoreferencirajući FK kategorije) tek sledi.
+
+### Korak 1: priprema i kontrola polaznog stanja
+
+1. Iz root-a projekta potvrdi da je radno stablo cisto (`git status`).
+2. Potvrdi da su modeli ucitljivi:
+
+```bash
+PYTHONPATH=fast-api-course-my-work .venv/bin/python -c "from sqlalchemy.orm import configure_mappers; from sqlalchemy_orm_fundamentals import models; configure_mappers(); print('Mapperi su ispravni')"
+```
+
+### Korak 2: implementiraj lekciju 13 u modelu `Kategorija`
+
+1. U `models/catalog.py` dodaj kolonu `roditelj_id` kao `Mapped[int | None]` sa `ForeignKey("kategorija.id")` i `nullable=True`.
+2. Dodaj relationship par:
+   - `roditelj` (jedan roditelj ili `None`);
+   - `deca` (lista podkategorija).
+3. U `roditelj` relationship-u dodaj `remote_side` da SQLAlchemy zna referentnu stranu self-veze.
+4. Ne menjaj postojeću vezu `proizvodi` prema modelu `Proizvod`.
+
+### Korak 3: validacija mapiranja
+
+1. Ponovo pokreni `configure_mappers()` komandu.
+2. Ako prijavi gresku oko `back_populates` ili `remote_side`, ispravi pre bilo kakvog testnog unosa.
+
+### Korak 4: proveri ponašanje na privremenoj SQLite bazi
+
+1. Napravi privremeni engine (`sqlite://`) i kreiraj shemu iz `Base.metadata.create_all(engine)`.
+2. Uključi FK enforcement (`PRAGMA foreign_keys=ON`) na konekciji.
+3. Proveri tri upisa:
+   - korenska kategorija (`roditelj_id=None`),
+   - podkategorija koja pokazuje na koren,
+   - pod-podkategorija koja pokazuje na podkategoriju.
+4. Proveri ORM navigaciju u oba smera:
+   - `dete.roditelj`,
+   - `koren.deca`.
+5. Proveri neuspeh za nepostojeci roditeljski ID i uradi `session.rollback()` nakon `IntegrityError`.
+
+### Korak 5: dokumentacija i sinkronizacija artefakata
+
+1. Azuriraj `13_self_referencing_relationships.md` da odgovara stvarnoj implementaciji i srpskim nazivima.
+2. Azuriraj `README.md` prakticnog paketa (`fast-api-course-my-work/sqlalchemy_orm_fundamentals/README.md`) sa statusom lekcije 13.
+3. Azuriraj `ERD_project_1.drawio` dodavanjem self-veze `kategorija.roditelj_id -> kategorija.id`.
+
+### Korak 6: zavrsna provera pre commita
+
+1. Proveri whitespace i format:
+
+```bash
+git diff --check -- 'fast-api-course-my-work/sqlalchemy_orm_fundamentals/models/catalog.py' 'fast-api-course-my-work/sqlalchemy_orm_fundamentals/README.md' 'docs/sqlalchemy_orm_fundamentals/01_defining_database_models(tables)/13_self_referencing_relationships.md' 'fast-api-course-my-work/teorija_po_danima/dan_15_sqlalchemy_orm_fundamentals_2.md'
+```
+
+2. Ako je sve cisto, tek tada radi `git add`, `git commit`, pa `git push`.
+
+### Kako da radiš svakog dana nadalje
+
+1. Prvo mala teorija iz jedne lekcije.
+2. Onda jedna ciljna izmena u modelima.
+3. Odmah posle toga jedna tehnicka validacija (`configure_mappers` + kratka SQLite provera).
+4. Na kraju azuriranje dokumentacije (README + teorija + ERD).
+
+Ovim ritmom izbegavas velike skokove i mnogo lakse hvatas greske dok su male i lokalizovane.

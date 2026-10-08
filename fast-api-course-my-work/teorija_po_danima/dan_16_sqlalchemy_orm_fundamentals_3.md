@@ -46,15 +46,19 @@ PITANJE: Zar nismo rekli da ograničenja preko SQLAlchemy-ja ne važe ako se zao
 
 ## Odgovor_2:
 
-ODGOVOR: Nije tačno da ograničenja preko SQLAlchemy-ja ne važe ako se zaobiđe SQLAlchemy način generisanja upita. Kada definišeš `unique=True` u SQLAlchemy modelu i kreiraš šemu, SQLAlchemy generiše odgovarajuće SQL ograničenje u bazi. To ograničenje važi bez obzira na to kako se podaci upisuju u bazu, bilo preko SQLAlchemy-ja, direktnog SQL-a ili drugog alata. Dakle, ako neko pokuša da unese duplikat direktno preko SQLite Terminala, baza će odbiti upis zbog `UNIQUE` ograničenja. Stoga, ograničenja definisana u SQLAlchemy modelu preko `unique=True` su zapravo ograničenja baze podataka i važe u svim slučajevima. Sa druge strane, ako tabela već postoji i nema `UNIQUE` ograničenja, samo dodavanje `unique=True` u model neće automatski promeniti postojeću bazu; potrebna je migracija. Ako ponovo kreiraš šemu sa `Base.metadata.create_all(engine)` nakon dodavanja `unique=True`, obrisaće se postojeće tabele i kreiraće nove sa odgovarajućim ograničenjima. Svi podaci iz baze će biti izgubljeni! Zbog toga se preporučuje koristiti migracije za promene u šemi baze podataka.
+ODGOVOR: Nije tačno da ograničenja preko SQLAlchemy-ja ne važe ako se zaobiđe SQLAlchemy način generisanja upita. Kada definišeš `unique=True` u SQLAlchemy modelu i kreiraš šemu, SQLAlchemy generiše odgovarajuće SQL ograničenje u bazi. To ograničenje važi bez obzira na to kako se podaci upisuju u bazu, bilo preko `SQLAlchemy`-ja, direktnog `SQL`-a ili `drugog alata`.
+
+Dakle, ako neko pokuša da unese duplikat direktno preko SQLite Terminala, baza će odbiti upis zbog `UNIQUE` ograničenja. Stoga, ograničenja definisana u SQLAlchemy modelu preko `unique=True` su zapravo ograničenja baze podataka i važe u svim slučajevima.
+
+Sa druge strane, ako tabela već postoji i nema `UNIQUE` ograničenja, samo dodavanje `unique=True` u model neće automatski promeniti postojeću bazu; potrebna je migracija. Ako ponovo kreiraš šemu sa `Base.metadata.create_all(engine)` nakon dodavanja `unique=True`, obrisaće se postojeće tabele i kreiraće nove sa odgovarajućim ograničenjima. Svi podaci iz baze će biti izgubljeni! Zbog toga se preporučuje koristiti migracije za promene u šemi baze podataka.
 
 ### Detaljno objašnjenje:
 
 Ne baš. Razlika je između **zaobilaženja SQLAlchemy-ja** i **zaobilaženja ograničenja koje je već upisano u šemu baze** sa akcentom na **stvarna ograničenja u bazi podataka**.
 
-`unique=True` u modelu je instrukcija `SQLAlchemy`-ju da, pri `kreiranju` ili `migraciji šeme`, napravi `UNIQUE` ograničenje u bazi. Kada je to ograničenje zaista prisutno u SQLite bazi, SQLite ga sprovodi bez obzira na to da li se upis radi kroz ORM, direktan SQL ili SQLite Terminal. Direktan upis ne zaobilazi ograničenje baze.
+`unique=True` u modelu je instrukcija `SQLAlchemy`-ju da, pri `kreiranju` ili `migraciji šeme`, napravi `UNIQUE` ograničenje u bazi. Kada je to ograničenje zaista prisutno u SQLite bazi i  SQLite ga sprovodi bez obzira na to da li se upis radi kroz `ORM`, `direktan SQL` ili `SQLite Terminal`. Direktan upis ne zaobilazi ograničenje baze!
 
-Ali ako je `unique=True` dodat samo u Python model, a postojeća baza nije ažurirana, SQLite Terminal ne zna ništa o toj izmeni. Tada direktan upis može napraviti duplikat, jer ograničenje još ne postoji u bazi. Isti slučaj važi ako terminal otvori drugi SQLite fajl umesto fajla koji koristi aplikacija.
+Ali ako je `unique=True` dodat samo u Python model, a postojeća baza nije ažurirana preko `Base.metadata.create_all(engine)` ili `Alembic`-a, SQLite Terminal ne zna ništa o toj izmeni. Tada direktan upis može napraviti duplikat, jer ograničenje još ne postoji u bazi. Isti slučaj važi ako terminal otvori drugi SQLite fajl umesto fajla koji koristi aplikacija.
 
 Dakle:
 

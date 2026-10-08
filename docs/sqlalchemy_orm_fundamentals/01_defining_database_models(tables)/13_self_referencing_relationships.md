@@ -2,141 +2,139 @@
 
 ## Cilj lekcije
 
-Samoreferencirajući strani ključ (self-referencing foreign key) je FK kolona koja referencira drugu kolonu u istoj tabeli. Koristi se kada zapisi mogu da budu povezani hijerarhijski, na primer kategorija i njene potkategorije.
+Samoreferencirajući strani ključ (self-referencing foreign key) je FK kolona koja referencira drugi red iste tabele. U našem projektu to je hijerarhija kategorija: jedna kategorija može biti roditelj drugoj kategoriji.
 
 Primer hijerarhije:
 
 ```text
 Elektronika
 └── TV
-	└── OLED TV
+    └── OLED TV
 ```
 
-Sva tri zapisa su redovi tabele `category`. Svaki red osim korenskog može da sačuva ID svog roditelja.
+Sva tri zapisa su redovi iste tabele `kategorija`.
 
-## Model stabla u jednoj tabeli
+## Kako to izgleda u našem domenu
 
-Za hijerarhiju kategorija koristimo primarni ključ `id` i dodatnu kolonu koja pokazuje na roditeljsku kategoriju:
+Za stablo kategorija koristimo primarni ključ `id` i dodatnu kolonu koja pokazuje na roditelja:
 
 ```text
-category.id          identifikuje red
-category.parent_id   referencira category.id roditelja
+kategorija.id           identifikuje red
+kategorija.roditelj_id  referencira kategorija.id roditelja
 ```
 
-Na primer, red za `TV` čuva ID kategorije `Elektronika` u koloni `parent_id`. Red za `OLED TV` čuva ID kategorije `TV`. Korenska kategorija nema roditelja.
+Korenski čvor nema roditelja, pa `roditelj_id` treba da bude `NULL`.
 
-| `id` | `parent_id` | `name`      |
-| ---: | ----------: | ----------- |
-|    1 |      `NULL` | Elektronika |
-|    2 |           1 | TV          |
-|    3 |           2 | OLED TV     |
+|  id | roditelj_id | naziv       |
+| --: | ----------: | ----------- |
+|   1 |        NULL | Elektronika |
+|   2 |           1 | TV          |
+|   3 |           2 | OLED TV     |
 
-Ovaj oblik baze naziva se adjacency list: veza roditelj–dete čuva se direktno na redu deteta. Kolona u dostavljenom kodu se zove `category_id`; naziv `parent_id` bi bio jasniji jer razlikuje roditeljsku kategoriju od `Product.category_id`, koji referencira kategoriju proizvoda.
+Ovo je adjacency-list model: veza roditelj-dete čuva se u redu deteta.
 
-## Ispravna deklaracija samoreferencirajućeg FK-a
+## Trenutno stanje projekta
 
-Strani ključ referencira istu tabelu preko stringa `"category.id"`:
+U praktičnom kodu (`fast-api-course-my-work/sqlalchemy_orm_fundamentals/models/catalog.py`) lekcija 13 je implementirana u klasi `Kategorija`:
 
-```python
-from sqlalchemy import Column, ForeignKey, Integer
+- nullable FK kolona `roditelj_id` referencira `kategorija.id`;
+- `roditelj` vodi do roditeljske kategorije ili `None` za koren;
+- `deca` je kolekcija direktnih potkategorija;
+- postojeći `proizvodi` relationship ka modelu `Proizvod` ostaje nezavisan.
 
+Kod je napisan u SQLAlchemy 2.x stilu i uz svaki dodatak ima kratak komentar lekcije.
 
-class Category(Base):
-	__tablename__ = "category"
+## Ispravna deklaracija u SQLAlchemy 2.x stilu
 
-	id = Column(Integer, primary_key=True, autoincrement=True)
-	parent_id = Column(
-		Integer,
-		ForeignKey("category.id"),
-		nullable=True,
-	)
-```
-
-Ovde `ForeignKey("category.id")` kaže da svaka nenull vrednost `parent_id` mora da odgovara postojećem `Category.id`. `nullable=True` dozvoljava korenski red bez roditelja. Ako se zadrži naziv iz kursnog source-a, isti oblik je `category_id = Column(Integer, ForeignKey("category.id"), nullable=True)`.
-
-## Korenski čvor i `nullable`
-
-U transkriptu se najpre kaže da korenska kategorija nema parent ID, a zatim se pominje `nullable=False`. Te dve postavke su u konfliktu:
-
-- ako hijerarhija ima korenske kategorije bez roditelja, FK kolona mora dozvoliti `NULL`;
-- ako se postavi `nullable=False`, svaki red mora imati roditelja i ne može se direktno napraviti korenska kategorija.
-
-Za model stabla u kojem postoje koreni, odgovarajuće pravilo je `nullable=True`. Ako poslovno pravilo zaista zahteva roditelja za svaki red, može se koristiti `nullable=False`, ali tada koreni moraju biti predstavljeni na drugi način, na primer posebnom vršnom kategorijom. Izbor je poslovno pravilo, ne nešto što FK sam odlučuje.
-
-## `ForeignKey` i `nullable` su argumenti različitih nivoa
-
-Source kod sadrži:
+U našem stilu (`Mapped[...]` + `mapped_column()`) to izgleda ovako:
 
 ```python
-category_id: Column[int] = Column(ForeignKey("category.id", nullable=False))
-```
+from __future__ import annotations
 
-`nullable` nije argument `ForeignKey(...)`. Ono pripada `Column(...)`, pored tipa i FK-a. SQLAlchemy 2.0 pri uvozu priloženog source fajla baca `TypeError` jer je `nullable` prosleđen `ForeignKey` konstruktoru.
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column
 
-Oblik deklaracije za obaveznog roditelja bio bi:
 
-```python
-category_id = Column(
-	Integer,
-	ForeignKey("category.id"),
-	nullable=False,
+roditelj_id: Mapped[int | None] = mapped_column(
+    Integer,
+    ForeignKey("kategorija.id"),
+    nullable=True,
 )
 ```
 
-Taj primer je sintaksno ispravan, ali ne dozvoljava korensku kategoriju. Za korene treba koristiti `nullable=True`, kao u prethodnom primeru. Source fajl nisam prepravljao; greška i razlika u poslovnom pravilu su zabeležene ovde.
+`ForeignKey("kategorija.id")` obezbeđuje da svaka nenull vrednost pokazuje na postojeći red u istoj tabeli. `nullable=True` je ključno za korenske kategorije.
 
-## FK kolona nije isto što i ORM `relationship()`
+## `nullable=True` vs `nullable=False`
 
-Transkript za ovu lekciju kaže da je za osnovnu samoreferencirajuću vezu dovoljno dodati FK kolonu. To je dovoljno da baza čuva roditeljski ID i proverava referencu. Dostavljeni source ne dodaje ORM atribute za roditelja i decu; postojeći `Category.product` opisuje vezu kategorije sa proizvodima, ne vezu kategorije sa drugim kategorijama.
+Ako želimo korenske kategorije bez roditelja, FK kolona mora dozvoliti `NULL`.
 
-**Dodatak: ORM navigacija kroz hijerarhiju.** Da bi se u SQLAlchemy ORM-u pristupalo roditelju i deci preko Python atributa, veza može da se opiše na obe strane. `remote_side` ukazuje koji je `id` udaljena, referentna strana samoreferencirajuće veze:
+- `nullable=True`: dozvoljeni korenski čvorovi.
+- `nullable=False`: svaki red mora imati roditelja, pa korenski čvor ne može da se unese bez dodatne poslovne konstrukcije.
+
+Za naš scenario stabla kategorija odgovara `nullable=True`.
+
+## `ForeignKey` i `nullable` su odvojeni argumenti
+
+`nullable` pripada koloni (`mapped_column`/`Column`), ne `ForeignKey` objektu.
+
+Pogresno:
 
 ```python
-from sqlalchemy.orm import relationship
-
-
-class Category(Base):
-	__tablename__ = "category"
-
-	id = Column(Integer, primary_key=True, autoincrement=True)
-	parent_id = Column(Integer, ForeignKey("category.id"), nullable=True)
-
-	parent = relationship(
-		"Category",
-		remote_side=[id],
-		back_populates="children",
-	)
-	children = relationship("Category", back_populates="parent")
+ForeignKey("kategorija.id", nullable=False)
 ```
 
-Sada `category.parent` predstavlja roditelja ili `None` za korenski red, dok `category.children` predstavlja kolekciju potkategorija. Ova ORM konfiguracija ne dodaje FK kolonu; FK kolona je i dalje `parent_id`. Primer je dopuna, ne deklaracija iz priloženog source fajla.
+Ispravno:
 
-## FK ne sprečava svaki problem stabla
+```python
+mapped_column(ForeignKey("kategorija.id"), nullable=False)
+```
 
-FK ograničenje obezbeđuje da roditeljski red postoji, ali samo po sebi ne garantuje da podaci čine ispravno stablo:
+Ili eksplicitno sa tipom:
 
-- red može biti postavljen kao sopstveni roditelj;
-- dve ili više kategorija mogu napraviti ciklus;
-- ne ograničava se automatski dubina hijerarhije;
-- brisanje roditelja sa decom zavisi od FK `ondelete` pravila i konfiguracije baze.
+```python
+mapped_column(Integer, ForeignKey("kategorija.id"), nullable=False)
+```
 
-Takva pravila zahtevaju dodatnu validaciju, pažljivo definisanu politiku brisanja ili druga ograničenja. U source kodu nije navedeno `ondelete="CASCADE"`, pa ne treba pretpostaviti da se deca automatski brišu sa roditeljem.
+## FK kolona nije isto sto i ORM relationship
 
-## Primer iz transkripta
+FK kolona cuva ID roditelja i baza proverava referencu. To je nivo seme.
 
-Transkript opisuje tri kategorije:
+ORM relationship je dodatni Python sloj za navigaciju kroz objekte. U projektu su dodata oba atributa u klasi `Kategorija`:
 
-1. `id=1`, bez roditelja: korenska kategorija;
-2. `id=2`, `parent_id=1`: potkategorija prve kategorije;
-3. `id=3`, `parent_id=2`: potkategorija druge kategorije.
+```python
+from __future__ import annotations
 
-Tako nastaje više nivoa hijerarhije bez posebne tabele za svaki nivo. Transkript se usput pogrešno poziva na „product“ kada opisuje kategoriju; primer i relacija koju treba izgraditi odnose se na kategorije.
+from sqlalchemy.orm import Mapped, relationship
+
+
+roditelj: Mapped[Kategorija | None] = relationship(
+    remote_side=lambda: [Kategorija.id],
+    back_populates="deca",
+)
+deca: Mapped[list[Kategorija]] = relationship(
+    "Kategorija",
+    back_populates="roditelj",
+)
+```
+
+`remote_side` govori SQLAlchemy-ju koja strana self-reference je roditeljska strana.
+
+## Sta FK ne garantuje sam po sebi
+
+FK obezbeđuje da roditelj postoji, ali sam po sebi ne rešava sve probleme stabla:
+
+- ne sprečava da red bude sam sebi roditelj;
+- ne sprečava cikluse između vise čvorova;
+- ne ograničava dubinu stabla;
+- ne definiše automatski politiku brisanja podstabla bez dodatnih pravila (`ondelete`, ORM cascade, poslovna validacija).
+
+## Provera implementacije
+
+Implementacija je proverena pozivanjem `configure_mappers()` i korišćenjem privremene memorijske SQLite baze sa uključenim `PRAGMA foreign_keys=ON`. Uspešno su sačuvani koren, dete i unuk, a navigacija `dete.roditelj` i `koren.deca` je proverena. Pokušaj povezivanja na nepostojeći roditeljski ID ispravno je odbijen bazom.
 
 ## Sažetak
 
-- Samoreferencirajući FK pokazuje iz kolone tabele na primarni ključ reda u istoj tabeli.
-- Za kategorije i potkategorije, dete čuva ID roditelja; to je adjacency-list model hijerarhije.
-- Ako korenski red nema roditelja, FK kolona mora biti `nullable=True`; `nullable=False` zabranjuje korene.
-- `nullable` pripada `Column(...)`, ne `ForeignKey(...)`; dostavljeni source ovako napisan ne može da se uveze.
-- Sam FK obezbeđuje referencu u bazi; ORM navigacija `parent`/`children` je poseban `relationship()` dodatak i nije prisutna u source kodu.
-- FK sam ne otkriva cikluse, ne ograničava dubinu i ne zadaje automatsko brisanje dece.
+- Samoreferencirajući FK u ovom projektu treba da bude na tabeli `kategorija` i da referencira `kategorija.id`.
+- Za korenske kategorije potreban je `nullable=True`.
+- FK kolona i ORM relationship rešavaju različite nivoe problema: sema baze naspram navigacije kroz objekte.
+- Lekcija 13 je implementirana u praktičnom modelu; samoreferencirajući FK je nullable kako bi korenske kategorije mogle da nemaju roditelja.
