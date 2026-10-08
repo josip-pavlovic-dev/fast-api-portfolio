@@ -46,8 +46,9 @@ class Kategorija(Base):
     nivo: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
     # Lekcija 13: NULL dozvoljava korenskoj kategoriji da nema roditelja.
+    # Lekcija 14: baza odbija brisanje kategorije dok postoje potkategorije.
     roditelj_id: Mapped[int | None] = mapped_column(
-        ForeignKey("kategorija.id"),
+        ForeignKey("kategorija.id", ondelete="RESTRICT"),
         nullable=True,
     )
 
@@ -57,10 +58,18 @@ class Kategorija(Base):
         remote_side=lambda: [Kategorija.id],
     )
     # Lekcija 13: svaka kategorija može imati više direktnih potkategorija.
-    deca: Mapped[list[Kategorija]] = relationship(back_populates="roditelj")
+    # Lekcija 14: ORM prepušta bazi da odbije brisanje roditeljske kategorije.
+    deca: Mapped[list[Kategorija]] = relationship(
+        back_populates="roditelj",
+        passive_deletes="all",
+    )
 
     # Lekcija 12: jedna kategorija može da ima više proizvoda.
-    proizvodi: Mapped[list[Proizvod]] = relationship(back_populates="kategorija")
+    # Lekcija 14: ORM ne poništava FK pre provere RESTRICT pravila u bazi.
+    proizvodi: Mapped[list[Proizvod]] = relationship(
+        back_populates="kategorija",
+        passive_deletes="all",
+    )
 
 
 class Proizvod(Base):
@@ -72,8 +81,9 @@ class Proizvod(Base):
         autoincrement=True,
     )
     # Lekcija 12: svaki proizvod referencira postojeću obaveznu kategoriju.
+    # Lekcija 14: kategorija sa proizvodima ne može da se obriše.
     kategorija_id: Mapped[int] = mapped_column(
-        ForeignKey("kategorija.id"),
+        ForeignKey("kategorija.id", ondelete="RESTRICT"),
         nullable=False,
     )
     naziv: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)

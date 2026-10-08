@@ -26,7 +26,11 @@ class Korisnik(Base):
     lozinka: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # Lekcija 12: korisnik može da ima više porudžbina.
-    porudzbine: Mapped[list[Porudzbina]] = relationship(back_populates="korisnik")
+    # Lekcija 14: ORM prepušta bazi da odbije brisanje korisnika sa porudžbinama.
+    porudzbine: Mapped[list[Porudzbina]] = relationship(
+        back_populates="korisnik",
+        passive_deletes="all",
+    )
 
 
 class Porudzbina(Base):
@@ -38,7 +42,11 @@ class Porudzbina(Base):
         autoincrement=True,
     )
     # Lekcija 12: svaka porudžbina pripada postojećem korisniku.
-    korisnik_id: Mapped[int] = mapped_column(ForeignKey("korisnik.id"), nullable=False)
+    # Lekcija 14: korisnik sa porudžbinama ne može da se obriše.
+    korisnik_id: Mapped[int] = mapped_column(
+        ForeignKey("korisnik.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
     kreirano_u: Mapped[datetime] = mapped_column(
         DateTime,
         default=func.now(),

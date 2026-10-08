@@ -2,7 +2,33 @@
 
 ## Cilj lekcije
 
-Strani ključ (foreign key, FK) povezuje kolonu u jednoj tabeli sa ključem u drugoj tabeli i omogućava bazi da proverava referencijalni integritet. SQLAlchemy ORM može dodatno da opiše istu vezu pomoću `relationship()`, što olakšava pristup povezanim objektima iz Python-a.
+Strani ključ (`foreign key`, `FK`) povezuje kolonu u jednoj tabeli sa ključem u drugoj tabeli i omogućava bazi da proverava referencijalni integritet.
+
+`Referencijalni integritet` predstavlja pravilo da vrednost u koloni stranog ključa mora odgovarati vrednosti u koloni primarnog ključa na koju se odnosi u tom smislu da `ne može postojati „sirova“ vrednost` koja ne pokazuje na postojeći red u `referenciranoj tabeli`.
+
+SQLAlchemy ORM može dodatno da opiše istu vezu pomoću `relationship()`, što olakšava pristup povezanim objektima iz Python-a na način da možemo direktno pristupiti npr. `Proizvod.kategorija` umesto da ručno pravimo upit za kategoriju proizvoda. Prikaz razlike:
+
+```python
+# FK kolona
+proizvod.kategorija_id
+
+# Referencirana kolona
+kategorija.id
+
+# ORM navigacija
+proizvod.kategorija
+
+# Ručni upit stari način SQLAlchemy 1.0
+kategorija = session.query(Kategorija).filter_by(id=proizvod.kategorija_id).first()
+
+# Ručni upit novi način SQLAlchemy 2.x
+kategorija = session.execute(select(Kategorija).filter_by(id=proizvod.kategorija_id)).scalar_one_or_none()
+
+# Napomena: ORM navigacioni atributi omogućavaju rad sa povezanim objektima bez potrebe za ručnim upitima.
+# Primer:
+proizvod.kategorija  # vraća objekat Kategorija povezan sa ovim proizvodom
+kategorija.proizvodi  # vraća listu objekata Proizvod povezanih sa ovom kategorijom
+```
 
 Ključna razlika:
 
@@ -11,7 +37,7 @@ Ključna razlika:
 
 Ove dve deklaracije se često koriste zajedno, ali rešavaju različite zadatke.
 
-Kurski source primeri ispod koriste engleska imena i stariji `Column(...)` stil. Naš praktični projekat koristi srpske nazive tabela i SQLAlchemy 2.x `Mapped[...]` / `mapped_column()` stil. Sledeća tabela je stvarno stanje projektnih modela nakon ove lekcije:
+Kursni source primeri ispod koriste engleska imena i stariji `Column(...)` stil. Naš praktični projekat koristi srpske nazive tabela i SQLAlchemy 2.x `Mapped[...]` / `mapped_column()` stil. Sledeća tabela je stvarno stanje projektnih modela nakon ove lekcije:
 
 | FK kolona                                           | Referencirana kolona     | Obavezna? | ORM navigacija                                                                      |
 | --------------------------------------------------- | ------------------------ | --------- | ----------------------------------------------------------------------------------- |
@@ -25,6 +51,8 @@ Kurski source primeri ispod koriste engleska imena i stariji `Column(...)` stil.
 Svih šest FK kolona u ovoj implementaciji ima `nullable=False`. FK osigurava da nenull vrednost pokazuje na postojeći red; `nullable=False` dodatno zahteva da vrednost uopšte bude navedena. PK `id` kolone postojale su već ranije i nisu ponovo dodavane.
 
 ORM navigacioni atributi ne postaju kolone: na primer `Proizvod.kategorija` je Python atribut za objekat kategorije, a stvarni FK podatak koji se čuva jeste `Proizvod.kategorija_id`. Detalji implementacije i kod nalaze se u `models/catalog.py`, `models/orders.py` i `models/promotions.py`; sve promene iz ove lekcije označene su komentarima `Lekcija 12`.
+
+---
 
 ## Veza jedan-prema-više
 

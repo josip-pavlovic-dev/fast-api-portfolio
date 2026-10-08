@@ -51,6 +51,9 @@ Po završetku kursa trebalo bi da možeš da:
 
 Materijali za ovu oblast nalaze se u [01_defining_database_models(tables)](<01_defining_database_models(tables)/>).
 
+Dopunski vodič za čitanje ORM veza nalazi se u
+[cheatsheet-u za `relationship()` i `back_populates`](cheatsheets/relationship_i_back_populates.md).
+
 ### 4. Osnove: generisanje tabela iz modela
 
 - Pokretanje PostgreSQL-a pomoću Docker-a.
