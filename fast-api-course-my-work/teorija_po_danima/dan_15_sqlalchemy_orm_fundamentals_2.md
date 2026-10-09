@@ -2,7 +2,9 @@
 
 ## Cilj rada
 
-Danas nastavljamo modelovanje tabela kroz lekcije 08–13. Cilj je da do samoreferencirajuće veze razumemo kako se nullable pravilo, podrazumevane vrednosti, jedinstvenost, primarni ključevi i strani ključevi nadovezuju jedan na drugi. Radimo postepeno: implementiramo samo obrađenu lekciju, proverimo modele, pa tek onda prelazimo dalje.
+Danas nastavljamo modelovanje tabela kroz lekcije `08–13`. Cilj je da do samoreferencirajuće veze razumemo kako se `nullable` pravilo, podrazumevane vrednosti (`default` i `server_default`), jedinstvenost (`unique`), primarni ključevi (`PK`) i strani ključevi (`FK`) nadovezuju jedan na drugi.
+
+Radimo postepeno: implementiramo samo obrađenu lekciju, proverimo modele, pa tek onda prelazimo dalje.
 
 Kurski snapshot-i ostaju neizmenjeni. U praktičnom paketu koristimo SQLAlchemy 2.x stil (`Mapped[...]`, `mapped_column()`), srpske ASCII nazive i postojeći root `.venv`. Ako praktični model namerno odstupi od source primera, razlog beležimo ovde.
 
@@ -39,9 +41,9 @@ U `models/promotions.py` imamo klasu/tabelu `PromotivniDogadjaj` gde su `naziv`,
 
 Ne navodi se `Mapped[... | None]` za ova polja, već koristi `Mapped[...]` sa `nullable=False`. Napomena da `nullable=False` ne sprečava prazan string; to je samo ograničenje baze. Takođe, ne navođenje `None` u anotaciji automatski govori SQLAlchemy-ju da polje ne može biti `NULL` pa je `nullable=False` redundantno, i ne mora se eksplicitno navoditi osim radi jasnoće.
 
-U početnom stanju pre lekcije 12, `VezaProizvodaIPromocije` je imala samo primarni ključ. Nakon implementacije lekcije 12 dobila je FK kolone `proizvod_id` i `promotivni_dogadjaj_id`, kao i složeni unique constraint da se isti par ne unese dvaput. Time se proizvod može povezati sa više promocija, a promocija sa više proizvoda. U Python-u tu mnogostruku vezu pratimo kroz asocijativni ORM model.
+U početnom stanju pre `lekcije 12`, `VezaProizvodaIPromocije` je imala samo primarni ključ. Nakon implementacije lekcije 12 dobila je `FK` kolone `proizvod_id` i `promotivni_dogadjaj_id`, kao i složeni `unique constraint` da se isti par ne unese dvaput. Time se `proizvod` može povezati sa više `promocija`, a `promocija` sa više `proizvoda`. Ovo predstavlja tipičan `many-to-many` odnos. U Python-u tu mnogostruku vezu pratimo kroz asocijativni ORM model (`VezaProizvodaIPromocije`).
 
-U `models/orders.py` imamo klasu/tabelu `Korisnik` i `Porudzbina` gde su korisnicko_ime, email, lozinka i količina stavke već bili ne-nullable, pa su ostali neizmenjeni. Vremena kreiranja i izmene porudžbine sada su tipizovana kao obavezna.
+U `models/orders.py` imamo klasu/tabelu `Korisnik` i `Porudzbina` gde su `korisnicko_ime`, `email`, `lozinka` i `količina stavke` već bili ne-nullable (`nullable=False`), pa su ostali neizmenjeni. Vremena kreiranja (`kreirano_u`) i izmene porudžbine (`izmenjeno_u`) sada su tipizovana kao obavezna (`nullable=False`).
 
 ---
 
@@ -175,6 +177,8 @@ Pojednostavljen tok upisa:
 
 ### Client-side i server-side default
 
+`default` i `server_default` oba opisuju šta se dešava kada INSERT ne zada vrednost kolone, ali se razlikuju po tome ko primenjuje pravilo. Važno je i da `default` ne znači nužno da Python izračunava vrednost: `func.now()` je SQL izraz koji izvršava baza.
+
 U ovom primeru:
 
 ```python
@@ -185,18 +189,69 @@ aktivna: Mapped[bool] = mapped_column(
 )
 ```
 
-- `aktivna` je ime Python atributa u ORM klasi.
-- `Mapped[bool]` označava da se atribut mapira kao ORM polje sa Python vrednošću tipa `bool`; SQLAlchemy može iz anotacije da zaključi tip i nullable pravilo.
-- `mapped_column(...)` zadaje SQLAlchemy konfiguraciju kolone.
-- `Boolean` je tip kolone.
-- `default=False` je SQLAlchemy client-side default podešavanje: SQLAlchemy ga primenjuje pri svom INSERT-u kada upis ne navede vrednost.
-- `nullable=False` je pravilo kolone u šemi baze; bazu treba migrirati ili kreirati iz ažuriranih metapodataka da bi se pravilo stvarno sprovelo.
+- `aktivna` je ime Python atributa u ORM klasi i ime mapirane kolone.
 
-Zato se ne kaže da je cela desna strana „client-side default“. Konkretno, `default=False` jeste client-side default, dok `Boolean` i `nullable=False` opisuju druge osobine kolone.
+- `Mapped[bool]` opisuje Python vrednost atributa; SQLAlchemy iz njega može da zaključi SQL tip `Boolean` i da kolona nije nullable.
 
-Client-side govori gde je default definisan i ko ga primenjuje; ne mora da govori gde se vrednost izračunava. Na primer, `default=func.now()` je podešen kao SQLAlchemy default, ali SQLAlchemy ubacuje SQL izraz `now()` u INSERT, a bazni server izvršava tu funkciju. Nasuprot tome, `default=False` je obična Python vrednost koju SQLAlchemy prosleđuje u upitu.
+- `Boolean` eksplicitno zadaje SQLAlchemy tip kolone.
 
-`server_default=...` definiše `DEFAULT` u DDL-u baze. Tada bazni server obezbeđuje vrednost i klijentima koji ne koriste SQLAlchemy, pod uslovom da izostave kolonu ili navedu `DEFAULT`. Ako upit eksplicitno pošalje `NULL`, default se ne koristi; odlučujuće je da li kolona dozvoljava `NULL`.
+- `default=False` je SQLAlchemy `client-side` (Python-side) default. Kada ORM ili SQLAlchemy Core izvrši `INSERT` bez vrednosti za `aktivna`, SQLAlchemy obezbeđuje `False` u tom INSERT-u. `Default` se primenjuje pri izvršavanju `INSERT`-a, ne samim pozivom `create_all()` niti nužno pri pravljenju Python objekta.
+
+- `INSERT` je SQL iskaz koji ubacuje novi red u tabelu. Naprimer:
+
+  ```sql
+  INSERT INTO kategorija (naziv, slug, aktivna, nivo) VALUES ('Primer', 'primer', FALSE, 0);
+  ```
+
+- `nullable=False` opisuje ograničenje kolone u šemi baze. To ograničenje stvarno postoji samo ako je napravljena ili izmenjena tabela u bazi tako da sadrži `NOT NULL`.
+
+„Client-side“ ovde znači da SQLAlchemy odlučuje da primeni default dok priprema SQLAlchemy INSERT. Fazom `pripreme` se smatra trenutak kada SQLAlchemy gradi SQL iskaz sa svim vrednostima koje će biti poslate bazi (u fazi pripreme koja se odvija kad se pozove `session.add()` i `session.commit()` na strani ORM-a ili ekvivalentni Core pozivi); ne znači da se ceo upit izvršava na klijentu. Za `default=False`, SQLAlchemy šalje vrednost `False` bazi. Za `default=func.now()`, SQLAlchemy uključuje SQL izraz za trenutno vreme u INSERT, a bazni server izvršava taj izraz. `func.now()` nije Python funkcija koja se poziva pri učitavanju modula. Primer izraza koji SQLAlchemy generiše sa `func.now()` je:
+
+```sql
+INSERT INTO kategorija (naziv, slug, aktivna, nivo, kreirano) VALUES ('Primer', 'primer', FALSE, 0, NOW());
+```
+
+`NOW()` je SQL funkcija koja vraća trenutno vreme na serveru.
+
+SQLAlchemy `default` važi za `INSERT` iskaze koje izvršava `SQLAlchemy`, bilo da dolaze iz ORM-a ili Core-a. Ne upisuje se kao `DEFAULT` pravilo u tabelu, pa direktan SQL, DBAPI poziv ili druga aplikacija koja zaobilazi SQLAlchemy ne dobija tu vrednost automatski. Ako takav klijent izostavi obaveznu kolonu bez serverskog default-a, INSERT može pasti na `NOT NULL` ograničenju.
+
+`server_default=...` je drugačiji: SQLAlchemy ga upisuje kao `DEFAULT` klauzulu u DDL kojim se pravi tabela. Kada INSERT izostavi tu kolonu, bazni server primenjuje vrednost, bez obzira na to da li je upit poslao SQLAlchemy ili neki drugi klijent. Ako INSERT izričito pošalje `NULL`, server-default se ne koristi; ako je kolona `NOT NULL`, baza odbija taj upis.
+
+Primer razlike u rezultujućem ponašanju:
+
+```python
+# Vrednost obezbeđuje SQLAlchemy samo za svoje INSERT iskaze.
+default=False
+
+# Vrednost je DEFAULT pravilo u šemi i zato važi i za druge klijente.
+server_default=...  # na primer, SQL izraz za FALSE
+```
+
+---
+
+### Šta radi `create_all()`?
+
+`Base.metadata.create_all(engine)` kreira tabele koje nedostaju, koristeći trenutno SQLAlchemy metadata podešavanje. Pri kreiranju nove tabele:
+
+- `nullable=False` postaje `NOT NULL` u šemi;
+- `server_default=...` postaje serverski `DEFAULT` u šemi;
+- `default=...` ostaje SQLAlchemy pravilo za INSERT i ne postaje database `DEFAULT`.
+
+Podrazumevano, `create_all()` proverava da li tabela već postoji. Ako postoji, ne menja joj kolone ili ograničenja, ne rekreira je i ne briše njene redove. Zato promena modela, pa novo pokretanje `create_all()`, ne dodaje `server_default` niti menja postojeći `NOT NULL` constraint.
+
+Za promenu već postojeće šeme uobičajeno se piše migracija (u ovom projektu kasnije ćemo učiti Alembic); promena se može izvršiti i eksplicitnim DDL-om, ali migracija je preglediv i ponovljiv način da se ta promena primeni. Migracija sama po sebi ne briše podatke: to zavisi od operacija koje sadrži. Dodavanje nove obavezne kolone tabeli koja već ima redove zahteva pažljiv plan, na primer privremeni default ili dopunu postojećih vrednosti, pre nego što se uvede `NOT NULL`.
+
+`create_all()` ne briše podatke. Gubitak podataka može nastati zbog neke druge, destruktivne operacije, na primer `drop_all()`, `DROP TABLE`, `DELETE`/`TRUNCATE` ili migracije koja eksplicitno uklanja ili prepisuje podatke. To nije posledica običnog `create_all()`.
+
+Kratko poređenje:
+
+| Podešavanje          | Ko primenjuje vrednost pri INSERT-u? | Važi za direktan SQL/drugu aplikaciju? | Efekat pri kreiranju nove tabele         |
+| -------------------- | ------------------------------------ | -------------------------------------- | ---------------------------------------- |
+| `default=...`        | SQLAlchemy, za ORM/Core INSERT       | Ne                                     | Ne dodaje `DEFAULT` u šemu               |
+| `server_default=...` | Baza, ako INSERT izostavi kolonu     | Da                                     | Dodaje serverski `DEFAULT`               |
+| `nullable=False`     | Baza odbija `NULL`                   | Da, ako je ograničenje u šemi          | Dodaje `NOT NULL`; ne popunjava vrednost |
+
+`onupdate=...` je odvojeno podešavanje: nije početna vrednost za INSERT i samo po sebi ne stvara database trigger. SQLAlchemy ga primenjuje na SQLAlchemy-generisanom UPDATE-u kada se kolona ne zada eksplicitno.
 
 ---
 
@@ -228,6 +283,8 @@ Ukratko: `Mapped[T]` govori koji Python tip vrednosti očekujemo i mapiramo; `ma
 
 Ova razlika je važna zato što Python, SQLAlchemy i baza imaju odvojene uloge. Python predstavlja datum i vreme kao `datetime` objekat; SQLAlchemy tipom opisuje kakvu kolonu želimo; dijalekt prevodi taj tip u oblik koji konkretna baza razume. Zato `timezone=True` nije obećanje da će svaka baza sačuvati vremensku zonu na isti način.
 
+---
+
 ### Naivni i timezone-aware Python `datetime`
 
 Python `datetime` može biti naivan ili timezone-aware:
@@ -253,6 +310,8 @@ Izlaz:
 ```
 
 Naivni objekat nema podatak koji kaže kojoj zoni ili UTC offset-u pripada `12:00`. To nije automatski „lokalno vreme“: on samo nema informaciju o zoni. Aware objekat ima offset i zato predstavlja određeni trenutak u vremenu. Za stvarne civilne zone, koje imaju pravila za letnje i zimsko računanje vremena, Python nudi `zoneinfo.ZoneInfo`, na primer `ZoneInfo("Europe/Belgrade")`.
+
+---
 
 ### Šta podešava SQLAlchemy tip
 
@@ -435,6 +494,8 @@ U PostgreSQL-u `TIMESTAMP WITH TIME ZONE` se često naziva `timestamptz`. Baza k
 PostgreSQL ne čuva originalni naziv zone, poput `Europe/Belgrade`, niti garantuje da će vratiti isti tekstualni offset koji je poslat. Čuva trenutak, a prikaz prilagođava zoni sesije. Ako aplikaciji treba i originalni naziv zone, njega treba čuvati u posebnoj tekstualnoj koloni.
 
 Nasuprot tome, `TIMESTAMP WITHOUT TIME ZONE` čuva datum i sat bez zone i bez konverzije u UTC. Vrednost `12:00` ostaje `12:00`, ali bez dodatnog pravila nije moguće znati na koji trenutak se odnosi. Zato ne treba mešati aware Python vrednosti sa kolonama bez zone: baza može zanemariti njihov offset, pa je bolje držati Python vrednosti i SQL kolonu semantički usklađenim.
+
+---
 
 ### Praktično pravilo za izbor
 
@@ -776,3 +837,59 @@ git diff --check -- 'fast-api-course-my-work/sqlalchemy_orm_fundamentals/models/
 4. Na kraju azuriranje dokumentacije (README + teorija + ERD).
 
 Ovim ritmom izbegavas velike skokove i mnogo lakse hvatas greske dok su male i lokalizovane.
+
+---
+
+## Poređenje `catalog1.py` i projektnog `catalog.py`
+
+`catalog1.py` je tvoja verzija za ručno prekucavanje i vežbu. Projektni `models/catalog.py` je referentni model koji sadrži do sada obrađene projektne odluke. Paket u `models/__init__.py` uvozi `.catalog`, a ne `.catalog1`, tako da provere paketa koriste projektni `catalog.py`; `catalog1.py` je zaseban fajl za vežbanje.
+
+### Razlike u modelima i vezama
+
+| Oblast                 | Tvoj `catalog1.py`                                          | Projektni `models/catalog.py`                                                                                                          |
+| ---------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `Kategorija.slug`      | Nije definisan.                                             | Definisan je kao obavezna, jedinstvena kolona.                                                                                         |
+| Kategorija–proizvod    | Nema FK ni ORM navigaciju između ova dva modela.            | `Proizvod.kategorija_id` je obavezni FK; `Kategorija.proizvodi` i `Proizvod.kategorija` su ORM navigacija.                             |
+| Hijerarhija kategorija | Nema roditelja i potkategorija.                             | `roditelj_id` je nullable self-FK; `roditelj` i `deca` povezuju kategorije.                                                            |
+| Brisanje kategorije    | Nisu navedena pravila.                                      | FK-ovi koriste `ondelete="RESTRICT"`; `passive_deletes="all"` prepušta bazi da odbije brisanje kategorije koja ima proizvode ili decu. |
+| Ostale veze proizvoda  | Nema relationship atributa ka porudžbinama ili promocijama. | `stavke_porudzbine` i `veze_promocija` vode do odgovarajućih ORM modela.                                                               |
+| Komentari              | Minimalna verzija bez objašnjenja dodatih odluka.           | Komentari označavaju lekcije i objašnjavaju FK, samovezu i izabranu politiku brisanja.                                                 |
+
+Ove razlike su namerne po obimu: tvoja skripta trenutno prikazuje osnovne kolone i tipove, dok projektni model sadrži i kasnije obrađene FK-ove, `relationship()` atribute i pravila brisanja.
+
+'''
+
+### Najvažnija razlika: `StanjeZaliha.poslednja_provera`
+
+U tvojoj verziji:
+
+```python
+poslednja_provera: Mapped[datetime] = mapped_column(
+	DateTime,
+	default=func.now(),
+	onupdate=func.now(),
+)
+```
+
+U projektnom modelu:
+
+```python
+poslednja_provera: Mapped[datetime] = mapped_column(
+	DateTime(timezone=True),
+	nullable=False,
+)
+```
+
+Razlike i njihovo značenje:
+
+- **Obaveznost:** tvoja anotacija `Mapped[datetime]` nije opciona. SQLAlchemy 2.x iz nje zaključuje `nullable=False`, iako to nisi eksplicitno napisao. Projektni kod navodi `nullable=False` radi čitljivosti i zato što je obaveznost deo lekcije. U oba slučaja kolona je zamišljena kao obavezna.
+- **Početna vrednost:** `default=func.now()` u tvojoj verziji znači da SQLAlchemy pri svom INSERT-u, ako vrednost nije prosleđena, ubacuje SQL izraz za trenutno vreme. Projektni model nema default, pa aplikacija mora da prosledi vreme poslednje provere.
+- **Izmena:** `onupdate=func.now()` u tvojoj verziji postavlja trenutno vreme pri SQLAlchemy-generisanoj izmeni reda. To može promeniti `poslednja_provera` i kada se menja neko drugo polje iz reda, na primer samo `kolicina`. U projektnom modelu vreme se ne menja automatski; ostaje podatak koji aplikacija upisuje kada se provera zaliha zaista dogodila.
+- **Granica `default`/`onupdate`:** ova podešavanja nisu `server_default` niti database trigger. Direktni SQL upis ili druga aplikacija ne dobija automatski te vrednosti iz šeme. `func.now()` je SQL izraz koji SQLAlchemy uključuje u svoj upit.
+- **Vremenska zona:** `DateTime` podrazumeva `timezone=False`; `DateTime(timezone=True)` traži timezone podršku od dijalekta baze. To ne garantuje da svaka baza, uključujući SQLite, sačuva offset ili `tzinfo`.
+
+Zato razlika nije samo tehnička: izaberi da li `poslednja_provera` znači „vreme svakog ORM ažuriranja zalihe“ ili „vreme kada je aplikacija stvarno proverila zalihe“. Projektna verzija koristi drugo značenje i traži da se ta vrednost prosledi eksplicitno.
+
+### Koju verziju da prepisuješ?
+
+Za sada prepisuj `catalog1.py` onako kako si ga sastavio i koristi ovaj odeljak da uporediš odluke posle vežbe. Nemoj automatski dodavati sve iz projektnog `catalog.py`: FK-ovi, hijerarhija kategorija i `RESTRICT` pripadaju kasnijim lekcijama. Kod `poslednja_provera` zadrži namerno izabranu verziju i umej da objasniš kako `default`, `onupdate`, `nullable` i `timezone` menjaju ponašanje.

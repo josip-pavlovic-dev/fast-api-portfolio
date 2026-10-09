@@ -98,8 +98,8 @@ class Proizvod(Base):
     )
     izmenjeno_u: Mapped[datetime] = mapped_column(
         DateTime,
-        default=func.now(),
-        onupdate=func.now(),
+        default=func.now(), # Postavlja podrazumevanu vrednost na trenutno vreme u bazi.
+        onupdate=func.now(), # Ažurira vreme izmene na trenutno vreme u bazi.
         nullable=False,
     )
     cena: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)

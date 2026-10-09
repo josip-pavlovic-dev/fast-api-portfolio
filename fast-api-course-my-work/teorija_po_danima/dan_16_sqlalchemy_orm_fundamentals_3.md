@@ -56,7 +56,7 @@ Sa druge strane, ako tabela već postoji i nema `UNIQUE` ograničenja, samo doda
 
 Ne baš. Razlika je između **zaobilaženja SQLAlchemy-ja** i **zaobilaženja ograničenja koje je već upisano u šemu baze** sa akcentom na **stvarna ograničenja u bazi podataka**.
 
-`unique=True` u modelu je instrukcija `SQLAlchemy`-ju da, pri `kreiranju` ili `migraciji šeme`, napravi `UNIQUE` ograničenje u bazi. Kada je to ograničenje zaista prisutno u SQLite bazi i  SQLite ga sprovodi bez obzira na to da li se upis radi kroz `ORM`, `direktan SQL` ili `SQLite Terminal`. Direktan upis ne zaobilazi ograničenje baze!
+`unique=True` u modelu je instrukcija `SQLAlchemy`-ju da, pri `kreiranju` ili `migraciji šeme`, napravi `UNIQUE` ograničenje u bazi. Kada je to ograničenje zaista prisutno u SQLite bazi i SQLite ga sprovodi bez obzira na to da li se upis radi kroz `ORM`, `direktan SQL` ili `SQLite Terminal`. Direktan upis ne zaobilazi ograničenje baze!
 
 Ali ako je `unique=True` dodat samo u Python model, a postojeća baza nije ažurirana preko `Base.metadata.create_all(engine)` ili `Alembic`-a, SQLite Terminal ne zna ništa o toj izmeni. Tada direktan upis može napraviti duplikat, jer ograničenje još ne postoji u bazi. Isti slučaj važi ako terminal otvori drugi SQLite fajl umesto fajla koji koristi aplikacija.
 
@@ -89,6 +89,8 @@ U projektu su odgovarajući FK atributi `Kategorija.roditelj_id`,
 `StavkaPorudzbine` i `VezaProizvodaIPromocije` ostaju van obuhvata ove lekcije
 i ne menjaju se.
 
+---
+
 ### Korak 1: proveri početno stanje
 
 1. Iz root-a repozitorijuma proveri `git status`; ne prepisuj postojeće izmene.
@@ -98,20 +100,24 @@ i ne menjaju se.
 4. Ne menjaj course snapshot
    `docs/sqlalchemy_orm_fundamentals/01_defining_database_models(tables)/source_code/Models/11_on_delete.py`.
 
+---
+
 ### Korak 2: razumi nameravano pravilo
 
 `RESTRICT` znači da baza odbija brisanje roditelja dok postoji red koji ga
 referencira:
 
-| Roditelj koji pokušavamo da obrišemo | Postojeći zavisni red | Očekivanje |
-|---|---|---|
-| kategorija | potkategorija | brisanje je odbijeno |
-| kategorija | proizvod | brisanje je odbijeno |
-| korisnik | porudžbina | brisanje je odbijeno |
+| Roditelj koji pokušavamo da obrišemo | Postojeći zavisni red | Očekivanje           |
+| ------------------------------------ | --------------------- | -------------------- |
+| kategorija                           | potkategorija         | brisanje je odbijeno |
+| kategorija                           | proizvod              | brisanje je odbijeno |
+| korisnik                             | porudžbina            | brisanje je odbijeno |
 
 To ne znači da se dete automatski briše. `CASCADE` bi bilo drugačije pravilo i
 moglo bi da ukloni čitavo podstablo ili povezane podatke. U ovom projektu
 biramo `RESTRICT` da bismo sačuvali zavisne redove i istoriju.
+
+---
 
 ### Korak 3: dodaj `ondelete` u `catalog.py`
 
