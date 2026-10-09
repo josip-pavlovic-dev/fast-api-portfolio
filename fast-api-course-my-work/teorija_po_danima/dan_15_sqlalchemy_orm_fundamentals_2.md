@@ -281,7 +281,11 @@ Ukratko: `Mapped[T]` govori koji Python tip vrednosti očekujemo i mapiramo; `ma
 
 ## Dodatak: `DateTime(timezone=True)` i `DateTime()`
 
-Ova razlika je važna zato što Python, SQLAlchemy i baza imaju odvojene uloge. Python predstavlja datum i vreme kao `datetime` objekat; SQLAlchemy tipom opisuje kakvu kolonu želimo; dijalekt prevodi taj tip u oblik koji konkretna baza razume. Zato `timezone=True` nije obećanje da će svaka baza sačuvati vremensku zonu na isti način.
+Ova razlika je važna zato što `Python`, `SQLAlchemy` i `baza` imaju odvojene uloge:
+
+1. `Python` predstavlja `datum` i `vreme` kao `datetime` objekat
+2. `SQLAlchemy` tipom opisuje kakvu kolonu želimo (npr. `Integer`, `String`, `DateTime`)
+3. Dijalekt (npr. `postgresql`, `sqlite`, `mysql`) prevodi taj tip u oblik koji konkretna `baza razume`. Zato `timezone=True` nije obećanje da će svaka baza sačuvati vremensku zonu na isti način. Svaka baza može imati različitu implementaciju i ograničenja u vezi sa vremenskim zonama.
 
 ---
 
