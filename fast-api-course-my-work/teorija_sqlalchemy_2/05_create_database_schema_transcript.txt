@@ -1,0 +1,120 @@
+33:51
+same thing right well anyway um so now that we have this table object
+33:57
+and it is in this collection called metadata uh which is actually part of the
+34:02
+in this place part of the declarative base uh we want to actually use the
+34:07
+sqlite memory database that we can create and do some create table statements that'll be fun uh so actually
+34:13
+take our python only notion of a table and run it and make those tables in the database so we can put data in them
+34:20
+so we do the create engine as we did in the first chapter we do engine.begin uh ddl is transactional
+34:28
+um sqlite CDL is transactional but the pi sqlite driver ddl Auto commits but that's an
+34:34
+implementation detail you generally should consider ddl to be something that needs to be committed
+34:39
+uh so with engine dot begin and then the base class that we used has a attribute
+34:45
+called dot metadata which is a dictionary it's it's a it points to a dictionary of all the tables that we've made so far
+34:51
+dot create all okay I'll create them all where do you want to create them on this connection okay
+34:58
+so uh create all uh by default checks for cables in ask sqlite hey do you have
+35:04
+a table called user account in your main schema now do you have a temp table no okay
+35:10
+let's create a user account with all this stuff and there's no server default here yet and then the commit so now we
+35:16
+have that table so just to show off uh what's called a
+35:21
+foreign key let's make a second orm declarative model with its own table we'll associate
+35:27
+it to the user using foreign key this is a class called address that will hold
+35:33
+an email address so a user in our system can have any number of email addresses that we can
+35:40
+contact them with so address is another class with another table
+35:47
+um it has a primary key ID you can make primary keys of any kind you want but when we do these demos we
+35:53
+typically have integer single column primary Keys you can have a composite it's fine we have a problem called email address
+36:00
+that stores the data and we have another integer column called user ID that's a non-nullable ins that will
+36:07
+refer by What's called the foreign key constraint through the user account table dot ID so that means that for every
+36:14
+address row it will have a number in the row link to this user ID that must refer
+36:21
+to a primary key in the user account table so that's what we call a foreign key now whether or not
+36:27
+there's a real farm key constraint in the database um is another matter sqlite has optional for our key
+36:34
+constraints in this case SQL obvious wants to know that there's a foreign key and we will
+36:40
+actually create the constraint but sqlite won't enforce it but it doesn't really matter for what we're doing so we can emit more ddl for that
+36:47
+directive with engine.begin
+36:53
+create all of that on that connection and that will again checks for user account well that table
+36:58
+is there now okay we'll have an address you have that table now let's create that table
+37:05
+uh with a foreign key on the user ID column that references the ID column in
+37:12
+the user account table so now we have two tables in the database with this phone case so this model
+37:18
+is what I'm going to use for examples in the next few chapters so user and address user is a one-to-many to address
+37:25
+is a foreign key uh and that's pretty much yeah oh for
+37:31
+the metadata so that was basically making table metadata using SQL log me 2o's core uh
+37:36
+orm it's declarative the next two sections will illustrate the use of these models to create SQL
+37:42
+statements and as I mentioned we're going to use this core only for a while
+37:48
+it's gonna be just very little orm and if I speak too slowly very lower them so we'll run um
+37:55
+insert select and in theory if we had more slides I'm going to run update and deletes I'm
+38:01
+skipping those two a really short on time uh using the connection and we're gonna get plain rows as we've seen the
+38:07
+row object back for results just so you can see how to run excuse me queries
+38:13
+um and then later as I lose my voice completely we will pull in the orm session and do some real orm back and
+38:20
+forth okay another another stupid question
+38:27
+um what are you doing to get the SQL readout of what you just did when you
+38:33
+make an engine uh you can say um Echo equals true and I didn't I
+38:39
+didn't do that here uh here I am live typing con 154.com
+38:47
+driver SQL one so when I did that we got a lot of
+38:54
+logging um and that's because this Echo equals true makes a python uh logger with basic
+39:00
+config and these time stamped logging lines is what that just did um these are regular python standard
+39:06
+logging so this slide Runner actually sets up a python logging like it does
+39:11
+this logging logging basic config if you're familiar with python login it did
+39:16
+this and it said log in get logger SQL SQL Alchemy engine set it did this set
+39:25
+level whatever uh level vlogging info that's what you do if you do this
+39:33
+if you take any sequography program you do that you will see this in your standard app or if you chew this on your
+39:40
+engine you'll see logging um there's a chapter on logging how to set up so there's two ways again the
+39:45
+theme Here two-way set of logging the easy way for just debugging something quickly is the echo because true but
+39:51
+this slide Runner has set up python logging with a custom formatter that has this SQL thing so does that
+39:57
+make sense approximately yes thank you so much great not stupid at all
+40:05
+all right so that was the the that was really the biggest what's new in SQLAlchemy 2.0

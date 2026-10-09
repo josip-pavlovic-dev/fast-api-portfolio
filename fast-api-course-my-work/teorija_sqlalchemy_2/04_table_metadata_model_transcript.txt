@@ -1,0 +1,262 @@
+20:33
+all right chapter two table metadata um so now that we know how to talk to a database and how to you know how to send
+20:39
+statements uh we need to have something set up to be able to send statements that are more interesting
+20:45
+statements that uh involve uh tables in database and we use this thing called
+20:51
+table metadata which means they're python structures that represents what the shape of a
+20:58
+certain kind of table in the database looks like uh SQL Alchemy provides this API first
+21:05
+and foremost for decades using a well-known object called table and uh it looks like this
+21:13
+so if older technology tutorials and actually our current tutorials we'll show you this table
+21:19
+uh this is a table for uh user accounts so it's made to look a lot like
+21:24
+a ddl create sample statement we import some imports and we do table
+21:30
+and we make a string for the table name metadata is a collection that stores a
+21:36
+bunch of table objects and we we create that up here as an empty collection and then as you make tables you pass
+21:42
+this collection to it and then you name your columns in the table and so it's designed to look very intuitively like a
+21:49
+create table statement so you have column as a name each column of the data type and then it
+21:55
+has optional constraints like this the primary key this column is part of the primary key this column is not null
+22:02
+so that's table and people have UC log me have all seen this this is very well known um and
+22:08
+what I'm going to do is just move off of it for this tutorial we're going to go out the side entrance
+22:14
+and go somewhere else so in real world use most applications are using the orm to a greater or lesser
+22:21
+degree even if they're a core only application there's probably RM code in there
+22:26
+when you do orm there's no Auto commit but isn't
+22:33
+beginning similar well yeah so the question is there's no Auto commitment begins similar so Auto
+22:38
+commit means that every time you run a statement you run insert the minute you send the insert to the database the
+22:45
+database commits it and then you run another insert and that commits also so Auto commit means that every statement
+22:51
+commits at one time so that means if you run five statements and the first you go in with no problem
+22:58
+and the third one throws an error and your program crashes or whatever the
+23:03
+first two rows will have gone into the database and this this the second three will have not gone it so you didn't
+23:10
+actually run a transaction so the thing that we get from transact the main thing that okay
+23:16
+the most obvious thing that we get from a transaction is called atomicity it's the first it's the first letter in acid
+23:22
+um and that means that you can run a whole bunch of statements that will either go all in together or not at all
+23:27
+so Auto commit explosively means that you were not getting atomicity means you're getting one statement at a time so so you could
+23:34
+walk me doesn't Orient itself around that model it Orient itself around there's always a block and you always
+23:39
+tell us when that block of statements goes in unless you do a thing called driver
+23:46
+level auto connect which I'm not covering it's in the docs it's a kind of a lesser used case it's very postgres
+23:52
+has certain ddl requirements or you might be using a read-only MySQL follower database
+23:59
+um but yeah when you have begin it means that using animosity does that make sense
+24:06
+I'm going to just go on I mean people can join the zoom and talk also right so I mean if people want to get on
+24:13
+back and forth do that too you see someone not in their head that you just because the speaker a
+24:19
+indication that they're making sense all right so I'm going to move on uh table uh is in constructed indirectly
+24:27
+using a style known as The Clarity mobile ramp so what I'm going to do is I'm going to show you guys the orm right now I'm going to show you actually the
+24:33
+most cool thing about the orm in C column 2o which is this new declarative style and
+24:39
+then we're going to do a whole bunch of sections using core SQL Alchemy core not
+24:44
+using the Oram but using the orm class definitions so people that know
+24:50
+what I'm talking about will know this a little bit different when I do so it's declarable or him and see clock Me 2 is super nice
+24:59
+especially that it integrates very well with Taping Tools like my pi and pylons
+25:05
+uh 44 typing tools uh work very well with Sequim declarative classes as done
+25:11
+in this new 2.0 Style and even if you get SQL statements and
+25:16
+results that's from your orm models those will usually have types too like you'll know that the First Column is in
+25:22
+Python you'll know the second column is a python float uh that works too which is pretty
+25:27
+amazing uh and we have integration with python data classes uh and we can still do everything with
+25:33
+course so if you have an app that you don't like orms I don't want to use the orm I don't like the orm session I don't
+25:38
+want to use that but I want to use engines and connections and select objects you can
+25:43
+still make your models with the orm you will still have that table metadata and
+25:50
+just in a nicer form so I'm going to make that same table using SQL opening 2.0 to cloud of stop
+25:57
+and also this is at the Forefront of the top because this is kind of what's new in 2.0 thing this is the most dramatically new
+26:03
+2.0 feature which is this new style where um when you want to make an orm map
+26:09
+class what we're doing is we're making python classes and each class represents usually a
+26:15
+database table so instead of having a table object we're going to have a python class that represents something in our program
+26:21
+and in all these tutorials I use a class called user which is like a user account in your your web application like your
+26:27
+login you have users when you want to make orm maps classes you start with this thing called the
+26:33
+declarative basis it's a magic class thing and as you make new classes
+26:39
+of this base the SQL Alchemy orm will say oh that's a math class let me create
+26:44
+table metadata for that class let me make sure that I know how to persist that kind of class
+26:50
+um to make a base class in SQL agency while we extend a class called declarative base which is itself is a is
+26:56
+a meta class enabled class that just does some stuff uh it creates that
+27:02
+metadata collection that we saw before will be associated with this base and for demo we're going to add in
+27:08
+another mixing called map does data class which means that when we do map these classes
+27:14
+they will be also python data classes like real ones not interpolated like actually uses python data class to
+27:21
+another class so that's the base and that's our building block for making new cloud of
+27:26
+classes that will represent tails in the database so that just says what I just said was
+27:32
+bullets so here's the user class um that looks just like the user account
+27:38
+table so in here we have different kinds of imports we make a class that can be called whatever you want
+27:45
+that's not the table name extends from base you give it an attribute class level attribute that refers to what you
+27:51
+want the table to be named then you have attributes that use python
+27:57
+pep 44 type annotations that's this colon so we have an attribute on user
+28:02
+called user.id which is a integer but it is a mapped integer
+28:07
+and the SQL Alchemy orn says oh that's a math integer let me make a column with an integer data type and then also this
+28:14
+it has extra stuff like oh by the way when you make this column C block me
+28:20
+make it part of the primary key constraint and also SQL Alchemy when you make the data class
+28:25
+don't make this field part of the Constructor so you need to to know what that means if you know python data
+28:30
+classes have a object called Data classes Dot Fields and the field has flags flags like in it equals false and
+28:38
+KW only those are all accepted by this new construct called mapped call which is new into SQL 2.0 it's not in sequence
+28:45
+1.4 um the next column is called name and we say this is a map string so SQL can say
+28:51
+okay I will use a VAR care for that and it's not optional so it'll be a not in
+28:57
+all column uh user has a full name column that will
+29:02
+be optional so we will make that a nullable string and then it has a column hole created at
+29:09
+that will be mapped to a date time like a timestamp column um and it will use a data class
+29:15
+default factories so when we make new user objects which you're not going to really do in this chapter too much use
+29:21
+the data classes uh default Factory of Python's UTC Now function to give the
+29:27
+object a new time stamp as to when it was instantiated um so this is intended to look like
+29:33
+python data classes so if you know python data classes this would make a lot of sense um people are at first like well what's
+29:39
+this map thing that's ugly what about just just calling hands um the maps is first and foremost says the
+29:45
+SQL Alchemy hey this is not just this is actually map so I want you to map it that means you can have other attributes
+29:50
+that are not mapped that are also part of your data class which is nice and also this map thing uh does a whole
+29:58
+lot with uh typing because as you'll see in the next couple of sections we use
+30:03
+these classes to create SQL Expressions um with a lot of special methods that
+30:09
+are on the class bound what we call descriptor so like user the user class.name
+30:15
+has a lot of special behaviors the max type gives you all of that
+30:21
+um you have to do that because SQL logging does not use typing plugins there's no mipi plugin in use in Cyclone
+30:28
+2.0 um everything has to be up front for the typing tools to see
+30:33
+um at static type static type analysis time
+30:38
+um so it indicated map indicates that seat block is it's an actual mapped attribute
+30:45
+map column is optional and indicates additional details about how the column should be created
+30:52
+um receives a lot of arguments including those of data class fields um when you work in the data class uh
+30:58
+the use of data classes is also optional um that's not a required function yet but it's going to be pretty prominent
+31:05
+going forward so the user class is called the declarative math class someone just said
+31:11
+uh someone said a question okay does the daytime okay so that's a great question the question is does that date time
+31:16
+initializer run at the database level or python so the one in the studio runs at
+31:22
+python and in the next chapter we will do the database version because the database
+31:27
+version is actually better as you're correct the daytime initializer should be at the database level
+31:33
+um however just to show show the data class NASA this I showed the python version so in the next chapter we'll do
+31:39
+the database version so good question um the user class called the clouded map
+31:44
+class it has data class methods like a knit and Reaper that correspond to have data
+31:50
+classes sets those up so here's that um if you've read our tutorial hold me know you'll know that we standardize on
+31:56
+SpongeBob SquarePants as our um data set the names of SpongeBob
+32:02
+characters and their fake email addresses um so users have older SQL automators would
+32:09
+notice that I didn't use keyword arguments here I use positional because data classes give us positional arguments and um
+32:17
+you can print it and the reaper method is there uh the date time came out from the created at
+32:23
+and uh uh the data's there and the ID primary key which is not part of the Constructor
+32:29
+is pointing to none so far so can I can I interrupt real quick what
+32:36
+made it print because it printed automatically when I did the user class and I don't see any print element within
+32:41
+the class let's see if I can remember how to go back we're in a python console
+32:51
+get it yep got it thanks we're in a uh we're a rebel
+32:57
+whatever that stands for yes sir I should have mentioned we're in a magical Rebel that I'm you there's
+33:03
+actually outstandard part of python called console console introvert or something like that and this uses that
+33:09
+and with someone else's idea a long time ago and it's pretty cool so yes when you see uh data like Pi or whatever that is
+33:15
+it's going to print it got it thanks so um when we did that
+33:22
+um we got this table object uh that's now assigned to the class
+33:28
+called Dunder table and from there you can see this table object which looks like the one we created before
+33:34
+there's the one we created before so we have we originally made user account table table
+33:39
+I missed a nullable in one of these but they're you know you can get them exactly the same they're pretty much the same
+33:46
+so there's two ways to create this python object which is what what's once more pythonic and two ways to do the
+33:51
+same thing right well anyway um so now that we have this table object

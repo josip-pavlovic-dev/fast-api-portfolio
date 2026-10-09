@@ -1,0 +1,136 @@
+40:05
+all right so that was the the that was really the biggest what's new in caught me too oh
+40:12
+chapter was that new declarative style which we have a lot of docs for and there's also a migration document if you have
+40:17
+existing 1.4 models here's how to transition into the new version
+40:23
+um I will note that um my Pi type Checker uh 1.1.1 was
+40:28
+released and there is a bug in how they did a new feature for data classes so if you're
+40:35
+using data classes feature with my Pi uh check the docs there's a workaround for this
+40:41
+unfortunate mistake my pie made and hopefully we'll fix it soon because if they don't I will be getting lots of bug
+40:48
+reports blaming me for it all right so now we have uh metadata that describes
+40:53
+tables we have um a database we have a data we have a way to create tables in database I mean
+40:59
+the tables are empty so next we're going to put data into them so this section will show the insert
+41:06
+construct which corresponds directly to a SQL insert statement
+41:11
+and we'll use that same orm Centric metadata model with a little change that someone had asked about
+41:17
+so here is that same orm Centric medicine we're just using the user class we're not going to use the address class here
+41:24
+um everything that you see here is the same code as before with the one exception as referred to on the create
+41:29
+that column we will add a data class directive saying don't include this as part of the Constructor
+41:37
+and instead of having a default Factory that's a data class python thing we're going to have server default
+41:44
+points to a little doohickey here called funk.now um funk in SQL Alchemy is a namespace that
+41:51
+creates SQL functions uh and SQL function is the most common or like string functions like lowercase and
+41:58
+contains and uh you and date functions like current timestamp uh math functions
+42:04
+like you know Max and Min and whatever like that well aggregate functions sorry none of the math works but you know what
+42:10
+I mean um anyway Funk dot now creates a current timestamp function and that's just something that's in the docs you
+42:15
+know how to do it funk dot now um so when it creates the table for this user account this time around it'll have
+42:21
+a server default meaning that anytime a row is inserted into that sqlite database table no matter how it got
+42:27
+there the sqlite database itself will add a timestamp to that column so it's a server side timestamp now technically
+42:34
+because this is a SQL Lite database it's embedded it's not really a server but we're just calling it a server because
+42:40
+it kind of pretends it acts like a server so I was tackling that server but you know what I mean
+42:46
+so that's the server default so again create engine
+42:52
+uh with engine dot begin asconnection transaction create the tables and we get
+42:59
+uh double because I set up a python logger like a dum-dum that is going to log
+43:04
+twice so here's our first adversity in our talk is I'm going to cut out and run the thing again so that that
+43:10
+logger is gone thinking on my feet was that chapter four let's try that again
+43:17
+great disaster reverted um create that was a total surprise
+43:26
+I just fixed above and live coding all right user account table again and this time we create that column has a default
+43:33
+of current timestamp and it's not no meaning any row that goes in here created that will never be null it'll
+43:39
+always have a timestamp which is awesome and when you make timestamps yes you do usually want timestamps to be server
+43:46
+generated it's just easier it's just better there's no chance of not having a timestamp and also timestamp matches
+43:51
+when the date of when the database as opposed to when your Python program had it in memory you know could be
+43:57
+different so let's just say whatever said
+44:03
+and um the user constructed a single argument which is the table or a table representing or M class which I will
+44:11
+often refer to as an orm entity that is the target of the insert the thing that will receive new row or rows
+44:18
+so in this case it's the user class it's part of the so the table as we saw
+44:24
+before is part of the user class so the table object that we don't have to worry about is what actually is used by the
+44:29
+insert construct to make the statement but we don't have to worry about that we just do insert user so we make an insert
+44:35
+statement into user if I were to print this right now it'll stringify
+44:44
+and you'll get this very generic insert with all the columns meaning it's going to insert all four
+44:49
+columns with some unknown value that has not been specified yet these are called
+44:54
+bound parameters it's a parameterized sequencing
+44:59
+so with this insert we want to give it some actual data which will be the familiar SpongeBob SquarePants as before
+45:06
+insert statements and people have a values construct so insert we want to actually put some data in its value so
+45:12
+we will add that using the insert.values method it accepts keys that match database
+45:20
+column names uh and actually you can name the columns in a separate way for your python versus
+45:25
+SQL but for example say just column names um so interest statement is the same
+45:31
+object and then we're going to generatively build onto it using a pattern called method chaining
+45:36
+I call it generative but really it's really formally it's known as method chaining it's in the gang of War Book
+45:43
+um interest statement equals the interest statement dot values and then add the SpongeBob name and the SpongeBob
+45:50
+SquarePants full name and that gives us a new interest statement that has more stuff in it than before
+45:55
+so we stringify that and again well it seems to know about name and full name and not the other columns but
+46:01
+it still is not giving us SpongeBob is showing these bound parameters these are parameters where's the data where does
+46:08
+SpongeBob go so it's there um all SQL activity constructs are very aggressive about taking any literal
+46:16
+strings into Bulls date times uuids jsons and struggling them away into
+46:22
+parameters it's called the bind parameter object in C quality it's mostly invisible uh and that's why when
+46:29
+you see statements you'll see these parameters printed everywhere
+46:34
+um you can see the data if you want using this utility method that is not for normal use called compile
+46:44
+so we did a compile here and uh on the statements a special method we sent some
+46:49
+very esoteric arguments to it and with those necessary arguments that are in the FAQ
+46:55
+you can see uh SpongeBob SquarePants is the data that's actually going to go in the database but when we run the statement it'll be parametrized it'll be
+47:01
+sent as a separate argument to the database driver so let's run the statement let's begin a
+47:08
+transaction with engine dot again execute the statement with engine.begin a transaction context manager.

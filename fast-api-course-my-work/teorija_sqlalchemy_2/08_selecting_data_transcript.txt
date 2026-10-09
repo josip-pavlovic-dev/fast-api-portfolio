@@ -1,0 +1,304 @@
+54:20
+okay so we have 10 54 and we're done at 11 45 so I actually have a lot of time
+54:27
+you have to run through this and it took longer okay I see nothing can happen in the chat so
+54:33
+we'll just take it as it comes now we're going to select some data
+54:39
+um and I should also note that uh this slide this slide this chapter
+54:45
+uh as I just started it it just ran a bunch of SQL already so those those data models that
+54:51
+we've been using the user and address we're just generated for us and they're here and also a bunch of data with funny
+55:00
+SpongeBob SquarePants character names is in the data so we'll be selecting some of that data
+55:06
+so in the previous section on engine uh we introduced this simple contract
+55:11
+called text and look like this so if we have here as we have these tables like we have a user
+55:16
+account table if I want to select a name column using a regular raw sql's name and say select
+55:22
+name from user account and I wrap that up in the text and I send it off to a connection
+55:30
+and we don't need a transaction here because we're not going to commit anything so dot connect give us a
+55:36
+connection four row in each row of the statements print the row and give us the
+55:41
+dot name column so easy enough right so that's the textual select start from
+55:47
+table and you can always do that there's nothing wrong with using text contract just use it it's very great it does
+55:52
+everything you don't need to use SQ qualities other thing except if you want the other things it provides
+56:01
+remember we're the same construct using SQL walking these more uh mainstream core uh SQL expression language using a
+56:09
+construct called select right so there's insert select updatedly it's pretty easy
+56:14
+um we're going to use this orm Centric method so no we're writing core but we're using the orm a little bit to
+56:21
+create SQL expressions and this is something that you could do in other older SQL Alchemy versions uh but as of
+56:27
+C cogb 1.4 uh into uh we made sure it really works as well as it can work
+56:33
+um so the class-bound attributes on the orm models uh like this user class that
+56:38
+we've seen a couple times now um the attributes like dot it and Dot
+56:43
+name at the class level meaning use your class.name represents columns such as user.name so this is the
+56:52
+user class right user is a class it's not it's not an instance um if I say user dot
+57:00
+user.name it's this funny thing that's a SQL Alchemy thing but the object that
+57:07
+this is in Python is called a descriptor python descriptors are awesome and tickle off me uses them a lot if you
+57:13
+ever use the python uh property decorator which everyone does that is the most
+57:19
+commonly used descriptor in Python um so user.name is kind of magical it's
+57:26
+not just the user it's not it's not just a it's not just like an empty you know I
+57:32
+actually wouldn't be present at all if you'd made a original python class or a data class um
+57:39
+it's significant it's got data types so if we make select user.name
+57:45
+we've just made another SQL select we made a SQL expression on that the same way we made that insert contract before
+57:52
+same kind of thing so the above statement means select the
+57:57
+name column from the user account table so the intent here is given as your select meaning that's what we want to do
+58:03
+that's our verb we must select the name column from the user table so by using
+58:10
+this python attribute user.name instead of instead of just saying string name the intent that where this name comes
+58:17
+from the context of it has the data type it uses is all inherent in that
+58:22
+statement SQL Alchemy knows that that's a string it knows if the database needs some special encoding thing to happen to
+58:28
+get the string back a whole lot of information was imparted in this that would not be imparted by a
+58:36
+simple string and the simple string would be longer so this is kind of me making the pitch for caulking course
+58:42
+that there's a lot of what we call automation it's not that I don't know how to write a select
+58:47
+you you should very much know how to write select you should know SQL
+58:52
+any anything you do with C block means you should know what the SQL looks like and then you write it in SQL alchemy's
+58:58
+version of SQL uh so select the name column from the user table
+59:04
+all at once and then you print it like we did before and we see there's select dot name from user account the
+59:11
+from clause we didn't have to we didn't have to type it because we knew what it was c-clocking knows what it is well
+59:17
+obviously it's the problem that's the from Clause um you can say that's implicit but it's
+59:22
+really not implicit it's explicit that we said well user is the class so of course that's the from Clause what it is
+59:28
+is just isn't it's being non-redundant um anyway that's my elevator pitch but I hate
+59:35
+elevators uh so as we did previously with the text construct we can run it
+59:40
+using connection.execute uh as we've seen 100 times now android.connect
+59:47
+for row and run the statement and it's the exact same code as before text where we have row dot name for each row in the
+59:54
+statements result set and we see the same
+1:00:00
+data which by the way are characters from right well actually my
+1:00:06
+eight year old doesn't want SpongeBob anymore but he likes for a while you know anyway um so the arguments that we send to that
+1:00:12
+function up front are a series of columns or tables or corresponding over M Maps classes slash entities
+1:00:20
+other so-called selectables like aliases or sub queries and uh SQL expressions
+1:00:27
+uh and I'm just going to illustrate I'm going to show you all those things but really quickly you can go back later
+1:00:33
+and look at the course shortcuts examples of Select include select all the comments from a table
+1:00:38
+so just like the insert select user that'll give you every column of the table
+1:00:44
+select from specific columns okay select ID name and create an it'll give you
+1:00:49
+those columns in whatever order you give them select from a series of tables or
+1:00:56
+columns or whatever from more than one table this is this is different so this is
+1:01:02
+select the name column from user select the full name column from user and as a result you get two separate columns in the result set.
+1:01:08
+more special case also select the email address column from the address table now what's that going to do we have two
+1:01:15
+different things to select from so the default well you see what it's doing the default behavior is that the from clause
+1:01:22
+is going to put both froms in there with a comma now if you were to run this
+1:01:27
+statement in a database that has data like this one um what it's going to do is it's going to get every Row from user account it's
+1:01:34
+going to get every Row from the address table and it's going to cross-light them all together in every combination in what's
+1:01:41
+known as a Cartesian product um now Cartesian products when you use SQL are something that you usually want
+1:01:47
+to avoid because if you have two tables one has 100 rows one is a thousand you can get Matthew says can give me how many runs
+1:01:54
+that would be because I couldn't possibly guess but but you can easily crash your computer with gigantic
+1:01:59
+Cartesian products at the point math the math is hand waving it's called multiplication I hear it's popular
+1:02:06
+um as we've seen that last statement the from Clause expands to include all the tables we are selecting from
+1:02:13
+so when we're selecting from multiple tables like that we normally want to join them together so that we don't get
+1:02:19
+this Cartesian product we get for each row we have the rows are linked because we know that the address rows have a
+1:02:25
+column called user ID that refers to the primary key of users so we should have the rows
+1:02:30
+be linked up so that the user ID of each address row matches up with the user that we're seeing and that's called a
+1:02:36
+joy and there's a few ways to join SQL there's an implicit join we could say select from user comma addresses where
+1:02:44
+user ID equals address user ID that's called an implicit join or you can more
+1:02:49
+just differently use what's called an explicit join which means there's a word in the SQL called join and that's
+1:02:56
+usually what we do if you do either way in Supermarket but joins more explicits it's more obvious what you're doing
+1:03:01
+so in caulking 2.0 and also 1.4 in the in the new API uh the easiest way to do
+1:03:07
+this kind of situation we have here is called join from uh and the reason it's called Joint firm
+1:03:13
+is because there already is a joint method that uh does uh it doesn't the
+1:03:18
+join method does kind of an implicit thing that is very useful if you have orm relationships but if you don't have
+1:03:25
+RM which is the thing I haven't shown you yet if you don't have this over relationship thing that is not in our models yet join from is more explicit
+1:03:32
+and allows you to say what would you like to join from to it gives you the from and the two because here we have a
+1:03:38
+select user table and the address table uh we want to join from the user table
+1:03:45
+to the address table and we can just do that and what's interesting here there's actually a
+1:03:50
+third argument that joint from takes which is called the on clause and the on Clause is not shown here uh the on
+1:03:58
+Clause illustrates how you would like to join the user and address tables together um we don't have an on Clause written in
+1:04:05
+our code yet when we look at the statement being printed out there is an on clause and that got generated for us
+1:04:12
+generated for us the reason that happened is because when we did our data model I think I actually have a close-up
+1:04:17
+of that happening here's the close-up close-up yes great um this was the data model that we built
+1:04:23
+is that we made the user table over a model and the address or a model
+1:04:28
+using this little thing called foreign key so when we made the address model we said hey address has a column called
+1:04:34
+user ID that is the natural foreign key to the user account.id call
+1:04:40
+and whether or not we made this table in database whether or not there's actually a farm key constraint the table metadata that we created was
+1:04:48
+able to give us information um that let me see if I can do this do you
+1:04:54
+see it statement yeah that metadata the fact that we put the foreign key in the
+1:05:00
+metadata gave SQL Alchemy what it needs to know to know that hey I joined from user address normally by default if not
+1:05:08
+otherwise specified should join on the user account ID to use address that you're trading and that is an example of
+1:05:15
+SQL automation I know what a foreign key constraint is I know what a join is but I don't want
+1:05:21
+to type it um and that's again I'm going to probably say this a lot apparently
+1:05:26
+SQL RP wants to automate things and that's what they like if you want to say C block me is a SQL abstraction layer
+1:05:33
+that's fine but it's not going to hide that you're doing a joint between two
+1:05:38
+tables you need to know if it's a join we're not going to pretend it's some kind of magical concept you want to do a join but I know
+1:05:46
+it's very redundant to type on when you just put it up front so this is automation
+1:05:53
+so that's how that happened uh user address knows how to do join
+1:06:00
+from so um
+1:06:06
+putting it together and I think this is going to run right this is going to run the statement okay so this is going to run this is the same statement with the
+1:06:12
+joyphron and I'm doing this just so you can see the data that I put in the database because we're going to do some other queries so just to see uh all the
+1:06:20
+usernames and the full names and their email address uh is uh SpongeBob SquarePants has one email address uh
+1:06:26
+Sandy Cheeks is the squirrel she lives in a big dome and she has because she's a techie she
+1:06:33
+has two email addresses and then Patrick uh was Spongebob's friend he's a little more low-tech so he's
+1:06:40
+still on AOL but we still love him um so that's just the data that we're going
+1:06:45
+to be selecting from and uh finally
+1:06:50
+there's a whole world of more complex select complex select statements using aliasis upgrade this is this is like a
+1:06:55
+preview of a query that's going to be too difficult for me to explain well I can explain it's not hard but
+1:07:02
+uh here here's a query called select usernames that have more than one email address and to do that kind of aquarium you need
+1:07:09
+to uh what we say compose the query based on uh individual selects that will
+1:07:15
+be joined together to select from each other and this is another big SQL Alchemy thing this is actually one of
+1:07:20
+the main reasons I wanted to write SQL in the first place was that I was working in a shop where we wrote ginormous query certain Oracle database
+1:07:27
+and I found that when you type these queries you have to type the same query and then type it all over again over
+1:07:34
+here as a union and then type the same thing with so it was like this would be programmatogenic this is really really
+1:07:39
+very error prone and verbose to generate these queries by hand um it'd be nice if I could compose them
+1:07:45
+using objects and that's what this is so I have a sub query here
+1:07:52
+that will give you all of the address user ID all the user IDs that have a row in the address table
+1:07:59
+and the count for how many email addresses are for that particular ID and then we're going to group those
+1:08:05
+counts by addressity so for each user ID grouping we'll get the count of the user uh email addresses and then we're only
+1:08:12
+going to include those accounts that have more than one email address and which we know from our data is actually standing in this Coral is the
+1:08:17
+only one that has more than one email address okay so that's and that's going to be called a DOT subquery
+1:08:23
+and we're going to then select usernames from the user table and the count of
+1:08:29
+email addresses that they have from that other sub query join from the user table to the sub
+1:08:36
+query and then again no on clause so that foreign key thing that we have
+1:08:41
+is smart enough to know even from a sub query it's going to dig in there and be like well this sub query actually has
+1:08:47
+the address user ID column I can join to that and if this subgrade had more than one
+1:08:53
+column that would user could join to would raise an errors not going to do something that it can't it's not going to guess it's only going
+1:08:59
+to join for you with the on clause automatically if it's completely unambiguous what career you want if we
+1:09:05
+were to add other columns to use to address that also refer to user ID it would raise an error saying this is
+1:09:10
+ambiguous you need to give us the own clubs um so we're going to join from the user
+1:09:16
+table to the sub query and get this fund data um which is Sandy this world's username
+1:09:24
+and Sandy has two email addresses and the other users that have one email address were not included because we
+1:09:30
+uh filter them out using having so this is just kind of like where this is going not really in this talk but that's like
+1:09:37
+when you learn SQL music the special language this is where you go but you can make composable structures
+1:09:43
+so back to that was kind of a jumping ahead preview I don't know why I put it there but anyway
+1:09:49
+um let's talk about the where clause how do we do the where Clause if we just
+1:09:54
+select we didn't do a where Clause there was a where Clause over there there was a hatting clause actually over there which is kind of like where it was a
+1:10:00
+different context um so when we have this user.name attribute yes
+1:10:05
+uh I will show you that now because I I'll show you what so when we do user.name we're going to do so all right

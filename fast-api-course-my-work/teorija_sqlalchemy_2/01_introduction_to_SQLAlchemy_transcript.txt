@@ -1,0 +1,95 @@
+
+0:04
+hey everyone thanks for coming and uh you might notice my voice is a little bit hoarse uh I've been sick so we'll
+0:11
+see how well my voice holds up um so this tutorial is kind of similar to ones I've been done in years past
+0:17
+it's shorter um there is a GitHub link on this page you can see
+0:23
+and that it has all of the source for the the slides that I'm doing the slides run entirely within within a console
+0:30
+application uh so you can get the source code and everything um we have this the the sort the code
+0:37
+for this talk has six modules uh which I've tried to trim down for the time we will do it most five of the modules
+0:45
+so the sixth module is about orm relationship which are a big topic so uh
+0:51
+if you want to go later to the GitHub you can see chapter six and also I'm pretty much reading reading bullets and
+0:57
+hopefully embellishing uh so you can see everything everything later if I talk
+1:04
+too fast or something everything's later um so take off me 2.0 is this big
+1:09
+release uh that I've been working on and myself and others I've been working on for quite a while so we'll do a quick uh
+1:16
+intro to uh what is SQL Alchemy uh and the tutorial is going to also kind of
+1:22
+include it's going to be kind of focused on some specific SQL Alchemy 2.0 kinds
+1:28
+of uh Concepts um so SQL Alchemy is always referred to itself as a database toolkit it's on the
+1:33
+home page um and the idea is to provide a lot of tools for databases
+1:39
+um and one of these tools is an object relational mapper or orm for short
+1:45
+um but there's a lot of other features in SQL alchemy that don't use the Oram
+1:50
+um so those features include things like a facade around the python database API
+1:56
+which is the python DB API is pep249 uh this so SQL awkwardness facade
+2:01
+provides a richer kind of embellishment on top of the Python DB API
+2:07
+database schema management functions so that you can create tables and databases and create schemas and things like that
+2:13
+uh SQL query Builder uh use Python Expressions to build objects that become
+2:19
+SQL statements uh schema inspection so if you have a database you can point SQL Alchemy at it
+2:26
+and get a list of all the tables columns to data types constraints
+2:32
+um all of those features oh that's my phone all those features uh there aren't orm are called SQL Alchemy
+2:39
+cores so the main point is that SQL Alchemy has two kind of sections there is the core
+2:46
+and then there's the orm it's built on top of the core so most of this talk is going to talk about core because uh for
+2:53
+SQL Alchemy 2.0 the foundations are kind of in core um oh and this well there's an orm thing
+2:58
+you'll see so I should just get to this the tutorial which follows is the latest version of a similar tutorial I've been
+3:04
+doing since 2007 uh introduction on financial Concepts uh
+3:09
+given in 2.0 terms um if you're new to this stuff I don't know how many people on the talk here
+3:16
+are people that have used C programming for a long time and other people like what is this thing let me go to this talk see
+3:21
+what it is um the best prerequisite to follow what I'm saying would be that you know some
+3:27
+python General Python program would be good uh basic oop like if you know what a class an instance is would help
+3:34
+um you kind of know some SQL like with a select insert you know how to create
+3:39
+table things like that um if you don't know SQL um SQL alchemies is philosophy
+3:45
+philosophically very oriented around you know SQL and you're automating your
+3:50
+use of SQL so it's not that easy if you don't know SQL first uh and if you know what a transaction is that would be
+3:55
+great so uh first up some ridiculously
+4:00
+important links for the new docs we're trying to make the docs findable people complain they can't find docs uh so here's the most important
+4:08
+links and you can go to the GitHub and see these links the main docs at docs.sequelocity.org there's a thing
+4:14
+called the quick start which is like a one page show me what this looks like then there's a unified tutorial which is
+4:21
+long and uh worth it you know to really introduce you to
+4:26
+every concept you would need uh and the or inquiring guide uh has got a lot of the new uh patterns for writing
+4:34
+queries using 2.0 Style no that's the first thing so I'll go
+4:40
+back to the menu of other modules so those are the modules so before we build a lot of things we're
+4:46
+going to talk about this thing called the engine uh the innermost data connect to the database structure is called the engine and it is responsible for managing the connection pool and executing SQL statements against the database.

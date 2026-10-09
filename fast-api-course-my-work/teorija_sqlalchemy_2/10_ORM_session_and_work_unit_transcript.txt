@@ -1,0 +1,428 @@
+1:22:38
+I'm gonna get so 11 22 so we have 15 like you know 18 minutes left or whatever I can't do math when I want to
+1:22:44
+talk 22 minutes sorry I can't think of the fly
+1:22:50
+so I'm gonna do some orm um and I'm gonna just do the the important things to know
+1:22:56
+I'm using theorem so we've done all this um select insert statement we've done basically statements oriented
+1:23:03
+programming right we want to talk the database let's write statements instead of videos that's the way we want to talk
+1:23:09
+to database now the orm gives us another way of talking to the database which is
+1:23:14
+in terms of python objects and their state and mutations on their state and
+1:23:20
+the orm will generate um the insert updates up insert update
+1:23:26
+deletes for you based on those changes in state the orm also lets you select objects and for that it still works in
+1:23:33
+the statement oriented fashion but it gives you back python object instead of rows well it actually it gives you rows
+1:23:38
+but it has the feature that it can return some of the columns in those rows
+1:23:43
+as fully formed python objects that themselves can be mutated to give you
+1:23:49
+more SQL uh modification stuff so
+1:23:56
+this is the new dimension and this is my intro when I first did this slide I got into the the fonts so this is over end
+1:24:05
+time and that's that's the end of the funny fonts the ASCII phones
+1:24:10
+um okay so we again have the orm model again that we did before so again we're
+1:24:16
+doing just the user class and as is the case before we have the server default
+1:24:21
+it's the same thing that we use for the insert chapter
+1:24:27
+as we as we've done about four or five times now we will generate the schema on this sqlite connection
+1:24:33
+no excuse me this talk I'm going to bed one second
+1:24:41
+um there's a table so we've already been working with orm Centric metadata models
+1:24:48
+but we weren't really using VR we're using the orm classes to make select statements and inserts and we can also
+1:24:54
+do update completes um to really use orm Centric patterns
+1:25:01
+we will add the use of instances of our orm mapped classes so that is well this is the class that's
+1:25:06
+the user class right which we've done a lot with it this is an instance of a class so when
+1:25:13
+we construct an instance of user using its under init method and we get an object so we have
+1:25:18
+the class and the object or the instance of the class excuse me
+1:25:24
+um both uh both of these areas of use are significant in
+1:25:29
+synchronically usually with an object model like like you know uh usually with objects you make the class and then
+1:25:36
+you're done you deal with the instances of the class of the class you have objects which is fine but with SQL
+1:25:42
+automated class itself is also very important so um what we want to do when we have
+1:25:49
+instances of user so stateful instances with data in them what we want to do
+1:25:54
+with the orm is we want to persist their state to the database and we want to load their state from a database back
+1:26:01
+into objects so before we were getting rows back with individual columns when using
+1:26:07
+orm you kind of want to see those objects with the state in them going back and forth that's why it's
+1:26:14
+called object relational mapper and in my opinion if you're using an object relational mapper it implies you are
+1:26:20
+doing object-oriented programming like if you had a functional language I don't think you could have I mean this is I
+1:26:25
+shouldn't get into this but I think orms imply that there's a class conflict of some kind a stateful uh usually mutable
+1:26:35
+you know um Universal state which is in some worlds evil but for classes python
+1:26:41
+classes mutable state is what we're doing if you don't like medical State don't use nowhere that's what I would say
+1:26:47
+use core those temples are not are not mutable um so anyway back to the orm as I am
+1:26:52
+digressing to achieve this we'll use a new kind of tool that can mediate between those instances and SQL uh data
+1:26:58
+modification language statements and SQL result rows and it'll do it all within a transaction
+1:27:04
+the same way that the engine connection Paradigm has given us transactions at all the time
+1:27:10
+the object is called the session um and the session is to the orm what the connection is to the core it's the
+1:27:16
+thing that interacts with the transaction of which there always is a transaction because the python database API as soon
+1:27:23
+as you connect there's a transaction you know as soon as you start setting commands everything
+1:27:28
+is lazily initialized but from sqwalking's point of view there's a quote-unquote transaction even if it
+1:27:34
+hasn't fully set itself up yet so in the same similar way as the connection comes from the engine the
+1:27:42
+session comes from a factory called session maker there's actually some other ways to make sessions but the
+1:27:49
+pattern that people seem to be into and it works very well is to have this Factory called like you
+1:27:56
+can make a session directly if you want but for the purpose of the tutorial I will show how the session maker is kind
+1:28:01
+of a factory for sessions and it has some patterns that line up exactly with
+1:28:06
+engine and connection and that's all kind of a c call me 2.0 things that we want the patterns of resources being
+1:28:13
+opened and closed and the patterns of transactions starting and closing to be consistent between core and or M so this
+1:28:19
+conceptually not shouldn't be too much different
+1:28:24
+the session maker as a factory when when we make that is given an engine
+1:28:29
+and so the session maker when it makes new sessions will send the engine to uh
+1:28:35
+the new session and then the session when it is asked to start talking to the database will procure the connection
+1:28:41
+from the engine which sounds crazy but it when it works it's not that part it's not that
+1:28:47
+complicated it just sounds hard to explain it one Link at a time so the engine has passed along to the session
+1:28:53
+uh so the session maker and we will assign it to a variable that is kind of thing we make globally by the way I
+1:28:58
+probably didn't cover this when you write your caulking program the engine uh is usually a global variable like
+1:29:05
+some kind of module level thing um you don't want to make an engine every time you want to connect the
+1:29:10
+database the engine should be it's a connection pool it's a long-lived object of some kind so you want to have it
+1:29:16
+either globally or in some kind of registry that's global something that every part of your program can go and refer to that same
+1:29:21
+engine throughout the list here in the program the session Factory if you're using that is similar it should also be
+1:29:27
+a long-lived persistent uh application scoped object let's not
+1:29:34
+say Global let's say application scope um I will see a lot of users telling me code where they're making an engine and
+1:29:40
+a session Factory every time inside of a method new engine new session Factory the new session it's like that got you nothing
+1:29:47
+that did nothing for you at all you did not need a second Factor you already had a session and you just did a whole lot
+1:29:53
+of python work for nothing each time that that should be Global anyway so session
+1:29:58
+Factory and engineer Global or application scope um session Factory is a new uh session
+1:30:04
+maker here that's bound to an engine uh nothing happened yet nothing was back to read yet okay so the session maker
+1:30:10
+creates a session when we call it like a call so the session Factory is here and we
+1:30:15
+just basically say session equal session Factory call it that's the factory
+1:30:22
+and then we got back the session object and that's the thing that can talk to the database it didn't it still didn't
+1:30:27
+connect the database yet everything is very lazy initializing um now if session maker is a factory
+1:30:33
+recession like an engine is a factory for the connection why isn't the method called session Factory dot connect
+1:30:40
+the way it's called engine.connect well because the session didn't work exactly the same way as engine not connected
+1:30:46
+um the session connected to database engines on demand so nothing actually connected again in this case so that's
+1:30:52
+why such and Factory discussions got a little more longer of a of a sequence chain to actually be connecting to the
+1:30:58
+database um as an example we can make a connect right now just to show what it looks like by using a
+1:31:05
+method called session.connection um session.connection is a method that you don't normally need I'm going to
+1:31:12
+show it because it is one immediate way to tell the session okay start your transaction start your connection get
+1:31:18
+going and then show us that connection that you have it's not called connect because it's
+1:31:24
+going to actually return us that connection that remains persistent within the session
+1:31:29
+so it's kind of like get the connection and create and create that connection if it doesn't exist yet
+1:31:35
+um again I'll run the code it does the beginning Pleasant that
+1:31:41
+we've seen before when we do session engine.connect we get back the connection that we've always seen
+1:31:47
+um but this is just demonstration we normally don't really have to use that connection I just wanted to show people that the the the process of session as
+1:31:55
+you tap session Factory then your session then when the session is asked to begin doing work it will then lazily
+1:32:01
+initialize and connect and create a real database transaction so once the session has established a
+1:32:08
+connection it's considered to be in a transaction and that is technically incorrect I should have fixed the slide the session is actually considered to be
+1:32:14
+in a transaction the moment you start doing things with it um once it gets the connection that's
+1:32:19
+actually a second level of being a transaction the session actually has its own notion of a transaction before it
+1:32:25
+even connects but usually roughly hand wavy the way I
+1:32:31
+frequently operate uh what has when it has a connection it's considered to be a
+1:32:36
+transaction um that same connection object will be used
+1:32:42
+until the transaction ends um when we're in the transaction uh there's some other things we can do
+1:32:48
+with the session but first of all you can run statements with the session and when you use the orm you're still
+1:32:53
+going to use select statements like we did before uh but when the session runs select statements they do kind of a more
+1:32:59
+special thing than before uh they can return objects but to run that statement
+1:33:04
+and statements we will still use session.execute the way we did connection.execute uh this methods
+1:33:09
+called session.scalers that gives you a list of individual columns or objects
+1:33:17
+excuse me and such and that scalar which will give you just one column of one row and and
+1:33:23
+be done with it so there's no limitation with session execute session execute will go right
+1:33:30
+through to connection execute so again we can go back to the beginning with text again
+1:33:36
+we can do select hello world all over again with the session and it will essentially pass through this statement
+1:33:42
+down to the connection and give us the same kind of results and the result object back the way we always saw so
+1:33:50
+session execute just like connection execute still sends you back a result
+1:33:56
+um let's see what kind of result it is it's a cursor result because this was a very raw
+1:34:01
+uh core statement that just ran and it gave us a cursed result back um but the session can give us other
+1:34:07
+kinds of results back as well when we do more ornish things and I'll hopefully
+1:34:12
+get to that before we run the time in 10 minutes so to end the transaction that the set
+1:34:18
+is in we call session document or session.rollback or session.closed
+1:34:23
+um so here we're doing session.close which will do the rollback thing yep we'll do the reluct thing and uh that
+1:34:30
+rolls back that's just that connection.close and again as I've spent all that time on context managers in the
+1:34:37
+engine chapter the same patterns apply to the session um session maker in session provide
+1:34:43
+integrate together to provide contact spider support that is trying to be equivalent to how the engine connection work so that it's the same idea you have
+1:34:50
+to change your mental Paradigm so here we open a session run a statement in a block and then the session is closed
+1:34:56
+just like the engine this is just like with engine dot connects it was session Factory session session execute a
+1:35:01
+statement and give us all the results in a list let me run that and we get nothing because we didn't put any data in yet
+1:35:07
+um this is the part of the talk when I started talking more quickly because I want to get to a certain thing in the top talk before we end so forgive me if
+1:35:14
+I talk about that I think we will do question and answer uh after I'll be on Slack coughing my brains out but you won't
+1:35:20
+know that um so let me just whip through the rest of this and do the more questions on stock
+1:35:25
+um session maker in session support the same transactional patterns Ascension connection the minute as you go it is there so with
+1:35:32
+session Factory okay run an insert you can run an insert with session uh commit the code we just put some data in by the
+1:35:38
+way uh run that submit the transaction um this is also the begin once pattern
+1:35:44
+where you can say a session measure make sessionaker dot begin and then what we're going to run here is a delete statement that wants to delete
+1:35:51
+the ones I just put in because I don't want to have them there I'm going to put them in another way delete the rows commit so those are the
+1:35:56
+two transactional patterns of session you have to use them a real world coach try to use context
+1:36:02
+manager patterns as I've just shown you to imagine sessions code however for the purposes of example
+1:36:07
+coming up now when I show you what's called the unit of work pattern we're going to make a single session and leave
+1:36:12
+it opened so that the interaction is going to be seen because with python context managers they don't show you the the the
+1:36:18
+console will not show you the data until I finish the block so I'm going to run a session I'm going to keep it open and
+1:36:24
+not use the context manager but I want to make clear this is the session that we will keep open for the purposes of example
+1:36:29
+uh this is not the pattern you want to use you want to have context manager as much as possible and not rely upon oh
+1:36:36
+we'll close assessing later no no how you're going to close it right now so keeping the keep the above in mind as we continue and here's our session that
+1:36:42
+we're going to just get just keep open in a transaction which is usually bad news so recall the user that we made
+1:36:48
+there's SpongeBob's the stateful instance of a user we want to persist it in a new row in the user account
+1:36:54
+database table we tell the session this is what we want
+1:36:59
+to do using session dot add such another as SpongeBob and as his customary in Sequel Alchemy again
+1:37:05
+nothing happens okay so what happened is the object is now referred to as a pending object
+1:37:11
+which means this uh is a python object that we'll use to populate an insert statement uh we can see the pending objects
+1:37:17
+looking in a collection in a session called dot new uh and there's the SpongeBob object in the dot new collection
+1:37:24
+um so the session knows that it wants to uh emit an insert statement for this pending object but when will it do it
+1:37:31
+um the session emits these insert and also updates some beliefs for other operations for objects in a process known as the flush and this pattern in
+1:37:37
+the bigger sense is known as the unit of work I mean the session will accumulate commands uh and then when it needs to
+1:37:43
+talk to the database to give you more data it will flush out everything that has pending first
+1:37:49
+plus occurs when we run session execute or similar to get a statement uh when an orm instance runs a process known as
+1:37:56
+lazy loading that we won't be showing too much here um when we run an explicit session flash
+1:38:02
+method that we don't normally need to use but once in a while if we need to know the value of a new server default uh and also when we commit the
+1:38:08
+transaction before the command occurs it will do a flush so let's see what the flush looks like uh we're going to ask
+1:38:14
+the session to select rows from the user table before we do that it will flush out the changes uh to the current
+1:38:21
+transaction and then it will run a select for us to get rows back which will actually be pulling from that data
+1:38:27
+that we just flushed so it's a little bit of a multiple things happening at once then here um it will persist the pending object
+1:38:33
+and load it back in one step so we use select to select rows uh and we will
+1:38:39
+select a user class without asking it for columns when we select from a class
+1:38:44
+and we send it with session execute and not connection execute we will get out or objects back
+1:38:51
+uh within the row we won't get columns it'll actually put it all into an object for us in kind of a hierarchical result
+1:38:57
+route so here we have select users where name is SpongeBob there's no actual data
+1:39:03
+database yeah but when we run it the flush will happen so the the transaction Begins the insert ran the flush occurred
+1:39:12
+um and then the data went in and then we selected it and it asked for SpongeBob and we got a result back
+1:39:18
+now what's in that result it has a single row um and within this row is the user we
+1:39:24
+selected as a single column value which seems a little weird uh so and I'll show you the Rope let's
+1:39:30
+get a row here there's the row and we can see it's a tuple with this fully constructed user object inside of
+1:39:36
+it which seems pretty awesome um and let's assign that we'll this will be easier in a month we'll also SpongeBob will be assigned to that
+1:39:44
+object okay we can see that the server generate attributes uh ID and created that were
+1:39:50
+generated by SQL light so not just created but also the primary key and those got populated for us which is pretty handy
+1:39:56
+um and there's the object and another funny thing that happened is that the object that we just got back
+1:40:03
+from the result is actually the same python object in memory as the one we use with such an ad which is weird so
+1:40:10
+SpongeBob is the object that we created which also seems to have its state updated and then the one we got back
+1:40:16
+looks the same and they're actually the same object which if you haven't used signaling
+1:40:22
+before might be weird um the way that happened is because the session uses that and if I had people
+1:40:27
+actually in a room with me I would be doing the Clapping in the hands I'll repeat class call the identity map so there's
+1:40:34
+this thing called the identity map what's that it's a so-called weak mapping meaning
+1:40:39
+that the objects that are transitory as far as python garbage collection is concerned of objects key to their class
+1:40:45
+and primary key identity so we can look at the identity map using a dictionary on top of this
+1:40:51
+attribute called identity map the identity key is this thing here it's
+1:40:58
+the class and the primary key and some supplementary stuff we're not using link to the user object so there's only
+1:41:04
+one user object Happening Here we inserted we selected it's the same object over and over again
+1:41:10
+um all the objects that are persisted by the session using flush as well as objects that we load with execute and
+1:41:15
+scouse whatever are placed in the identity map so when an object is in the identity map it is no longer known as pending it's
+1:41:22
+now known as persistent so persistent objects means that they are there is a
+1:41:28
+row in the current database transaction that matches this object's primary key identity that's the definition for persistent
+1:41:34
+whereas pending means this row will be inserted persistent means this row has been inserted at some point either now
+1:41:40
+or previously uh so the identity map is very important integration point because just for now
+1:41:46
+it just was able to populate the object we already gave it and we could only have that one object and we don't have multiple copies of SpongeBob floating
+1:41:52
+around confusing things so uh quick quickly before I have like
+1:41:58
+two minutes left uh we had to extract the user object from a row which was inconvenient that
+1:42:04
+we want objects back we don't like rows anymore I mean we like those but we don't want them now we want objects back we're normally going to use a method
+1:42:10
+called session.scalers which is like that result that scattered method I showed you earlier
+1:42:17
+which would turn uh just the first object of the first row pack instead of rows so this is all for consistency
+1:42:23
+execute everywhere always gives you withdrawal that always returns rows scalars everywhere always gives you a
+1:42:30
+result that returns python objects out of the First Column you actually get other columns too but use the first column so for everyday orm load objects
+1:42:36
+you want to use session desk image and that's what's in a lot of the documentation examples so here we'll run it again we'll say session.scalers
+1:42:43
+statements select userware name is SpongeBob and then from the scalar result set give us the first python
+1:42:49
+object and then we get another value that we will assign to this too is SpongeBob which is the same obviously
+1:42:54
+again uh and you get it back you get that same object back um even though see quality ran the
+1:43:01
+select statements as it ran the statement and got the results it saw that this particular primary key
+1:43:06
+identity was already in our identity map and it used that object again is there a
+1:43:11
+last no because last is not easy because to get it last without doing an order by you would have to run the entire result
+1:43:17
+set all the way through and sequel can be tries to not trap you into situations where you're going to
+1:43:23
+pull the whole result and throw it away that's kind of always a big gotcha so you would to get a last you would do
+1:43:29
+order by something in reverse and get first that makes sense again you need to know a sequel
+1:43:35
+so we have one minute left um that's really all I have the the other the last thing I can show you is the is at all that will add some more
+1:43:42
+objects and uh it does pending changes so I I there's no time it will modify
+1:43:47
+we're gonna modify attributes the objects become what we call Dirty and I'll get to the flush part where it
+1:43:53
+will update a dirty column and then also insert some more pending rows and there's a whole lot more to talk about
+1:43:59
+the unit of work but that's all we had time for in this talk uh and then also chapter six in here talks about orm
+1:44:05
+relationships one to many many to one uh and if you're new it's good stuff and also the tutorial online has got great
+1:44:11
+stuff I'm gonna skip this part because that's in the top tip controversy
+1:44:18
+there we go we're at the end

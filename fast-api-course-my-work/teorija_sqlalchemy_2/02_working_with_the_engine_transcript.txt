@@ -1,0 +1,170 @@
+4:52
+and it's the most foundational construct into company core you want to get an engine you call a
+4:58
+function called create engine so this is some code and code runs in here so this is pretty cool uh you'll
+5:04
+see bullets in code just mix and match uh so I'm SQL Alchemy import the create
+5:10
+engine function and then we create this engine given a URL to a SQL like database
+5:16
+um the single argument that create engine requires is a string or other kind of URL object that points
+5:24
+to the database you want to connect to um the first part of it the scheme with the colon slash slash is the
+5:30
+database you want to connect to the kind of database and then following that are things like the host name and passwords
+5:35
+and database name when you do SQL Lite without any arguments without any file name you get this thing called an in-memory python
+5:41
+database so it's a database that's only in the python process and it's nowhere else and it's very handy for tutorials
+5:47
+because it doesn't have to have any file anywhere but if you go to the docs there'll be
+5:53
+many other styles of URL that you can look at so we made an engine above that will
+5:59
+connect to a SQL layer memory database nothing actually happened yet it didn't connect
+6:04
+the engine's a factory that makes new connections when used I'm going to close this because
+6:11
+my dog was flying outside and then this gets Tangled
+6:20
+um the engine that also stores a connection pool uh which is where connections will be reused uh for subsequent operations
+6:29
+um so the engine doesn't connect till we tell it to for the first time uh when we use the engine directly we
+6:35
+get a connection using the dot connect method that will actually create a sqlite connection and do stuff with it
+6:41
+for us um so right here connection equals engine dot connect so what just happened
+6:47
+there so this is when we actually did connect to sqlite and we made a little in-memory database
+6:55
+a returned object is an instance of SQL Alchemy .engine.connection
+7:01
+and uh that's what that looks like and then
+7:07
+uh what the connection does is it's a so-called uh proxy for a DB API
+7:12
+connection uh now I'm using the word connection confusingly SQL Alchemy has connection that's what you deal with
+7:18
+then inside of it is the python sqlite connection that you don't have to worry about at all but if
+7:24
+you use SQL Alchemy you should know as the programmer that it's there and that when you have a connection that
+7:30
+actually has a one-to-one correspondence to a database actual connection so in
+7:36
+this case it's using Python's built in sqlite3 module we can see it by peaking at the the
+7:42
+driver the dot connection.driver connection attribute and there it is that's the sqlite3
+7:48
+connection so that's the proxy for the connection what can we do with it the main thing
+7:54
+you want to do with connection is to use the execute method that runs queries uh and that will then do the stuff with
+8:01
+the sqlite connection which involves using an optical recursor to run a statement and get results back
+8:07
+uh and when we want to run a textual statement we you know when we do this tutorials I start with textual statements I just select star for cable
+8:13
+or whatever um you use a construct called text and so at the basic level you can just
+8:20
+make a string that selects anything so here we're doing a select that's not from a table
+8:26
+just some arbitrary data so select hello world and just give us back that string
+8:31
+and name it after a column called greeting and then we run connection.execute
+8:37
+statement we get back a result and when I press return it'll run this code so
+8:42
+here's an actual statement running this logging is SQL logging is logging
+8:48
+and the tutorial slide Runner has turned it on so you can see it
+8:54
+and uh the first thing that happens you see this begin implicit which doesn't mean SQL community did it begin it means
+9:00
+that the python database API did it begin python database API includes begin
+9:06
+in all cases because it does not use Auto commit by default so there's always a begin that the python driver does so C
+9:13
+fog me has a log that says to you hey by the way this is when we're considering the DB API to have done its begin so you
+9:20
+should know that it's there and then we have our statement and then we have uh some stuff about the
+9:27
+SQL caching system that's new and SQL every 1.4 some stats we can ignore that for now
+9:32
+and then we have an empty parameter list because we didn't set any parameters
+9:39
+is anyone confused yet or is this fairly easy old hat if anyone has any like I
+9:45
+have no idea what you're talking about you know time in or whatever okay
+9:52
+the connection execute always returns What's called the SQL Alchemy result object
+9:58
+in a specific case it's a class called crochet result which means it proxies a DB API sure
+10:04
+let me see it there that's the result object and um similar to a DB APA cursor which has
+10:11
+methods like fetzal fetch one for fetching rows right I'm going to fetch rows but result has more methods fancy
+10:17
+things nice things that are useful uh more than previous equality releases prior to ones one Supermarket 1.4 the
+10:24
+result was very basic and now has more stuff uh one method it has that we'll use a
+10:30
+lot here for demonstration purposes is called DOT first which will return the first row the
+10:35
+result uh and if there's no row it'll return none and then it closes the result set which means it's going to
+10:41
+close the underlying cursor that's part of the database resources we have checked out so we wanted that to happen
+10:47
+so let's get a one row back and then close the result because we only asked we only had a statement that had one row
+10:53
+that's a SQL Alchemy row object uh and it looks and acts mostly like a
+10:58
+names Tuple so we see here it looks like a tuple it has integer index it's named Tuple which
+11:06
+means it has attributes on it that match the column names so when we did that statement we said select hello world as
+11:12
+greeting the name greeting is here as a column we can access now if you have the name greeting as a string
+11:18
+there's a dictionary interface on row a row called dot mapping underscore
+11:24
+mapping the underscores because name tuples uh you want to be the namespace open for
+11:30
+but Dynamic attribute names so use underscores for other names uh row dot
+11:36
+mapping and use the string greeting get the same data um this row object is not the same as it
+11:42
+was in C call can be 1.3 and previously in 1.4 we introduced the new row uh but
+11:48
+it was an opt-in and now it's equality two of us the default row that is a name Tuple by default
+11:54
+apps like a towel and then if you wanted to act like a dictionary where object in object object in collection gives you a
+12:01
+Boolean for the keys that's the dictionary keys on mapping
+12:06
+um so some quick let's call it quick slide get lots of rows back at once what's the
+12:12
+best pattern iterate your own result give me the rows uh to get the rows back and assign The Columns to app to
+12:19
+variables use Temple assignment for Ida greeting comma XYZ in result as you
+12:25
+iterate the rows it will assign things to the variables uh using python fstring the print is pretty nice that's
+12:30
+obviously what if you do with the data iterate through just the First Column of each row we'll see this method a lot this is called the scalars scalar is
+12:37
+transformed the results to give you a new kind of result called a scalar result that gives you just one python
+12:44
+value no more rows because you just the value so that'll give you just for greeting and result test scalars hello
+12:49
+world whatever get all the rows in a list called dot all that gives you the list if you want
+12:56
+uh scalars in a list we call Dot scalars.all
+13:01
+um this line shows us something new which is that the result has multiple transformative steps that you can call
+13:07
+so there's all kinds of methods you can call that will change what it's going to return and then you can actually get the
+13:12
+rows after that so it's very it's a rich object it's great
+13:17
+and that's the result intro some water for that
+13:23
+so we've got this connection the next thing to know about it is it has a DOT close method now what does that do it doesn't actually close the
+13:31
+database connection it's going to release the database connection back to the connection pool usually immediately, making it available for other parts of the application to use.

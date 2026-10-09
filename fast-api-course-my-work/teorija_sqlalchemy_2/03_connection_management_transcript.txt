@@ -1,0 +1,166 @@
+13:31
+database connection it's going to release the database connection back to the connection pool usually
+13:36
+releases means the pool May hold on to the connection or close it if it's part of what we call overflow
+13:42
+when we use a sqlite memory database there's a very special kind of connection pool called the Singleton
+13:47
+pool that has just the one connection because the sqlite memory connection is normally unless you do some pretty
+13:53
+strange things not shareable among multiple connections if you want to talk to that database and the data in
+13:59
+it you've got to use that one exact connection um that's not how most databases work like sqlite file databases you can have
+14:06
+multiple connections to the file at once and all obviously all other databases have lots of connections but sqlite
+14:11
+memory is special so releasing the connection to the pool won't really do anything except store it
+14:17
+when we call Dot close you will see in the logging if you're doing logging the rollback
+14:22
+um and that's because the python database API as mentioned before um implicitly begins a transaction as
+14:29
+soon as you've been any any commands on it so if you want this connection to go back to the connection pool where it
+14:34
+could be sitting for hours if you have a web application sitting there idle uh you want to roll
+14:39
+back the transaction so you'll always see that rollback happen uh the internal Secaucus me term for that is called
+14:44
+reset on return um and that's the default that there's ways to change it if you have special
+14:49
+situations going on but you're going to see that roll back um so that's the closed method and after
+14:56
+I show you that method I'm going to say now I don't want you to use the closed method because I want you to use Python
+15:01
+contact managers uh python context managers are very good for when you have some kind of resource
+15:07
+that is open like a file or something a file handle or a socket handle
+15:13
+you wanted to work with it and you want to make sure it's closed when you're done with it so that's the python context manager pattern which starts
+15:19
+with the the with statement so you clock me 20 should let you use
+15:25
+context managers as much as possible so when you connect to a database with engine.connect as we've just shown don't
+15:31
+call close go with engine.connect and you get the connection back and then in the block do the work of the
+15:38
+connection if you have like a lot of work to do with the connection call a function and pass the connection to it but the point is when you deal with SQL
+15:45
+Alchemy objects and database objects you want to make sure when you get an a resource you open something you start
+15:51
+something you have a plan for that thing to be released correctly
+15:56
+right there because that's where all of our problems come all of our users know
+16:01
+but a lot of user questions they have their sessions or connections being shared among many threads they're
+16:07
+Global no good their transactions are being closed stuff like that
+16:13
+so when we do this contact manager we see to begin as we've seen we see the
+16:19
+select of our statement we see the results because I'm printing it and we see the rollback and it's all
+16:24
+encapsulated in one shot so conflict managers are good and with that we get into some more
+16:30
+patterns with engines because and what we do here actually applies to orm stuff and it's important because this is stuff
+16:36
+that people get wrong and that's why I'm emphasizing it which is uh SQL Alchemy
+16:41
+always assumes there's some kind of a transaction at the start of SQL operations even if you use
+16:47
+the database in what's called Auto commit mode which is very well supported in supercomy seek walking from the
+16:52
+client side still assumes there's some kind of begin commit thing happening
+16:58
+um even if there's not really one because that controls that dictates how you write a program and it dictates that you write your
+17:05
+program in terms of you know where the beginning of something important starts and you know where the ending of that
+17:10
+important thing is uh and it's good to write your program in that way and SQL Community wants you to do that
+17:16
+so for transactions uh it wants you to if you if you have a transaction it's always gonna it's never going to commit
+17:22
+for you automatically um and that's different SQL Alchemy 1.4 and previous have an auto commit Library
+17:29
+level feature that commits things uh that's removed because it was not really helping
+17:34
+anybody but it does mean that when we have released too well we've had a bunch of people saying hey I have all these
+17:40
+inserts and they're not getting committed that they're not in the database why they don't they don't say it's not getting committed because they don't know about commit they're like I
+17:46
+run a bunch of inserts and there's nothing in the database that's what they'll say it's like well you didn't commit that's a new thing too well
+17:52
+here's the migration docs you have to commit or use an instruction that says hey run this block and commit at the end
+17:59
+so here are those two styles there is also driver level Auto commit which we're not going to cover here but you
+18:05
+can do that too which you will have to for some some particular use cases
+18:12
+the connection has two variations in how to do this transaction um one is called commit as you go
+18:18
+uh you do engine.connect and then you run some statements and then you do a connection document if you have to
+18:23
+commit changes if you're running selects you don't have to commit but if you're running inserts updates Elites create tables you
+18:30
+want to commit so here's a block where the engine.connect is connection
+18:36
+running the statement to create a table run an insert insert some data
+18:41
+um this I'll show later this is a how to use bound parameters with a statement we'll get into that in the next chapter
+18:46
+and then connection document so add the stuff inside the block command and then
+18:51
+I can run more statements afterwards and commit those so it's commit as you go it's kind of how the python DB API
+18:58
+itself works so we see if I run that code to begin some statements
+19:03
+and a commit that's the important part the other style is called begin once and
+19:09
+this is when you really have a bunch of statements and you want to commit them and you definitely want to just one run
+19:15
+one transaction uh you can say instead of saying engine.connect you can say engine dot begin
+19:20
+and that will say within and Dot begin as connection so that means check out a connection like we did with connect
+19:27
+and then also begin a transaction and then on that statement run uh yours you know run on that
+19:34
+connection run a statement or run many statements and then when the block ends you'll see the commit and the connection
+19:40
+will be returned like that
+19:45
+engine.connect can also be used with connection.begins you can have two separate blocks so you can say engine.connect and then
+19:52
+within the engine.connect you can do connection Hub again and that gives you a trend a block that'll do and you can run multiple
+19:59
+blocks like these inside like that
+20:05
+uh and that's the uh the basic the basics of engines and running textual statements
+20:11
+uh are there any questions with that so far
+20:18
+I'm assuming no I have a chat open and if there's anything in slack they'll let me know
+20:24
+okay nothing in the slack
+20:33
+all right chapter two table metadata um so now that we know how to talk to a database and how to you know how to send
+20:39
+statements uh we need to have something set up to be able to send statements that are more interesting
+20:45
+statements that uh involve uh tables in database and we use this thing called
+20:51
+table metadata which means they're python structures that represents what the shape of a
+20:58
+certain kind of table in the database looks like uh SQL Alchemy provides this API first
+21:05
+and foremost for decades using a well-known object called table and uh it looks like this
+21:13
+so if older technology tutorials and actually our current tutorials we'll show you this table
+21:19
+uh this is a table for uh user accounts so it's made to look a lot like
+21:24
+a ddl create sample statement we import some imports and we do table
+21:30
+and we make a string for the table name metadata is a collection that stores a
+21:36
+bunch of table objects and we we create that up here as an empty collection and then as you make tables you pass
+21:42
+this collection to it and then you name your columns in the table and so it's designed to look very intuitively like a

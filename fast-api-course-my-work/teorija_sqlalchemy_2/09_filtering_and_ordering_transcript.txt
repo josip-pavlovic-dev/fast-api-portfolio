@@ -1,0 +1,244 @@
+1:10:00
+different context um so when we have this user.name attribute yes
+1:10:05
+uh I will show you that now because I I'll show you what so when we do user.name we're going to do so all right
+1:10:13
+so let me just skip so the question is is there an as statement username has the name yes so we had if we do print
+1:10:19
+select user.net we see just select user accountant name now users have older SQL
+1:10:25
+alchemies will recall that this would often be a SQL user content name as it would have this big generated label name
+1:10:31
+um that's still around but it's not really needed anymore but if you do want to select uh things with labels there's
+1:10:38
+a it's called label I just gave it away label the name and then you could say address
+1:10:46
+email address label the email
+1:10:52
+these are not good label names because they're not even the same convention uh but that will give you those label names and if you get a result
+1:10:58
+back like you said you had a row it you would have Road the name would be the the attribute you get back on the row
+1:11:06
+um so yes labels are very important and especially if you have the same column in different contexts and also if you
+1:11:13
+have SQL functions SQL Expressions that don't have a clear label you'll be using dot label a lot and that does the as for
+1:11:20
+you okay so back to the where clause let's try that
+1:11:26
+great excuse me
+1:11:32
+it's catching up to me class attributes like user.name or the
+1:11:37
+foundation of SQL expressions so if we take user.name and use the python equals
+1:11:43
+operator with a string this crazy thing happens and people that know SQL Community are very used to this
+1:11:48
+and if you've not seen this before then it's probably weird looking um python lets you override methods uh
+1:11:55
+like EQ and any and under ad under you know minus sub Thunder LT there's math
+1:12:02
+operators there's uh comparison operators Boolean operators bitwise operators you can make python objects
+1:12:09
+that repurpose all those things uh and so SQL Alchemy like a few other tools
+1:12:14
+maybe these days repurposes the python operators to an extent to allow you to
+1:12:20
+write python expressions uh that becomes SQL expressions uh and
+1:12:26
+this is a popular feature there's other ways to do this uh but this is the way that we've done this thing for a long time so when you run user.name which is
+1:12:33
+the special python descriptor and you run the equals operator we have a special EQ method that did some stuff
+1:12:41
+and instead of it spitting out a Boolean instead of spitting a true or false spit out this object
+1:12:47
+called binary expression in the binary expression means it has two right has left side and a right side and an
+1:12:52
+operator um and that's a component of the larger SQL construction language
+1:12:58
+um you don't need to know about binary Expressions just on printing it out excuse me so you can see what it is
+1:13:05
+um and then also you can see that we had this literal python string that SQL Alchemy as I said before very
+1:13:11
+aggressively shuttles it away to become a parameter so it's hidden away we can't see it
+1:13:17
+um and again like with the interest statement you can use com uh right the pattern the parameters come out when you
+1:13:23
+don't do connection.execute but they can also be seen as before using a utility called compile so if you want to see
+1:13:29
+SpongeBob you take your username equals SpongeBob uh binary expression you put it in some
+1:13:35
+parentheses so you can pack it away dot compile that thing with some esoteric arguments that are not very
+1:13:42
+good looking uh maybe maybe some people make the measure and then you can see that the SQL expression we have here is
+1:13:48
+user account name equals SpongeBob but uh when we run the statement you're going to have a premium so the idea of
+1:13:55
+parameterizing things uh probably most people on this call have heard of uh SQL
+1:14:01
+injection attacks which is the most common uh you know vulnerability and database
+1:14:07
+applications is that people type into the web forms uh what's your what's your name semicolon drop table you know that
+1:14:13
+whatever that is right it's all these ways of injecting um and if you run a lot of older
+1:14:19
+applications a lot of the old PHP stuff PHP was just Rife with these things people did not Escape there
+1:14:26
+strings and then these semicolons quoting tricks would come in and wreak
+1:14:31
+havoc with their databases because uh you need to make sure strings especially or other python other data values that
+1:14:39
+are ins which might be secretly sended strings anyway you know because we're in a dynamically typed language
+1:14:46
+um you know uh do not they don't make it through they get Escape so the best way to do that is
+1:14:52
+to use Brown parameters uh parameterizing statements also lets the database use prepared statements and as
+1:14:57
+optimizations and also SQL alchemy's SQL caching system relies upon these parameters as well because the same
+1:15:03
+statements with different parameters will be cached as the same thing uh even though this even though this SpongeBob
+1:15:09
+is embedded in there there's a caching system that passes this user name
+1:15:15
+expression in an agnostic way way too much detail anyway let's hear some other some other
+1:15:21
+operators quick you'll see less than greater than pretty easy fancy string like contains like I contains you know I
+1:15:28
+contains expansions crazy lower thing with uh you know percent signs uh and
+1:15:34
+then uh in Expressions uh are very very well supported now uh they look a little
+1:15:39
+weird the way we compile them so here's the literal bound so you say user account name in you do parentheses you
+1:15:46
+pass a list of the things you want to be in and if we print that with the literal binds it works very nicely if we uh and
+1:15:54
+you'll see layered prints out in kind of a funny way without the parameters uh we can add these Expressions to our select
+1:16:00
+object using the where method uh so we have select username where username is there we print it there's a
+1:16:06
+funny thing here this is not a bound parameter this is a SQL Alchemy expanding parameter uh when SQL Alchemy
+1:16:12
+runs this statement it will look at the data being passed see that it's three strings and then expand this out into
+1:16:18
+three primers so when you see this weird post compile thing Don't Panic uh where it can be called
+1:16:25
+multiple times uh the default way that those are the only way the joining this context is by and there's also an or but
+1:16:31
+it's a different construct uh you could say where username is SpongeBob and and
+1:16:36
+where user ID is greater than the value of one and we can uh put things in mythical
+1:16:42
+order by Expressions again so savings they want that order by again we're using this method chaining pattern where
+1:16:48
+we have this object called select select.where select dot order by select.is select that that keep building
+1:16:53
+keep assigning the return guide to a new object each time
+1:16:59
+uh add a column expression let's select them some more goofy columns here's uh
+1:17:04
+select a what's called a literal construct with some text and string concatenate that to the user full name
+1:17:11
+column string concatenation uh is with the plus sign against a string if we use the plus sign it gets integers it would
+1:17:17
+do PI it would do math addition it's so the operators in Supermarket can be dynamic in that way uh running the
+1:17:23
+statement this is just basically a kitchen sink thing again just like a show-offy this is where you can go uh
+1:17:29
+this big statement with the user account name String concatenation string here I got turned to a bound
+1:17:35
+parameter uh here's the N that created parameters on the Fly for that and some
+1:17:41
+other stuff and then we get some data back so that's kind of a whirlwind tour through uh select and Dot where Clauses
+1:17:49
+and stuff like that um I'm going to keep going and if people just people seem to be jumping in with
+1:17:54
+the questions as they have so just feel free um the SQL expression language intends to allow any SQL structure any
+1:18:00
+statements uh to be modeled as a python expression so follow me goes very far with this uh things not covered here
+1:18:07
+include updates and deletes which look a lot like these inserts and selects uh unions other kinds of set operations
+1:18:13
+ctes Common Table expressions are called [Music]
+1:18:19
+window functions uh this olap operators there's electronic functions Json functions basically everything that any
+1:18:25
+database can do we either support it or there's users coming to us would please support this
+1:18:30
+um again all these things can be done as a textual stream you can always just say text and do your SQL you can always do
+1:18:37
+that but everyone usually recognizes the the utility of the Python the
+1:18:44
+pythonification of these constructs uh and so everything is pretty much getting pythonified over the years so we have a
+1:18:51
+lot of stuff um when you say everything can go into text is that built into SQL Alchemy as
+1:18:57
+well the the text in the beginning so in the beginning I showed you this particular country called text
+1:19:03
+right right okay right so that means you take text you put a big triple quotes make it really big and put gigantic wall
+1:19:10
+of crazy SQL tax whatever you want and it's nothing has nothing to do with it I'll just send it along
+1:19:16
+and people do that and we are working uh we have apis that I just got a bug report about one uh where you can relate
+1:19:24
+the rows coming back from these textual statements to SQL Alchemy things that
+1:19:30
+are useful um because always sequel to me never wanted to impose the select insert model
+1:19:37
+on people but it just supplies a lot of uh advantages you know
+1:19:42
+um but if you have the textual SQL and it does what you need then you're done run your text there's no problem with
+1:19:48
+that um so when people are writing SQL Expressions the hope is that
+1:19:55
+you can just think in terms of SQL Alchemy first and foremost because um it's trying to look like SQL it's
+1:20:02
+trying to look like it's not that different I mean it was select user.name and that select name from user but
+1:20:09
+um see it's hard for me to really argue with this because I've been doing it for like 18 years it's pretty intuitive to me you know of course it is so but the
+1:20:17
+hope is that people don't have to think in terms of here's the statement how do I write this and take a look at me like that's kind
+1:20:23
+of eventually you get past that I would hope and people will blog no I know and
+1:20:29
+I hate it's terrible whatever anyway that's the Hope um and the python objects for SQL Expressions allows for
+1:20:34
+composability is the main thing and also database agnostics agnosticism the same
+1:20:39
+statement can run on Oracle or postgres or a SQL server without any changes is also a goal
+1:20:45
+um but that's not a complete goal because you can use all kinds of database specific functions and things
+1:20:51
+in your statements SQL Alchemy is not going to um reduce the language down to the
+1:20:56
+lowest common denominator of all the databases you can do all kinds of postgres Json functions uh and that
+1:21:02
+statement won't run on SQL Server so it depends on what you're running and you need again you need to know what you're doing caulking is just automating the
+1:21:10
+work it's not designing the work for you so that's the select chapter
+1:21:15
+quick other question about joins can you join left's inners outers so joins are inherently left uh well
+1:21:22
+left outer joint yet so a joint is left so yeah as for an outer join there's an outer join from
+1:21:28
+and a right join we don't talk about no a right join is
+1:21:33
+really we don't have a right joint because right join is really there's no way I'm gonna show it with my
+1:21:39
+typing it's too complicated but it just right joint is just a left joint a a normal joint in reverse a right outer
+1:21:45
+joint um I think maybe once in the past 18 years we had someone asked for right how to join we'll like just flip your
+1:21:50
+Clauses around um and no one's really had a problem with that so yeah you have a lot there's
+1:21:56
+some other joins like cross join that I'm not sure if we maybe that's the SQL Server specific thing
+1:22:02
+um but yeah generally join in left out or join to the two joints oh there's also full join this this thing called
+1:22:08
+the full which I don't really know why people use that but a few people use that there's a few options
+1:22:13
+it's in the docs um I mean we base it on in 18 years how many people have asked for these this feature of that feature
+1:22:20
+like if you know we have millions of downloads and whatever is very important people ask
+1:22:25
+for it so that's how we gauge what's important to have so that's that's the question yeah
+1:22:32
+that's that thanks so this is the last section that I think we'll cover in this part of the course.

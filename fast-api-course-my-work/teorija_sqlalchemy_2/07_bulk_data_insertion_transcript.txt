@@ -1,0 +1,196 @@
+47:08
+transaction with engine dot again execute the statement with engine.begin a transaction as a
+47:14
+connection connection run this statement and we will see the statement runs with
+47:20
+parameters that seem to be question marks now which they weren't I see there's a question there I'm going to
+47:26
+get to that in a second um question marks and uh then the values of
+47:33
+the parameters there I'm going to just do this one thing that'll answer the pi identity question um this question mark thing is because
+47:39
+the sqlite driver uses question marks as the default bound parameter format uh so an interesting thing
+47:46
+is uh when we print enter statement it shows these colons
+47:51
+but when you run on SQL light this question mark That's because when the interest statement is run by the connection uh the stringification of it
+47:58
+is done in a dialect specific manner so if we were to run the statement on another kind of database like a postgres
+48:03
+you might get a different down parameter format there are actually six bound parameter formats and uh there's
+48:09
+actually in SQL Alchemy to seven because async PG uses a different format so someone has a question about pedantic
+48:15
+so he wants recommendations for pedantic um I think SQL model is great because and
+48:22
+look because my my main hardship in life is user support so if people use SQL
+48:27
+model and they have problems they can go to SQL model get support from them too and that's always good so I like people
+48:33
+to use other things um when uh he I forgot uh I forgot the
+48:39
+man's name that wrote SQL model but um when he wrote it I hadn't done the SQL Alchemy 2o thing yet so I think it's
+48:45
+going to be interesting to see how SQL model which has also did class like declarative approach versus sqwalkami's
+48:51
+approach uh Shape Up um and then also up data classes I mean pedantic has this thing where there's
+48:57
+this separate user input thing um I don't work with pedantic I do know that they have support for those two
+49:03
+classes thing um I don't know how much of a solution this is for people pedantic also has data class its own data class
+49:10
+uh feature and we have added uh it might be released by now we have added a
+49:16
+little uh callable to SQL alchemies to Clarity where you can plug in pedantic data Class Type
+49:21
+and it would seem to me not knowing by identity very well that if you use pedantic's data class feature with SQL
+49:28
+Alchemy is mapped as data class decorator a mixing class there's also Decker mixing class and you set it up so
+49:36
+that SQL lock is mapped as data class uses pedantics data class column I think you can have the best of all
+49:43
+worlds uh but I don't know to the extent that pedantic's own Thing versus a pedantic data class is
+49:50
+different I have noticed that pedantic data class just seems to do the validation thing that is what people use pedantic for so I would say look at
+49:58
+pythonics data class integrated with sequel welcoming's data class thing should be the best but uh
+50:04
+as options yeah okay all right so we back to the insert uh we
+50:10
+inserted with the question marks so what we just did there we ran an
+50:15
+insert save that has specific dot values Clause so when we normally use inserts uh we normally don't have to use the dot
+50:22
+values uh we can rely upon SQL hug me itself to generate
+50:27
+the values for us I'm about to cough because I have a cold
+50:36
+was that an hour 15 minutes went by in the conference so I'm pretty good comparing how I was coughing before this
+50:42
+talk she called me Chinese advice clause if not otherwise given based on a collection of parameters passed to the
+50:49
+execute method so we the uh I just tried the speech thing probably got screwed up Pastor the execute method separately so
+50:56
+we showed connection.execute is given a statement there's a second argument there which is the collection of
+51:04
+parameters which can be in dictionary or list of dictionaries um and I'll show you that
+51:10
+execute method and when you pass a list of dictionaries SQL Alchemy will insert
+51:15
+uh the list of dictionaries in bulk using one of two different approaches depending on what you're asking it for
+51:22
+um the automatic generation of values works by inspecting the keys within the first dictionary given so if
+51:28
+the second dictionary has the wrong Keys you're going to get an error message um the convention of keys math column
+51:33
+names is the same instead of the insert values method so here's the usual way to just get raw data without using SQL
+51:40
+functions to generate data into the database when using core when not when using orm
+51:48
+it's all different well you can actually you can do this lrm as well but the normal aurum way is something else that will show but if using core I just want
+51:54
+to do it or you just want to use an insert I don't care about object relation I just want I have these dictionaries put them in put them in the
+52:00
+database please this is the way to do it insert user and send the dictionary is over and you can do that with our M2 it just
+52:05
+depends on what you want to do um so we begin the transaction run the
+52:11
+statement and we send it just the insert user again now remember when I printed a stringified an insert user before it
+52:18
+printed all the columns just expanded out when you send the set of parameters
+52:23
+it will limit the values to just these parameters given uh and in most cases depending on the
+52:30
+driver you're using and depending on some other things about the statements it will use a database uh a python DB
+52:38
+API call call a call called execute many
+52:43
+um so dot execute many it it receives the statement and the list of parameters so I was knocking on
+52:50
+my drawer for a second okay um so in this case we see the same statements before with the question marks
+52:55
+and then we see a list of two sets of parameters and you see also SQL alchemy's format is always uh
+53:03
+named parameters with dictionaries when the driver uses what's called positional parameters like these positional
+53:09
+question marks it converts the dictionaries into uh tuples uh that's done for you so Python's DB API raw says
+53:18
+Hey depending on what drum we're using you either have to send dictionaries or tuples and uh caught me thought that was
+53:23
+a little bit you know arbitrary so you with SQL Community it's always dictionaries um and they get converted as as
+53:29
+appropriate so most drivers for this statement will use the execute menu which means that the driver receives the
+53:35
+statement it receives a list of parameters and it will do something on the back end to run those parameters in
+53:41
+as fast as possible and they could be using a prepared statement um for sqlite I think it's just written in C just runs really fast it just runs
+53:48
+the same statement over and over again different parameters um the point is it's supposed to be faster which usually it is and for some
+53:55
+drivers it's not and and for those drivers SQL Community has changed what we do to to create better performance
+54:01
+okay so that's the end of inserts that that that's the raw insert so when you have some tables and you want to put
+54:06
+data in the insert is the most efficient well outside of using bulk routines but within SQL Alchemy and easy code you
+54:14
+know okay so that anything on Instax as we go on I guess people will come up with questions as I do the next chapter
+54:20
+okay so we have 10 54 and we're done at 11 45 so I actually have a lot of time
+54:27
+you have to run through this and it took longer okay I see nothing can happen in the chat so
+54:33
+we'll just take it as it comes now we're going to select some data
+54:39
+um and I should also note that uh this slide this slide this chapter
+54:45
+uh as I just started it it just ran a bunch of SQL already so those those data models that
+54:51
+we've been using the user and address we're just generated for us and they're here and also a bunch of data with funny
+55:00
+SpongeBob SquarePants character names is in the data so we'll be selecting some of that data
+55:06
+so in the previous section on engine uh we introduced this simple contract
+55:11
+called text and look like this so if we have here as we have these tables like we have a user
+55:16
+account table if I want to select a name column using a regular raw sql's name and say select
+55:22
+name from user account and I wrap that up in the text and I send it off to a connection
+55:30
+and we don't need a transaction here because we're not going to commit anything so dot connect give us a
+55:36
+connection four row in each row of the statements print the row and give us the
+55:41
+dot name column so easy enough right so that's the textual select start from
+55:47
+table and you can always do that there's nothing wrong with using text contract just use it it's very great it does
+55:52
+everything you don't need to use SQ qualities other thing except if you want the other things it provides
+56:01
+remember we're the same construct using SQL walking these more uh mainstream core uh SQL expression language using a
+56:09
+construct called select right so there's insert select updatedly it's pretty easy
+56:14
+um we're going to use this orm Centric method so no we're writing core but we're using the orm a little bit to
+56:21
+create SQL expressions and this is something that you could do in other older SQL Alchemy versions uh but as of
+56:27
+C cogb 1.4 uh into uh we made sure it really works as well as it can work
+56:33
+um so the class-bound attributes on the orm models uh like this user class that
+56:38
+we've seen a couple times now um the attributes like dot it and Dot
+56:43
+name at the class level meaning use your class.name represents columns such as user.name so this is the
+56:52
+user class right user is a class it's not it's not an instance um if I say user dot
+57:00
+user.name it's this funny thing that's a SQL Alchemy thing but the object that
+57:07
+this is in Python is called a descriptor python descriptors are awesome and tickle off me uses them a lot if you
+57:13
+ever use the python uh property decorator which everyone does that is the most
+57:19
+commonly used descriptor in Python um so user.name is kind of magical it's
+57:26
+not just the user it's not it's not just a it's not just like an empty you know I object. It's a special SQLAlchemy descriptor that represents a column in the database.
