@@ -46,7 +46,7 @@ U logu se mogu pojaviti poruke kao `[generated in ...]` ili `[cached since ...]`
 Za mrežne baze tipičan oblik URL-a je:
 
 ```text
-dijalekt+draјver://korisnik:lozinka@host:port/ime_baze
+dijalekt+driver://korisnik:lozinka@host:port/ime_baze
 ```
 
 - **Dijalekt** označava vrstu baze, na primer `postgresql`, `mysql` ili `sqlite`.
@@ -250,6 +250,47 @@ Rezultat:
 - `for row in result` obrađuje redove pojedinačno kroz SQLAlchemy Result API.
 
 Način na koji drajver baferuje podatke u pozadini zavisi od baze i podešavanja. Iteracija izbegava da naš kod odmah napravi dodatnu listu svih redova, ali sama po sebi ne garantuje serversko strimovanje za svaki drajver.
+
+## Kako čitati vežbu `01_engine_usage.py`
+
+Vežba [01_engine_usage.py](../playground/sqlalchemy_2/01_engine_usage.py) prolazi iste koncepte jednim izvršivim primerom. Važno je pratiti koji poziv pravi novi `Result`:
+
+```python
+statement = text("SELECT 'hello world' AS greeting")
+
+first_row = connection.execute(statement).first()
+rows = connection.execute(statement).all()
+
+multiple_rows = text(
+	"SELECT 1 AS item_id, 'hello' AS greeting "
+	"UNION ALL SELECT 2, 'SQLAlchemy'"
+)
+tuple_rows = connection.execute(multiple_rows).all()
+scalar_values = connection.execute(multiple_rows).scalars().all()
+```
+
+- `statement` opisuje jedan red sa kolonom `greeting`; pošto je vrednost fiksna, ovde nema bind parametra.
+- Prvi `execute()` napravi `Result`, a `.first()` uzme njegov prvi `Row` i zatvori taj rezultatni skup.
+- Drugi `execute(statement)` pravi nov `Result`, pa `.all()` može bezbedno da ga potroši. Ne nastavljamo čitanje prvog rezultata posle `.first()`.
+- `tuple_rows` sadrži dva reda: `(1, "hello")` i `(2, "SQLAlchemy")`.
+- `scalar_values` je `[1, 2]`, jer `scalars()` uzima prvu izabranu kolonu (`item_id`) iz svakog reda, a ne kolonu `greeting`.
+
+Ako želimo da `scalars()` vrati pozdrave, pozdrav mora biti prva izabrana kolona ili jedina kolona:
+
+```python
+greeting_statement = text(
+	"SELECT 'hello' AS greeting "
+	"UNION ALL SELECT 'SQLAlchemy'"
+)
+greetings = connection.execute(greeting_statement).scalars().all()
+assert greetings == ["hello", "SQLAlchemy"]
+```
+
+U vežbi se `driver_connection` ispisuje samo da pokaže da SQLAlchemy `Connection` koristi DBAPI objekat ispod sebe. Uobičajeni upiti idu preko `connection.execute()`, ne direktno preko tog drajverskog objekta.
+
+Po izlasku iz `with engine.connect()` bloka SQLAlchemy `Connection` se zatvara, ali se DBAPI konekcija obično vraća u pool. Na kraju vežbe `engine.dispose()` odbacuje pool-ovane konekcije; ovde nema konekcije koja je još pozajmljena iz `with` bloka. Pošto je URL `sqlite://`, gašenje poslednje konekcije uklanja i memorijsku bazu.
+
+`echo=True` čini tok vidljivim: log prikazuje izvršene SELECT iskaze i transakcijske poruke. Posle čitanja može se videti `ROLLBACK` pri zatvaranju konekcije; to čisti transakcijski kontekst i ne poništava nikakve SELECT rezultate.
 
 ## Zatvaranje konekcije i pool
 
