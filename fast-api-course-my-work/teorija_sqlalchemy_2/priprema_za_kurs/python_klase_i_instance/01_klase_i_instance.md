@@ -4,11 +4,15 @@
 
 Oba alata koriste Python klase, ali im daju različite uloge:
 
-- SQLAlchemy ORM klasa opisuje mapirani entitet i strukturu njegove tabele.
-- FastAPI koristi Pydantic klase da opiše podatke zahteva i odgovora.
-- U oba slučaja radni kod najčešće barata instancama tih klasa.
+- SQLAlchemy ORM klasa je Python klasa mapirana na tabelu ili drugi relacioni izvor. Njeni mapirani atributi opisuju kolone, a mapiranje može da definiše i veze i ograničenja.
+- FastAPI koristi Pydantic modele za opisivanje i validaciju strukturisanih podataka, na primer tela HTTP zahteva i podataka odgovora. Ne predstavljaju svi ulazni podaci Pydantic model: putanje i query parametri, na primer, mogu biti obične tipizovane vrednosti.
+- Uvicorn je ASGI server koji prima HTTP zahteve i poziva FastAPI aplikaciju preko ASGI interfejsa. FastAPI aplikacija je ASGI aplikacija, a ne server. Telo odgovora API-ja često je JSON, ali može biti i drugog formata.
+- Kod endpoint-a može da radi sa običnim Python vrednostima, Pydantic instancama i SQLAlchemy ORM instancama, u zavisnosti od zadatka.
+- Instanca je konkretan objekat sa trenutnim vrednostima. ORM instanca može predstavljati mapirani entitet odnosno red u bazi, ali može biti i nova, još neupisana instanca. Pydantic instanca sadrži strukturisane podatke; ona sama nije HTTP zahtev niti odgovor.
 
-Pre ORM-a zato treba čvrsto razlikovati klasu od instance.
+Pre rada sa ORM-om zato je važno jasno razlikovati klasu od instance.
+
+---
 
 ## Klasa je opis, instanca je konkretan objekat
 
@@ -40,6 +44,8 @@ assert second_book.pages == 240
 
 Klasa odgovara na pitanje „kakva vrsta objekta može da postoji i šta ume da radi?“. Instanca odgovara na pitanje „koji je konkretan objekat i koje vrednosti trenutno ima?“.
 
+---
+
 ## Kako nastaje instanca?
 
 Kada pozovemo ime klase kao funkciju, Python napravi objekat te klase i pokrene njegov inicijalizator:
@@ -56,6 +62,8 @@ Pojednostavljeno, desi se sledeće:
 4. Izraz sa leve strane dodeli gotovu instancu promenljivoj `book`.
 
 `__init__` inicijalizuje već napravljeni objekat; sam po sebi ne vraća objekat. U takvom tipičnom kodu njegov povratni tip je `None`.
+
+---
 
 ## `self` označava konkretnu instancu
 
@@ -86,6 +94,8 @@ print(another_book.description())
 
 ista metoda radi nad drugim objektom jer je njen `self` sada `another_book`.
 
+---
+
 ## Atributi su stanje instance
 
 `self.title = title` napravi ili izmeni atribut na konkretnoj instanci. Zato svaka knjiga može imati svoje vrednosti:
@@ -107,6 +117,8 @@ first_book.language = "sr"
 
 Ipak, za čitljivost i bolju tipizaciju korisno je jasno deklarisati očekivane atribute u `__init__`-u, dataclass poljima ili SQLAlchemy `Mapped[...]` deklaracijama.
 
+---
+
 ## Tipizacija nije isto što i validacija
 
 Anotacije pokazuju očekivane tipove i pomažu čitaocu, editoru i statičkim alatima:
@@ -123,11 +135,15 @@ Običan Python sam po sebi ne odbija pogrešan tip samo zbog anotacije. Bez pose
 book = Book("Python osnove", "mnogo")
 ```
 
-Static type checker može ovo označiti; za runtime validaciju koriste se eksplicitna provera, Pydantic ili druga validaciona logika.
+Static type checker-i (npr. `mypy` ili `pyright`) mogu ovo označiti. Na primer, `mypy` će prijaviti grešku ako se pokuša proslediti string umesto integera za `pages`. Ovi checker-i rade statičku analizu koda i ne utiču na runtime ponašanje.
+
+Za `runtime validaciju` koriste se eksplicitna provera (npr. `isinstance`), Pydantic (`BaseModel`) ili druga validaciona logika.
+
+---
 
 ## Referenca, identitet i jednakost
 
-Promenljiva sadrži referencu ka objektu. Dve promenljive mogu pokazivati na isti objekat:
+Promenljiva sadrži `referencu` ka objektu. Dve promenljive mogu pokazivati na isti objekat:
 
 ```python
 original = Book("Python osnove", 320)
@@ -150,10 +166,12 @@ copy = Book("Python osnove", 320)
 assert copy is not original
 ```
 
-- `is` proverava da li su dve reference isti objekat.
-- `==` proverava jednakost prema pravilima klase.
+- `is` proverava da li su dve reference isti objekat, isti identitet.
+- `==` proverava jednakost prema pravilima klase npr. poređenje po vrednostima atributa.
 
 Ako klasa ne implementira `__eq__`, podrazumevano poređenje korisničkih objekata uglavnom se ponaša kao poređenje identiteta. Dataclass i Pydantic klase mogu definisati poređenje po vrednostima, zato uzmi u obzir vrstu klase.
+
+---
 
 ## Kada koristimo ove pojmove u SQLAlchemy-ju?
 
@@ -174,19 +192,27 @@ user = User(name="sandy")
 
 Ovaj poslednji slučaj se razlikuje od obične Python klase. SQLAlchemy instrumentiše class-level atribut da bi isti model služio i za ORM objekte i za sastavljanje SQL izraza. To detaljno obrađuje [lekcija o SQLAlchemy modelima](03_sqlalchemy_modeli_kao_klase.md).
 
+---
+
 ## Česte zabune
 
 ### Klasa i instanca nisu zamenljive
 
 U običnoj Python klasi `title` nije automatski definisan na klasi samo zato što se u `__init__`-u pojavljuje `self.title`. Atribut se pravi na instanci. SQLAlchemy kasnije dodaje posebno class-level mapped ponašanje svojim descriptor-ima.
 
+---
+
 ### Promenljiva nije objekat
 
 Promenljiva `book` je ime koje referencira instancu. Više promenljivih može referencirati isti objekat.
 
+---
+
 ### Metoda koristi instancu preko `self`
 
 Kada pozovemo `book.description()`, Python automatski veže `book` za `self`. Zato ista metoda može pristupati podacima različitih instanci.
+
+---
 
 ## Sažetak
 
@@ -196,4 +222,6 @@ Kada pozovemo `book.description()`, Python automatski veže `book` za `self`. Za
 - `self.attribute` čuva ili čita stanje te instance.
 - Tip anotacije pomaže alatima, ali običan Python ne sprovodi automatsku runtime validaciju.
 - `is` proverava identitet objekta; `==` zavisi od pravila jednakosti klase.
-- U SQLAlchemy-ju klasa je ORM model, a instance su konkretni objekti koji mogu predstavljati redove.
+- U SQLAlchemy-ju klasa je `ORM model`, a `instance` su `konkretni objekti` koji mogu predstavljati redove.
+
+---
