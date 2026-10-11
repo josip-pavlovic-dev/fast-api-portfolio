@@ -10,7 +10,9 @@ U web aplikaciji isti logički podatak može proći kroz više različitih Pytho
 | SQLAlchemy ORM model  | `Item`       | Opisuje mapiranu tabelu i ORM instance koje predstavljaju redove. |
 | Pydantic izlazna šema | `ItemOut`    | Opisuje i validira podatke koje API vraća klijentu.               |
 
-Pydantic klasa nasleđuje `BaseModel`. SQLAlchemy ORM model nasleđuje deklarativni `Base`. Ne treba ih spajati u jednu klasu samo zato što oba koriste class sintaksu.
+Pydantic klasa nasleđuje `BaseModel`. SQLAlchemy ORM model nasleđuje `DeclarativeBase`. Ne treba ih spajati u jednu klasu samo zato što oba koriste class sintaksu.
+
+---
 
 ## Pydantic šema je ugovor podataka, ne tabela
 
@@ -25,7 +27,16 @@ class ItemCreate(BaseModel):
     description: str | None = None
 ```
 
-Pravljenje instance validira primljene vrednosti:
+Pravljenje instance `payload` validiramo primljene vrednosti iz JSON tela zahteva. Naprimer ako je JSON telo zahteva:
+
+```json
+{
+  "name": "Sveska",
+  "description": "Karirana sveska"
+}
+```
+
+Onda pravimo instancu pydantic klase/šeme `ItemCreate` i dodeljujemo je varijabli `payload` koristeći te podatke:
 
 ```python
 payload = ItemCreate(
@@ -38,11 +49,17 @@ assert payload.model_dump() == {
     "name": "Sveska",
     "description": "Karirana sveska",
 }
+
+# `payload` je validirana Pydantic instanca i može se koristiti dalje u kodu za kreiranje ORM objekata, upis u bazu ili druge operacije (npr. POST, PUT ili PATCH zahtevi).
 ```
 
 `ItemCreate` nije ORM model i ne opisuje SQL tabelu. To je klasa podataka/API ugovor, a `payload` je validirana Pydantic instanca.
 
-Ako pošaljemo pogrešan tip ili nedostaje obavezno polje, Pydantic prijavljuje validacionu grešku pre nego što kod rute nastavi da obrađuje podatke. Ta validacija je različita od SQLAlchemy `Mapped[...]` tipa: `Mapped[str]` tipizuje ORM atribut, ali sama anotacija nije Pydantic-style ulazna validacija.
+Ako pošaljemo pogrešan tip ili nedostaje obavezno polje, Pydantic prijavljuje validacionu grešku pre nego što kod rute nastavi da obrađuje podatke. Ta validacija je različita od SQLAlchemy `Mapped[...]` tipa.
+
+ZAKLJUČAK: Pydantic služi za validaciju ulaznih podataka, dok SQLAlchemy `Mapped[...]` tipovi služe za definisanje strukture baze i ORM atributa.
+
+---
 
 ## SQLAlchemy ORM model opisuje tabelu i ORM objekte
 
@@ -67,7 +84,7 @@ class Item(Base):
 
 `Item` je ORM klasa; `item = Item(name="Sveska", description=None)` bi bio ORM objekat. `Item.name` je class-level SQLAlchemy atribut za mapiranu kolonu, a `item.name` je vrednost instance.
 
-Pydantic i ORM klase mogu imati polja istih imena, ali se koriste za različite stvari:
+Pydantic i ORM klase mogu imati polja istih imena, ali se koriste za različite stvari. Realan tok podataka kroz aplikaciju može izgledati ovako:
 
 ```text
 JSON tela zahteva -> ItemCreate instanca -> ORM Item instanca -> ItemOut -> JSON odgovor
@@ -75,9 +92,11 @@ JSON tela zahteva -> ItemCreate instanca -> ORM Item instanca -> ItemOut -> JSON
 
 Dodavanje ORM objekta u sesiju i upis u bazu slede kasnije u praktičnom toku; ovde nam je fokus uloga klasa i instanci.
 
+---
+
 ## Ulazna i izlazna šema nisu nužno ista
 
-Klijent pri kreiranju resursa obično ne šalje ID koji će baza dodeliti. Zato ulazna šema može izostaviti `id`, dok izlazna šema prikazuje ID:
+Klijent pri kreiranju resursa obično `ne` šalje ID koji će baza dodeliti. Zato ulazna šema može izostaviti `id`, dok izlazna šema prikazuje ID:
 
 ```python
 from pydantic import BaseModel, ConfigDict
@@ -103,6 +122,44 @@ Ove dve klase opisuju različite granice aplikacije:
 
 To što obe imaju `name` ne znači da moraju da budu ista klasa. U realnoj aplikaciji ulaz i izlaz često imaju različite dozvole, obavezna polja ili strukture.
 
+### Čitanje vrednosti iz ORM atributa
+
+```python
+class ItemOut(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+```
+
+`model_config` je class atribut kojim se podešava ponašanje Pydantic modela. `ConfigDict(...)` je Pydantic-ov način da se napiše taj konfiguracioni rečnik; poziv vraća običan Python `dict`, u našem slučaju sa vrednošću `{"from_attributes": True}`.
+
+Kada se pozove `ItemOut.model_validate(orm_item)`, opcija `from_attributes=True` govori Pydantic-u da čita potrebna polja pomoću atributa objekta, na primer `orm_item.id`, `orm_item.name` i `orm_item.description`. Pydantic zatim proverava dobijene vrednosti prema tipovima i pravilima `ItemOut` modela i pravi novu `ItemOut` instancu. ORM objekat se ne pretvara u Pydantic objekat i ne menja svoju klasu.
+
+Bez `from_attributes=True`, običan ORM objekat nije prihvaćen kao ulaz za `model_validate()`: Pydantic očekuje podatke u obliku mape, kao što je rečnik. To ne znači da ORM objekat ne možemo koristiti uopšte; možemo ručno proslediti njegova polja konstruktoru:
+
+```python
+# Sa from_attributes=True:
+response = ItemOut.model_validate(orm_item)
+
+# Bez from_attributes=True, ove varijante i dalje rade:
+response = ItemOut(
+    id=orm_item.id,
+    name=orm_item.name,
+    description=orm_item.description,
+)
+response = ItemOut.model_validate({
+    "id": orm_item.id,
+    "name": orm_item.name,
+    "description": orm_item.description,
+})
+```
+
+Dakle, `from_attributes=True` nije potreban kada već prosleđujemo rečnik ili pojedinačne vrednosti; koristan je kada želimo da Pydantic model validira objekat čitajući njegove atribute. Čitanje ORM atributa koji predstavlja lenju (`lazy`) vezu može pritom pokrenuti SQL upit, ako je veza još nije učitana.
+
+---
+
 ## Kako FastAPI koristi Pydantic klasu
 
 FastAPI koristi type annotation parametra rute da zna koji model treba da napravi od JSON tela zahteva. `response_model` određuje strukturu izlaznog odgovora:
@@ -126,6 +183,8 @@ FastAPI tokom request-a napravi `ItemCreate` instancu iz JSON-a. Funkcija dobija
 
 `id=1` je ovde samo vežbovni primer, da ruta pokaže tipove. U stvarnoj aplikaciji bi ID obično stigao iz ORM objekta posle upisa u bazu; taj deo pripada kasnijim lekcijama.
 
+---
+
 ## Pretvaranje ORM objekta u Pydantic odgovor
 
 Pydantic 2 može da napravi šemu čitajući atribute Python objekta kada je uključeno `from_attributes=True`:
@@ -142,6 +201,8 @@ Ovaj primer je demonstracija granice između klasa. `orm_item` je SQLAlchemy ins
 
 U FastAPI-ju `response_model=ItemOut` često omogućava FastAPI-ju da serializuje ORM objekat u izlaznu šemu, ali ORM objekat mora imati dostupne atribute koje šema zahteva. Ako ORM polje još nije dobilo ID iz baze, ne može se napraviti izlazni model koji zahteva `id: int` bez te vrednosti.
 
+---
+
 ## Kako da razmišljaš o tipu parametra rute
 
 ```python
@@ -156,6 +217,10 @@ def create_item(payload: ItemCreate):
 
 Ovo je ista osnovna veza klasa–instanca kao u Python-u, samo FastAPI automatizuje pravljenje Pydantic instance iz HTTP podataka.
 
+---
+
 ## Granica prema narednim oblastima
 
-Ova priprema ne obrađuje SQL `INSERT`, transakcije, dependency koji obezbeđuje `Session`, niti CRUD implementaciju. Za sada treba razumeti samo ko su klase i instance i koja klasa ima koju odgovornost. Te teme dolaze u SQL i transakcijskim pripremama i kasnijim FastAPI lekcijama.
+Ova priprema ne obrađuje SQL `INSERT`, transakcije, dependency koji obezbeđuje `Session`, niti CRUD implementaciju.
+
+Za sada treba razumeti samo ko su klase i instance i koja klasa ima koju odgovornost. Te teme dolaze u SQL i transakcijskim pripremama i kasnijim FastAPI lekcijama.
