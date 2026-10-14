@@ -1,3 +1,4 @@
+from decimal import Decimal
 from types import NotImplementedType
 
 # Vežba 1: klasa i dve instance
@@ -114,3 +115,17 @@ print("Sa __eq__:", knjiga_sa_eq_1 == knjiga_sa_eq_2)
 
 # Samostalna klasa koja definiše __eq__ nema automatski hash; Python je
 # podrazumevano čini neupotrebljivom kao ključ dict-a ili element set-a.
+
+## Vežba 4: atribut klase naspram instance
+
+# Dodaj klasi `Product` atribut klase `currency = "RSD"`, a svakom proizvodu instance atribute `name` i `price`. Promeni `currency` samo na jednoj instanci.
+
+# Odredi vrednosti `first.currency`, `second.currency` i `Product.currency`. Zatim objasni zašto mutable atribut klase, na primer `items = []`, može biti opasan.
+
+class Product():
+    currency: Decimal
+    name: str
+    price: Decimal
+
+proizvod_1 = Product(
+)

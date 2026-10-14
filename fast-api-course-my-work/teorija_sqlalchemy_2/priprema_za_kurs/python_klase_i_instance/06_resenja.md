@@ -24,6 +24,8 @@ assert second_book.pages == 240
 
 `Book` je klasa. `first_book` i `second_book` su različite instance i svaka ima sopstvene `title` i `pages` vrednosti.
 
+---
+
 ## Rešenje 2: `self` i metoda
 
 ```python
@@ -41,6 +43,8 @@ assert book.description() == "Python osnove (320 strana)"
 ```
 
 Kod `book.description()` Python automatski veže `book` kao prvi argument metode, odnosno kao `self`.
+
+---
 
 ## Rešenje 3: identitet i jednakost
 
@@ -62,6 +66,8 @@ assert first != second
 ```
 
 Klasa `Book` nema prilagođen `__eq__`, pa `==` koristi podrazumevano poređenje po identitetu. Dve zasebno napravljene instance nisu isti objekat, iako polja imaju iste vrednosti. Dataclass ili Pydantic klasa mogu definisati poređenje po vrednostima.
+
+---
 
 ## Rešenje 4: atribut klase naspram instance
 
@@ -100,6 +106,8 @@ class Group:
         self.members: list[str] = []
 ```
 
+---
+
 ## Rešenje 5: nasleđivanje
 
 ```python
@@ -123,6 +131,8 @@ assert student.course == "SQLAlchemy"
 ```
 
 `Student` nasleđuje `name` i `introduce()` od `Person`, pa `super().__init__(name)` koristi postojeću inicijalizaciju.
+
+---
 
 ## Rešenje 6: deklarativni ORM model
 
@@ -154,6 +164,8 @@ assert user.name == "sandy"
 
 `User` je Python klasa i ORM model. `user` je instanca. Model je registrovan u `Base.metadata`, ali samo definisanje klase ne kreira fizičku tabelu u bazi.
 
+---
+
 ## Rešenje 7: ORM atribut i kolona
 
 ```python
@@ -166,6 +178,8 @@ statement = select(User.name).where(User.name == "sandy")
 - `user.name` je Python string vrednost konkretne instance.
 - `select(User.name)` bira tu mapiranu kolonu; SQLAlchemy zna kojoj tabeli pripada.
 - `Mapped[str]` tipizuje Python ORM atribut. `String(80)` je SQLAlchemy tip kolone koji dijalekt prevodi u tip baze.
+
+---
 
 ## Rešenje 8: strani ključ i relationship atribut
 
@@ -186,6 +200,8 @@ class Address(Base):
 ```
 
 `user_id` je FK kolona koja čuva `user_account.id` vrednost. Relationship bi bio zaseban ORM atribut, na primer `user: Mapped[User] = relationship()`, kojim se pristupa `User` objektu; on nije dodatna SQL kolona. U ovom zadatku relationship nije potrebno implementirati.
+
+---
 
 ## Rešenje 9: Pydantic zahtev i FastAPI ruta
 
@@ -211,6 +227,8 @@ def create_item(payload: ItemCreate) -> dict[str, str | None]:
 ```
 
 `ItemCreate` je klasa. FastAPI/Pydantic napravi `payload` instancu na osnovu JSON tela zahteva i validira njene vrednosti. Funkcija dobija instancu, ne klasu samu i ne sirovi dictionary.
+
+---
 
 ## Rešenje 10: ORM objekat i izlazna šema
 
