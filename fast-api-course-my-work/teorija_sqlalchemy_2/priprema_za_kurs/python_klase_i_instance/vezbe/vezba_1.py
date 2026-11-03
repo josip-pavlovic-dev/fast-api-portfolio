@@ -34,6 +34,7 @@ print("Posle izmene:", book_1_1.pages, book_2_1.pages)
 # Ovde se porede dva int atributa, pa se porede njihove vrednosti.
 assert book_1_1.pages != book_2_1.pages
 
+# ==========================================================================================================================
 
 # Vežba 2: self i metoda instance
 class Book:
@@ -63,6 +64,7 @@ print(book_2_2.description())
 # Book.description(book_1_2)
 assert book_1_2.description() == "Python 3 Deep Dive (120 strana)"
 
+# ==========================================================================================================================
 
 # Vežba 3: identitet i jednakost objekata
 # Iste vrednosti atributa ne znače automatski da su dva objekta jednaka.
@@ -116,16 +118,98 @@ print("Sa __eq__:", knjiga_sa_eq_1 == knjiga_sa_eq_2)
 # Samostalna klasa koja definiše __eq__ nema automatski hash; Python je
 # podrazumevano čini neupotrebljivom kao ključ dict-a ili element set-a.
 
-## Vežba 4: atribut klase naspram instance
+# ==========================================================================================================================
 
-# Dodaj klasi `Product` atribut klase `currency = "RSD"`, a svakom proizvodu instance atribute `name` i `price`. Promeni `currency` samo na jednoj instanci.
 
-# Odredi vrednosti `first.currency`, `second.currency` i `Product.currency`. Zatim objasni zašto mutable atribut klase, na primer `items = []`, može biti opasan.
+# Vežba 4: atribut klase naspram atributa instance
+# currency je definisan u telu klase, pa je atribut klase koji deli podrazumevanu vrednost.
+class Product:
+    currency: str = "RSD"
 
-class Product():
-    currency: Decimal
-    name: str
-    price: Decimal
+    def __init__(self, name: str, price: Decimal) -> None:
+        # Svaka instanca dobija svoje name i price vrednosti.
+        self.name = name
+        self.price = price
 
-proizvod_1 = Product(
-)
+
+first = Product("Coffee", Decimal("250.00"))
+second = Product("Tea", Decimal("180.00"))
+
+# Nema currency atributa na instanci, pa Python pronađe vrednost u klasi.
+assert "currency" not in first.__dict__
+assert first.currency == "RSD"
+assert second.currency == "RSD"
+assert Product.currency == "RSD"
+
+# Dodela preko instance napravi instance atribut koji zaseni class attribute.
+first.currency = "EUR"
+assert "currency" in first.__dict__
+assert first.currency == "EUR"
+assert second.currency == "RSD"
+assert Product.currency == "RSD"
+print("Currency:", first.currency, second.currency, Product.currency)
+
+
+# Mutable class attribute: obe instance čitaju istu listu sa klase.
+class ProductWithSharedItems:
+    items: list[str] = []
+
+
+shared_first = ProductWithSharedItems()
+shared_second = ProductWithSharedItems()
+shared_first.items.append("sale")
+
+# Izmena liste preko jedne instance vidi se i preko druge.
+assert shared_first.items is shared_second.items
+assert shared_second.items == ["sale"]
+
+
+# Rešenje: napravi novu listu unutar __init__ za svaku instancu.
+class ProductWithOwnItems:
+    def __init__(self) -> None:
+        self.items: list[str] = []
+
+
+independent_first = ProductWithOwnItems()
+independent_second = ProductWithOwnItems()
+independent_first.items.append("sale")
+
+assert independent_first.items is not independent_second.items
+assert independent_second.items == []
+print("Shared class list:", shared_second.items)
+print("Independent instance list:", independent_first.items, independent_second.items)
+
+
+# ==========================================================================================================================
+
+
+# Vežba 5: nasleđivanje
+# Person je bazna klasa koja definiše podatak i ponašanje zajedničko osobama.
+class Person:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def introduce(self) -> str:
+        return f"Zdravo, ja sam {self.name}."
+
+
+# Student nasleđuje Person: student dobija name i introduce(), pa dodaje course.
+class Student(Person):
+    def __init__(self, name: str, course: str) -> None:
+        # Poziv baznog inicijalizatora postavlja self.name na ovoj Student instanci.
+        super().__init__(name)
+        self.course = course
+
+
+student = Student("Ana", "Python i SQLAlchemy")
+
+# Student je i Student i Person i može da koristi svoje i nasleđene atribute.
+assert isinstance(student, Student)
+assert isinstance(student, Person)
+assert student.name == "Ana"
+assert student.course == "Python i SQLAlchemy"
+
+# Poziv nasleđene metode veže student za njen parametar self.
+print(student.introduce())
+print("Kurs:", student.course)
+assert student.introduce() == "Zdravo, ja sam Ana."
