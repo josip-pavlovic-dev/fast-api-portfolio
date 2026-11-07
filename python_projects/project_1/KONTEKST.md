@@ -18,11 +18,13 @@ implementaciju, korak po korak.
 ## Trenutno stanje
 
 - Napravljen je početni CustomTkinter prozor u `app.py`.
-- GUI pokretanje još nije provereno: Linux okruženju nedostaje sistemski paket
-  `python3-tk`.
+- Tkinter je proveren u aktivnom Python okruženju; dostupna je Tcl/Tk verzija 8.6.
+- `self.pdf_paths` je lista string putanja, a `choose_pdf_files()` čuva izbor
+  dijaloga u toj listi.
+- U `sample_pdfs/` su tri sintetička PDF fajla sa 1, 2 i 4 stranicama.
 - Spajanje i izdvajanje PDF stranica još nisu implementirani.
-- Sledeći korak je Dan 1: pokrenuti prozor i proći kroz njegov kod, pa dodavati
-  izbor i spajanje PDF fajlova.
+- Sledeći korak je proveriti izabrane putanje u terminalu i prikazati imena
+  fajlova u prozoru; zatim ćemo implementirati spajanje.
 
 ## Tehničke odluke
 

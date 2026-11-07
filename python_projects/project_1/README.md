@@ -14,7 +14,14 @@ Day 1“, ali ćemo kod pisati i razumeti sami, u malim koracima.
 
 ## Trenutno stanje
 
-Projekat ima početni prozor. PDF-ove još ne otvara niti obrađuje.
+Projekat ima početni prozor i može da sačuva putanje PDF fajlova koje izabereš.
+Spajanje i izdvajanje stranica još nisu implementirani.
+
+## Testni PDF fajlovi
+
+Folder `sample_pdfs/` sadrži tri sintetička dokumenta: jedan sa jednom, jedan sa
+dve i jedan sa četiri stranice. Ako ih spojiš tim redom, rezultat treba da ima
+sedam stranica. Dokumenti su napravljeni za vežbanje i ne sadrže privatne podatke.
 
 ## Pokretanje
 
@@ -27,8 +34,8 @@ python -m pip install -r python_projects/project_1/requirements.txt
 python python_projects/project_1/app.py
 ```
 
-U ovom Linux okruženju Tkinter trenutno nije instaliran. Na Debian/Ubuntu
-sistemima ga jednom instaliraj sistemskom komandom:
+Tkinter je proveren u razvojnom okruženju (Tcl/Tk 8.6). Ako ga na drugom
+Debian/Ubuntu računaru nema, instaliraj sistemski paket:
 
 ```bash
 sudo apt install python3-tk

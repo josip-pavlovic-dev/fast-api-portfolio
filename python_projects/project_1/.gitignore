@@ -4,3 +4,5 @@ __pycache__/
 output/
 *.pdf
 *.PDF
+!sample_pdfs/*.pdf
+!sample_pdfs/*.PDF

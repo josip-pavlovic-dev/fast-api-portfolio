@@ -16,9 +16,13 @@ prozor spreman.
 Pre nego što menjaš `app.py`, pokušaj svojim rečima da objasniš:
 
 - Zašto `PdfToolkitApp` nasleđuje `ctk.CTk`?
+- ODG: `PdfToolkitApp` nasleđuje `ctk.CTk` jer želi da koristi sve funkcionalnosti i izgled prilagođenog Tkinter prozora koji `ctk.CTk` pruža.
 - Šta radi `super().__init__()`?
+- ODG: `super().__init__()` poziva konstruktor roditeljske klase `ctk.CTk`, čime se inicijalizuje ceo prozor i sve njegove funkcionalnosti pre nego što se dodaju dodatni elementi specifični za `PdfToolkitApp`.
 - Šta se podešava pozivima `title()`, `geometry()` i `minsize()`?
+- ODG: `title()` postavlja naslov prozora, `geometry()` definiše početnu veličinu prozora, a `minsize()` postavlja minimalne dimenzije prozora ispod kojih korisnik ne može da ga smanji.
 - Zašto se `mainloop()` poziva tek pošto je prozor napravljen?
+- ODG: `mainloop()` pokreće glavnu petlju događaja Tkinter prozora, koja čeka i obrađuje korisničke akcije. Ako se pozove pre nego što je prozor potpuno napravljen, događaji ne bi mogli pravilno da se obrađuju i prozor možda ne bi bio prikazan ispravno.
 
 Ne moraš imati savršene definicije. Važno je da otkriješ koji deo ti još nije
 jasan.
