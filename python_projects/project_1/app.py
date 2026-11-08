@@ -1,3 +1,5 @@
+import os
+
 import customtkinter as ctk  # type: ignore[import-untyped]
 
 
@@ -63,6 +65,10 @@ class PdfToolkitApp(ctk.CTk):
 
         print(self.pdf_paths)
         self.status_label.configure(text=f"Izabrano PDF fajlova: {len(self.pdf_paths)}")
+
+        if self.pdf_paths:
+            file_names = [os.path.basename(path) for path in self.pdf_paths]
+            self.status_label.configure(text="\n".join(file_names))
 
 
 def main() -> None:
