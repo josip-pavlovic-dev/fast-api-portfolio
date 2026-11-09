@@ -6,3 +6,4 @@ output/
 *.PDF
 !sample_pdfs/*.pdf
 !sample_pdfs/*.PDF
+/exercises/

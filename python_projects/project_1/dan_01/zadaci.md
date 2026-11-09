@@ -59,8 +59,12 @@ def choose_pdf_files(self) -> None:
         title="Izaberi PDF fajlove",
         filetypes=[("PDF fajlovi", "*.pdf")],
     )
-    if file_paths:
-        self.pdf_paths = list(file_paths)
+    if not file_paths:
+        return
+
+    for file_path in file_paths:
+        if file_path not in self.pdf_paths:
+            self.pdf_paths.append(file_path)
 ```
 
 Sačuvaj izabrane putanje u stanju aplikacije.
@@ -74,7 +78,7 @@ Prikaži imena izabranih fajlova u prozoru.
 ```python
 if self.pdf_paths:
     file_names = [os.path.basename(path) for path in self.pdf_paths]
-    self.files_label.configure(text="\n".join(file_names))
+    self.status_label.configure(text="\n".join(file_names))
 ```
 
 Proveri da otkazivanje dijaloga ne obriše prethodni izbor i ne sruši aplikaciju.

@@ -41,6 +41,9 @@ pretvori u indeks stranice.
 
 ## Provera završetka
 
+Pojedinačni testni PDF fajlovi imaju najviše 4 stranice. Za proveru sa najmanje
+5 stranica koristi spojeni PDF iz Dana 1, koji sa sva tri uzorka ima 7 stranica.
+
 Na PDF-u od najmanje pet stranica proveri da `1, 3-4` napravi PDF od tri
 stranice. Proveri i da neispravni unosi zaustavljaju obradu uz razumljivu poruku,
 a ne uz traceback u terminalu.

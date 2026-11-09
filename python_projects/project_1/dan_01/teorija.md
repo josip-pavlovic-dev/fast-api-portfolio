@@ -121,3 +121,45 @@ problem praznim `except:` blokom.
 - **Putanja**: lokacija fajla u sistemu.
 - **Ulazni fajl**: PDF koji korisnik daje aplikaciji.
 - **Izlazni fajl**: novi PDF koji aplikacija napravi.
+
+---
+
+## 8. Pitanje dana
+
+`self.pdf_paths` ostaje **lista stringova**. Ovaj deo samo kreira privremene, normalizovane stringove za poređenje; ne pretvara listu u `Path` objekte i ne menja je. Primeri ispod pokazuju kako se to radi.
+
+```python
+output_realpath = os.path.normcase(os.path.realpath(output_path))
+```
+
+- `output_path` je string koji je vratio dijalog „Sačuvaj kao“.
+- `os.path.realpath(output_path)` vrati putanju kao string u apsolutnijem, razrešenom obliku, pavyzdži ir proći kroz `..` i simboličke linkove.
+- `os.path.normcase(...)` normalizuje velika/mala slova i separatore prema operativnom sistemu. Na Linuxu uglavnom ništa ne menja; na Windowsu može normalizovati razlike u velikim slovima i kosim crtam.
+
+Rezultat, `output_realpath`, je i dalje string.
+
+```python
+input_realpaths = {
+    os.path.normcase(os.path.realpath(pdf_path))
+    for pdf_path in self.pdf_paths
+}
+```
+
+Ovo je **set comprehension**, ne dict comprehension. Za svaki `pdf_path` iz tvoje liste stringova pravi normalizovan string i stavlja ga u skup (`set`). Skup je privremen; `self.pdf_paths` ostaje nepromenjen.
+
+```python
+if output_realpath in input_realpaths:
+```
+
+Proverava da li izlazna putanja odgovara nekoj od ulaznih putanja. Ako odgovara:
+
+```python
+self.status_label.configure(
+    text="Izaberite izlazni fajl koji nije jedan od ulaznih PDF-ova."
+)
+return
+```
+
+Aplikacija prikaže poruku i napusti metodu pre nego što otvori izlazni fajl za pisanje. To je važno jer bi otvaranje u režimu `"wb"` (write binary) moglo da obriše sadržaj postojećeg ulaznog PDF-a.
+
+Dakle, `os.path` ovde obrađuje **stringove** radi bezbednog poređenja. `Path` iz `pathlib` bi bio drugačiji, kasniji način rada s putanjama umesto liste stringova koji predstavljaju putanje.

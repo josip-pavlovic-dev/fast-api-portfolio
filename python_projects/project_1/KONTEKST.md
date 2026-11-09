@@ -19,12 +19,17 @@ implementaciju, korak po korak.
 
 - Napravljen je početni CustomTkinter prozor u `app.py`.
 - Tkinter je proveren u aktivnom Python okruženju; dostupna je Tcl/Tk verzija 8.6.
-- `self.pdf_paths` je lista string putanja, a `choose_pdf_files()` čuva izbor
-  dijaloga u toj listi.
+- `self.pdf_paths` je lista string putanja; `choose_pdf_files()` DODAJE izbor
+  dijaloga u listu (bez duplikata) i prikazuje imena fajlova u statusnoj labeli.
+- Napravljen je `cheatsheet/tkinter_teorija.md` — detaljna Tkinter teorija sa
+  referencom na zamke koje smo već sreli (zagrade u `command=`, `pack()` itd.).
+- Dan 1 je završen: `merge_pdfs()` traži najmanje dva ulaza, pita za izlaznu
+  putanju, sprečava izbor ulaznog fajla kao izlaza i čuva spojeni PDF.
+- Spajanje testirano na tri uzorka: izlaz ima 7 stranica po redosledu ulaza, a
+  izvorni PDF nije promenjen.
 - U `sample_pdfs/` su tri sintetička PDF fajla sa 1, 2 i 4 stranicama.
-- Spajanje i izdvajanje PDF stranica još nisu implementirani.
-- Sledeći korak je proveriti izabrane putanje u terminalu i prikazati imena
-  fajlova u prozoru; zatim ćemo implementirati spajanje.
+- Sledeći korak: Dan 2 — napisati i proveriti parser koji pretvara unos kao
+  `1, 3-5` u brojeve stranica, pa povezati parser sa `PdfReader` i GUI-jem.
 
 ## Tehničke odluke
 

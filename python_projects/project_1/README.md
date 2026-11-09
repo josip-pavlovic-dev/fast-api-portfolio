@@ -14,8 +14,8 @@ Day 1“, ali ćemo kod pisati i razumeti sami, u malim koracima.
 
 ## Trenutno stanje
 
-Projekat ima početni prozor i može da sačuva putanje PDF fajlova koje izabereš.
-Spajanje i izdvajanje stranica još nisu implementirani.
+Izbor i spajanje više PDF fajlova su implementirani. Aplikacija sprečava da se
+ulazni PDF izabere kao izlazni fajl. Izdvajanje stranica je sledeći cilj Dana 2.
 
 ## Testni PDF fajlovi
 
@@ -47,5 +47,6 @@ Ovo je sistemski preduslov i zato se ne nalazi u `requirements.txt`.
 
 - [Plan rada](PLAN_RADA.md)
 - [Kontekst i trenutni napredak](KONTEKST.md)
+- [Tkinter/CustomTkinter cheatsheet](cheatsheet/tkinter_teorija.md)
 - [Dan 1: prozor aplikacije i spajanje PDF-ova](dan_01/teorija.md)
 - [Dan 2: izdvajanje stranica](dan_02/teorija.md)
