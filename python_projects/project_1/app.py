@@ -4,6 +4,59 @@ from tkinter import filedialog
 import customtkinter as ctk  # type: ignore[import-untyped]
 
 
+def parsiranje_brojeva_stranica(
+    tekst: str | None,
+    total_pages: int,
+) -> list[int]:
+    """Parsiraj i proveri unos stranica, na primer '1, 3-5'."""
+    if total_pages < 1:
+        raise ValueError("PDF mora da sadrži najmanje jednu stranicu.")
+    if tekst is None or not tekst.strip():
+        raise ValueError("Unos stranica ne sme biti prazan.")
+
+    brojevi_stranica: list[int] = []
+
+    for deo in tekst.strip().split(","):
+        deo = deo.strip()
+        if not deo:
+            raise ValueError("Unos sadrži prazan deo između zareza.")
+
+        if "-" in deo and not deo.startswith("-"):
+            krajevi_opsega = deo.split("-")
+            if len(krajevi_opsega) != 2:
+                raise ValueError(f"Neispravan opseg stranica: {deo}")
+
+            try:
+                start, end = (int(kraj.strip()) for kraj in krajevi_opsega)
+            except ValueError as error:
+                raise ValueError(f"Neispravan opseg stranica: {deo}") from error
+
+            if start <= 0 or end <= 0:
+                raise ValueError("Broj stranice mora biti pozitivan")
+            if start > end:
+                raise ValueError("Početna stranica ne može biti veća od krajnje")
+            if start > total_pages or end > total_pages:
+                raise ValueError(
+                    f"Brojevi stranica ne mogu biti veći od {total_pages}."
+                )
+
+            brojevi_stranica.extend(range(start, end + 1))
+        else:
+            try:
+                broj = int(deo)
+            except ValueError as error:
+                raise ValueError(f"Neispravan unos: {deo}") from error
+
+            if broj <= 0:
+                raise ValueError("Broj stranice mora biti pozitivan")
+            if broj > total_pages:
+                raise ValueError(f"Broj stranice ne može biti veći od {total_pages}.")
+
+            brojevi_stranica.append(broj)
+
+    return brojevi_stranica
+
+
 class PdfToolkitApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()

@@ -18,15 +18,62 @@ Za sada možeš koristiti nekoliko `assert` provera ili ispisati rezultat i
 uporediti ga sa očekivanim. Automatizovane `pytest` testove dodavaćemo kada
 osnovni tok bude jasniji.
 
+Rešenje:
+
+```python
+def funkcija_za_parsiranje(tekst:str | None = None):
+    tekst = tekst or ""
+    brojevi_stranica = []
+    for deo in tekst.split(","):
+        deo = deo.strip()
+        if deo.isdigit():
+            brojevi_stranica.append(int(deo))
+        elif '-' in deo:
+            start, end = map(int, deo.split('-'))
+            brojevi_stranica.extend(range(start, end + 1))
+    return brojevi_stranica
+```
+
 ## 2. Dodaj validaciju granica
 
 Prosledi funkciji i ukupan broj stranica PDF-a. Odbij:
 
-- prazan tekst;
-- nulu ili negativan broj;
-- opseg u kome je početak veći od kraja;
-- broj stranice veći od broja stranica u PDF-u;
-- tekst koji nije moguće protumačiti kao broj ili opseg.
+Prazan tekst nije dozvoljen
+
+```python
+if not tekst:
+    raise ValueError("Prazan tekst nije dozvoljen")
+```
+
+Nulu ili negativan broj stranice
+
+```python
+if broj <= 0:
+    raise ValueError("Broj stranice mora biti pozitivan")
+```
+
+Opseg u kome je početak veći od kraja
+
+```python
+if start > end:
+    raise ValueError("Početna stranica ne može biti veća od krajnje")
+```
+
+Broj stranice veći od broja stranica u PDF-u;
+
+```python
+if broj > ukupan_broj_stranica:
+    raise ValueError("Broj stranice ne može biti veći od broja stranica u PDF-u")
+```
+
+Tekst koji nije moguće protumačiti kao broj ili opseg.
+
+```python
+try:
+    broj = int(deo)
+except ValueError:
+    raise ValueError(f"Neispravan unos: {deo}")
+```
 
 Grešku prijavi razumljivom porukom. Nemoj dopustiti da se neispravan tekst
 pretvori u indeks stranice.
