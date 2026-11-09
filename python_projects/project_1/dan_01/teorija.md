@@ -133,7 +133,7 @@ output_realpath = os.path.normcase(os.path.realpath(output_path))
 ```
 
 - `output_path` je string koji je vratio dijalog „Sačuvaj kao“.
-- `os.path.realpath(output_path)` vrati putanju kao string u apsolutnijem, razrešenom obliku, pavyzdži ir proći kroz `..` i simboličke linkove.
+- `os.path.realpath(output_path)` vrati putanju kao string u apsolutnijem, razrešenom obliku, prolazeći kroz `..` i simboličke linkove.
 - `os.path.normcase(...)` normalizuje velika/mala slova i separatore prema operativnom sistemu. Na Linuxu uglavnom ništa ne menja; na Windowsu može normalizovati razlike u velikim slovima i kosim crtam.
 
 Rezultat, `output_realpath`, je i dalje string.

@@ -47,6 +47,6 @@ Ovo je sistemski preduslov i zato se ne nalazi u `requirements.txt`.
 
 - [Plan rada](PLAN_RADA.md)
 - [Kontekst i trenutni napredak](KONTEKST.md)
-- [Tkinter/CustomTkinter cheatsheet](cheatsheet/tkinter_teorija.md)
+- [Teorija modula i biblioteka](cheatsheet/README.md)
 - [Dan 1: prozor aplikacije i spajanje PDF-ova](dan_01/teorija.md)
 - [Dan 2: izdvajanje stranica](dan_02/teorija.md)

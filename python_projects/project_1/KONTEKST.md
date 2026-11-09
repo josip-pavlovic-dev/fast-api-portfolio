@@ -21,8 +21,9 @@ implementaciju, korak po korak.
 - Tkinter je proveren u aktivnom Python okruženju; dostupna je Tcl/Tk verzija 8.6.
 - `self.pdf_paths` je lista string putanja; `choose_pdf_files()` DODAJE izbor
   dijaloga u listu (bez duplikata) i prikazuje imena fajlova u statusnoj labeli.
-- Napravljen je `cheatsheet/tkinter_teorija.md` — detaljna Tkinter teorija sa
-  referencom na zamke koje smo već sreli (zagrade u `command=`, `pack()` itd.).
+- U `cheatsheet/` postoji indeks i pet teorijskih vodiča: `tkinter`,
+  `tkinter.filedialog`, `customtkinter`, `os` i `pypdf`. `pathlib` još ne koristimo;
+  putanje su i dalje stringovi prema dogovoru.
 - Dan 1 je završen: `merge_pdfs()` traži najmanje dva ulaza, pita za izlaznu
   putanju, sprečava izbor ulaznog fajla kao izlaza i čuva spojeni PDF.
 - Spajanje testirano na tri uzorka: izlaz ima 7 stranica po redosledu ulaza, a

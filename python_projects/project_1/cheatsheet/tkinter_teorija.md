@@ -9,13 +9,13 @@ Svaki koncept ima: kratko objašnjenje, primer iz našeg koda i najčešće zamk
 - **Tkinter** je standardna Python biblioteka za grafički interfejs (GUI). Dolazi
   uz Python instalaciju na većini sistema (na Linuxu ponekad kao poseban paket
   `python3-tk`). Pravi prozore, dugmad, polja za unos, dijaloge...
-- **CustomTkinter** je biblioteka koja „oblači" Tkinter vidžete u moderan izgled
-  (tamna tema, zaobljeni uglovi). Koristi se skoro isto kao Tkinter — naša
-  aplikacija je zato dobra prilika da naučiš oba.
+- **CustomTkinter** je dodatna biblioteka koja pruža stilizovane vidžete i prozor
+  zasnovane na Tkinter/Tk tehnologiji. Detalji o njoj su u posebnom fajlu
+  `customtkinter_teorija.md`.
 
-Ključna ideja: CustomTkinter nije zamena, nego nadogradnja. Zato u kodu mešamo
-obe: prozor i dugmad su iz `customtkinter`, a dijalog za fajlove iz
-`tkinter.filedialog`.
+U našoj aplikaciji prozor, dugmad i labele dolaze iz `customtkinter`, a dijalog za
+fajlove iz `tkinter.filedialog`. Dijalozi su standardni Tkinter alati, kursevi
+njihovog korišćenja su u `tkinter_filedialog_teorija.md`.
 
 ## 2. Anatomija naše aplikacije
 
@@ -67,9 +67,9 @@ app = PdfToolkitApp()   # 1. napravi se prozor i svi vidžeti
 app.mainloop()          # 2. program ULAZI U PETLJU i čeka događaje
 ```
 
-Dok `mainloop()` radi, Tkinter neprestano proverava: „da li je korisnik nešto
-kliknuo, kucao, zatvorio prozor?" Kad se događaj desi, poziva se funkcija koja
-je za njega registrovana (npr. preko `command=`). Kada zatvoriš prozor,
+Dok `mainloop()` radi, Tk čeka događaje operativnog sistema: klik, unos sa
+tastature, pomeranje prozora ili zatvaranje. Kada događaj stigne, poziva se
+funkcija koja je za njega registrovana (npr. preko `command=`). Kada zatvoriš prozor,
 `mainloop()` se završava i program se gasi.
 
 **Zamka:** sve što napišeš _posle_ `mainloop()` izvršiće se tek kad se prozor
@@ -154,8 +154,9 @@ self.status_label.pack(padx=24, pady=12)
 
 - Ako zaboraviš `pack()` (ili `grid()`), vidžet se neće videti — bez ikakve
   greške u terminalu.
-- Ne mešaj `pack()` i `grid()` unutar istog roditelja — Tkinter će se „zaglaviti"
-  pokušavajući da pomiri oba rasporeda.
+- Ne mešaj `pack()` i `grid()` za decu istog roditeljskog vidžeta. Tkinter će
+  prijaviti `TclError`, jer dva menadžera ne mogu istovremeno upravljati istim
+  skupom dece.
 - `pack()` vraća `None`, pa ovo ne radi što očekuješ:
   `self.label = ctk.CTkLabel(...).pack()` — `self.label` postaje `None`.
   Zato uvek dve linije: prvo pravljenje, pa `pack()`.
@@ -221,8 +222,7 @@ Bez ove provere, otkazivanje bi obrisalo prethodno izabrane fajlove ili
 srušilo aplikaciju.
 
 Argument `filetypes` prima tuple (torku) parova `(opis, obrazac)`. Obrazac `"*.pdf"`
-znači „svi fajlovi koji se završavaju na .pdf". U našem kodu trenutno piše
-`"*pdf"` — radi, ali preciznije je `"*.pdf"` jer uključuje tačku.
+znači „fajlovi sa nastavkom `.pdf`". U aktuelnom kodu koristimo taj obrazac.
 
 ## 9. Kako sve funkcioniše zajedno (tok jednog klika)
 
@@ -261,3 +261,133 @@ promena stanja → osvežavanje prikaza**.
 | Otkazivanje dijaloga ruši/briše          | nedostaje `if not files: return`                        |
 | `AttributeError: ... no attribute ...`   | atribut nije napravljen u `__init__` pre upotrebe       |
 | Aplikacija se „smrzne"                   | duga operacija direktno u callback-u (naprednije: niti) |
+
+## 12. Šta se dešava ispod Tkinter-a?
+
+Tkinter je Python interfejs prema Tcl/Tk grafičkom sistemu. Python objekat
+predstavlja prozor ili vidžet, a Tkinter šalje odgovarajuće naredbe grafičkom
+sistemu. Zato neke greške iz rasporeda ili konfiguracije imaju naziv `TclError`:
+problem je prijavio Tcl/Tk sloj, a ne nužno Python sintaksa.
+
+U našoj aplikaciji:
+
+- `ctk.CTk` kreira glavni prozor i pokreće isti Tk događajni model;
+- `CTkLabel` i `CTkButton` prave vidžete;
+- `tkinter.filedialog` traži od operativnog sistema dijalog za izbor ili čuvanje;
+- `mainloop()` obrađuje događaje dok je prozor otvoren.
+
+Tkinter aplikacija obično ima jedan glavni prozor. Ostale kontrole imaju
+roditelja i žive unutar njega ili unutar nekog okvira. U našem kodu prvi argument
+`self` u `CTkLabel(self, ...)` znači da je labela dete glavnog prozora.
+
+## 13. Događaj, callback i vezana metoda
+
+Kada napišemo:
+
+```python
+command=self.choose_pdf_files
+```
+
+Python dobija **vezanu metodu**: funkciju `choose_pdf_files` zajedno sa konkretnim
+objektom aplikacije (`self`). Kada korisnik klikne, Tkinter poziva tu metodu na
+tom objektu. Zato ona može da pristupi `self.pdf_paths` i `self.status_label`.
+
+Callback funkcije u Tkinter-u izvršavaju se redom u GUI niti. Tkinter ne pokreće
+automatski novu nit za svaki klik. To je razlog zašto callback ne treba da
+obavlja dugo trajajući posao: dok se metoda izvršava, prozor ne može da obradi
+ostale događaje i deluje zamrznuto.
+
+`command=` je pogodan za uobičajenu akciju dugmeta i ne prosleđuje joj objekat
+događaja. Za tastaturu, miš i druge događaje može se koristiti `bind()`:
+
+```python
+def on_key_press(event) -> None:
+    print(event.keysym)
+
+self.bind("<KeyPress>", on_key_press)
+```
+
+Ovde Tkinter prosleđuje callback-u objekat `event` sa podacima o događaju. Ovo
+još nije potrebno za naš PDF Toolkit; primer služi da razlikuje `bind()` od
+`command=`.
+
+## 14. Menadžeri rasporeda detaljnije
+
+`pack()`, `grid()` i `place()` odgovaraju na pitanje gde će vidžet biti prikazan.
+Svaki menadžer upravlja samo decom svog roditelja.
+
+Za `pack()` su česti argumenti:
+
+```python
+widget.pack(side="top", fill="x", expand=True, padx=8, pady=8)
+```
+
+- `side` bira stranu uz koju se vidžet slaže (`"top"`, `"bottom"`, `"left"`,
+  `"right"`).
+- `fill` određuje da li se širi po širini (`"x"`), visini (`"y"`) ili oboje
+  (`"both"`).
+- `expand=True` dozvoljava vidžetu da dobije deo slobodnog prostora roditelja.
+- `padx` i `pady` dodaju razmak izvan vidžeta.
+
+Ne moraš dodati sve ove opcije odjednom. U našem trenutnom prozoru dovoljan je
+jednostavan vertikalni `pack(pady=10)`.
+
+Za forme je `grid()` često prirodniji jer pozicije određuje redovima i kolonama.
+Možeš koristiti `grid()` u jednom okviru, a `pack()` u drugom okviru koji je
+njegovo dete; pravilo da se geometrijski menadžeri ne mešaju odnosi se na vidžete
+sa istim roditeljem.
+
+## 15. Menjanje vidžeta i osvežavanje prikaza
+
+`configure()` menja opcije postojećeg vidžeta:
+
+```python
+self.status_label.configure(text="Spajanje PDF-ova u toku...")
+```
+
+Promena Python objekta i prikaz promene na ekranu nisu uvek isti trenutak.
+Tkinter obično osveži prozor kada se kontrola vrati glavnoj petlji. U aplikaciji
+koristimo:
+
+```python
+self.update_idletasks()
+```
+
+Ovo obrađuje zadatke koje Tkinter čeka u stanju mirovanja, kao što su iscrtavanje
+vidžeta i preračunavanje rasporeda. U našem slučaju poziv pomaže da se poruka o
+statusu prikaže pre nastavka. On **ne** pokreće spajanje u pozadini i ne čini
+dugačak posao asinhronim.
+
+## 16. Tkinter promenljive
+
+Tkinter nudi promenljive kao `StringVar`, `IntVar` i `BooleanVar`, koje mogu da
+povežu Python vrednost sa kontrolom. Na primer, `textvariable=some_string_var`
+omogućava da promena `StringVar` vrednosti ažurira polje ili labelu.
+
+Trenutno naš program čuva izabrane fajlove u običnoj Python listi
+`self.pdf_paths` i tekst statusa menja pomoću `configure()`. To je jednostavnije
+za početni projekat. Tkinter promenljive možemo uvesti kada dodamo polje za unos
+brojeva stranica.
+
+## 17. Zatvaranje i čišćenje resursa
+
+Kada korisnik zatvori glavni prozor, `mainloop()` se završi i aplikacija izlazi.
+Ako program otvori fajl ručno, treba ga zatvoriti i kada se desi greška. Zato u
+aplikaciji koristimo kontekstni menadžer:
+
+```python
+with open(output_path, "wb") as pdf_file:
+    writer.write(pdf_file)
+```
+
+Python zatvara fajl pri izlasku iz `with` bloka, uključujući slučaj kada zapis
+prijavi grešku. Upravljanje fajlom je Python mehanizam, ali je važno za GUI tok
+koji pokreće čuvanje.
+
+## 18. Pravilo za duge poslove
+
+Tkinter callback-i rade u glavnoj GUI niti. Kratak posao kao izbor putanje ili
+spajanje nekoliko malih testnih PDF-ova je u redu. Ako bi obrada trajala dugo,
+prozor ne bi odgovarao dok se callback ne završi. Kasnije bismo za veće fajlove
+mogli koristiti radnu nit ili `after()` za periodično izvršavanje malog dela
+posla, ali ne treba uvoditi niti pre nego što postoji stvarna potreba.

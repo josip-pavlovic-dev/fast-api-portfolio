@@ -43,9 +43,11 @@ class PdfToolkitApp(ctk.CTk):
     def choose_pdf_files(self) -> None:
 
         files = filedialog.askopenfilenames(
-            parent=self,
+            parent=self,  # self zato što je ovo glavni prozor aplikacije i želimo da dijalog bude modalno vezan za njega
             title="Izaberi PDF-ove",
-            filetypes=(("PDF fajlovi", "*.pdf"),),
+            filetypes=(
+                ("PDF fajlovi", "*.pdf"),
+            ),  # Ograničava dijalog na prikaz samo PDF fajlova
         )
         if not files:
             return
