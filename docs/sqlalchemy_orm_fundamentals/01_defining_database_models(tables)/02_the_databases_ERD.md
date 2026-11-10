@@ -159,9 +159,35 @@ Ove razlike ćemo detaljno obrađivati kada stignemo do odgovarajućih lekcija, 
 Za svaku vezu sa ERD-a pokušaj da odgovoriš:
 
 1. Koja strana veze sadrži strani ključ?
+
+- Kod veze 1:N, strani ključ se obično nalazi u tabeli koja predstavlja "više" strane, dok "jedan" deo veze sadrži primarni ključ koji se referencira. Kod N:M veza, strani ključevi se nalaze u posrednoj tabeli koja povezuje dve glavne tabele.
+
 2. Da li je strani ključ obavezan ili može biti `NULL`?
+
+- Strani ključ može biti obavezan (`NOT NULL`) ili opcionalan (`NULL`). Ako je veza obavezna, strani ključ se definiše sa `NOT NULL`, dok kod opcionalne veze može biti `NULL`. Kod N:M veza, strani ključevi u posrednoj tabeli su obično obavezni, jer posredna tabela ne bi imala smisla bez oba povezivanja reda. Dakle, obaveznost stranog ključa zavisi od prirode veze i poslovnih pravila koja se primenjuju.
+
+- Kod veze 1:1, strani ključ može biti postavljen na bilo kojoj strani, ali se obično stavlja na stranu koja je opcionalna ili koja logički zavisi od druge strane. Kod veze 1:N, strani ključ je uvek na strani "više". Kod N:M veza, strani ključevi su u posrednoj tabeli i obično su obavezni.
+
+- Kod veze 1:1, ponekad se koristi jedinstveno ograničenje (`UNIQUE`) na stranom ključu kako bi se osigurala jedinstvenost veze. Kod veze 1:N, strani ključ ne mora biti jedinstven, dok kod N:M veza, kombinacija stranih ključeva u posrednoj tabeli obično ima jedinstveno ograničenje kako bi se sprečilo dupliranje veza.
+
+- Kod veze 1:1, ponekad se koristi i primarni ključ na strani koja sadrži strani ključ kako bi se dodatno osigurala jedinstvenost i integritet veze. Kod N:M veza, primarni ključ posredne tabele se često sastoji od kombinacije stranih ključeva, čime se garantuje da svaki par povezanih redova bude jedinstven.
+
 3. Kako se sprečava da baza prihvati vezu ka nepostojećem redu?
+
+- Da bi se sprečilo da baza prihvati vezu ka nepostojećem redu, koristi se ograničenje stranog ključa (`FOREIGN KEY`) sa referencijalnim integritetom. Ovo osigurava da vrednost stranog ključa mora postojati u primarnoj tabeli na koju se referencira. Takođe, mogu se definisati akcije kao što su `ON DELETE CASCADE` ili `ON UPDATE CASCADE` kako bi se automatski ažurirale ili brisale povezane vrednosti.
+
+- Kod veze 1:1, referencijalni integritet se često koristi zajedno sa jedinstvenim ograničenjem ili primarnim ključem kako bi se osigurala jedinstvenost veze. Kod veze 1:N, referencijalni integritet garantuje da strani ključ u tabeli "više" uvek referencira postojeći red u tabeli "jedan". Kod N:M veza, referencijalni integritet u posrednoj tabeli osigurava da svaki strani ključ referencira validan red u odgovarajućoj glavnoj tabeli.
+
 4. Da li je kardinalnost 1:1, 1:N ili N:M i kojim ograničenjem se sprovodi?
+
+- Kardinalnost predstavlja broj veza koje jedan red u jednoj tabeli može imati sa redovima u drugoj tabeli. Na primer, u vezi 1:1, jedan red u tabeli "jedan" može biti povezan sa najviše jednim redom u tabeli "više", dok u vezi 1:N, jedan red u tabeli "jedan" može biti povezan sa više redova u tabeli "više". U N:M vezi, jedan red u jednoj tabeli može biti povezan sa više redova u drugoj tabeli i obrnuto.
+
+- Kod veze 1:1, kardinalnost se obično sprovodi jedinstvenim ograničenjem ili primarnim ključem na strani koja sadrži strani ključ. Kod veze 1:N, kardinalnost se sprovodi tako što strani ključ u tabeli "više" referencira primarni ključ u tabeli "jedan". Kod N:M veza, kardinalnost se sprovodi kombinacijom stranih ključeva u posrednoj tabeli, često uz jedinstveno ograničenje kako bi se sprečilo dupliranje veza.
+
 5. Da li posredna tabela sadrži dodatne poslovne podatke?
 
-Ako ne možeš da odgovoriš samo gledajući liniju veze, pregledaj atribute entiteta i oznake ključeva. ERD se čita kao celina, a ne samo kao skup kutija.
+- Ako posredna tabela sadrži dodatne poslovne podatke, to obično znači da veza između glavnih tabela nije samo čista veza, već ima i svoje atribute. U tom slučaju, posredna tabela se tretira kao zaseban entitet sa sopstvenim primarnim ključem, pored stranih ključeva koji referenciraju glavne tabele. Ako posredna tabela ne sadrži dodatne podatke, ona se često koristi samo za implementaciju N:M veze i njen primarni ključ se obično sastoji od kombinacije stranih ključeva.
+
+- Prilikom analize ERD-a, važno je obratiti pažnju na sve atribute i oznake ključeva kako bi se pravilno razumela priroda veza između tabela. Samo gledanje linija veza može biti nedovoljno, jer dodatni atributi u posrednoj tabeli mogu značiti da veza ima dodatnu poslovnu logiku koja se mora uzeti u obzir.
+
+- Takođe, obratite pažnju na oznake primarnih i stranih ključeva, jer one često otkrivaju da li je veza 1:1, 1:N ili N:M, i da li posredna tabela ima sopstveni identitet ili samo implementira vezu između glavnih tabela.

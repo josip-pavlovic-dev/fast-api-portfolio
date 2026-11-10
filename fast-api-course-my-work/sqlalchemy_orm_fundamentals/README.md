@@ -17,18 +17,40 @@ sqlalchemy_orm_fundamentals/
         orders.py        # korisnici i porudžbine
 ```
 
-Lekcija 05 definiše osam ORM klasa sa `id` primarnim ključem, raspoređenih po domenima u `catalog.py`, `promotions.py` i `orders.py`: `Kategorija`, `Proizvod`, `StanjeZaliha`, `PromotivniDogadjaj`, `VezaProizvodaIPromocije`, `Korisnik`, `Porudzbina` i `StavkaPorudzbine`. Lekcija 06 dodaje kolone i SQLAlchemy tipove, lekcija 07 datumska i vremenska polja, lekcija 08 usklađuje anotacije `Mapped[...]` i `nullable` pravila, lekcija 09 obrađuje default-e, a lekcija 10 dodaje jedinstvenost poslovnih naziva, slug-ova, korisničkog imena i email-a. Lekcija 11 objašnjava PK-ove koji već postoje u svih osam modela. Lekcija 12 dodaje šest FK kolona i dvosmerne ORM `relationship()` veze: kategorija–proizvod, korisnik–porudžbina, porudžbina/proizvod–stavka i proizvod/promocija preko vezne tabele. Vezna tabela promocija sprečava dupliranje istog para proizvoda i promotivnog događaja pomoću složenog `UniqueConstraint`-a. Lekcija 13 dodaje nullable samoreferencirajući FK `Kategorija.roditelj_id` ka `kategorija.id` i ORM navigaciju `roditelj`/`deca` preko `remote_side`; pravila za cikluse i kaskadno brisanje nisu dodata. Tabele i polja koriste srpska ASCII imena, uz izričito dokumentovane praktične korekcije; engleski kurski snapshot-i ostaju neizmenjeni. U praktičnim modelima `izmenjeno_u` dobija `default=func.now()` uz `onupdate=func.now()` da bi obavezno polje imalo vrednost pri `INSERT`-u; kurski source nema taj početni default. Engine i sesije još nisu implementirani.
+Lekcija 05 definiše osam ORM klasa sa `id` primarnim ključem, raspoređenih po domenima u `catalog.py`, `promotions.py` i `orders.py`: `Kategorija`, `Proizvod`, `StanjeZaliha`, `PromotivniDogadjaj`, `VezaProizvodaIPromocije`, `Korisnik`, `Porudzbina` i `StavkaPorudzbine`.
 
-Lekcija 14 dodaje bazno `ON DELETE RESTRICT` za tri odnosa iz kurskog primera: `kategorija.roditelj_id`, `proizvod.kategorija_id` i `porudzbina.korisnik_id`. Na roditeljskim kolekcijama `deca`, `proizvodi` i `porudzbine` koristi se `passive_deletes="all"` kako ORM ne bi poništavao FK pre nego što baza sprovede pravilo. Ostale FK veze, uključujući asocijativne redove, ostaju bez eksplicitnog `ondelete`; ORM `delete`/`delete-orphan` kaskade nisu dodate.
+Lekcija 06 dodaje kolone i SQLAlchemy tipove
+
+Lekcija 07 datumska i vremenska polja
+
+Lekcija 08 usklađuje anotacije `Mapped[...]` i `nullable` pravila
+
+Lekcija 09 obrađuje default-e
+
+Lekcija 10 dodaje jedinstvenost poslovnih naziva, slug-ova, korisničkog imena i email-a
+
+Lekcija 11 objašnjava PK-ove koji već postoje u svih osam modela
+
+Lekcija 12 dodaje šest FK kolona i dvosmerne ORM `relationship()` veze: kategorija–proizvod, korisnik–porudžbina, porudžbina/proizvod–stavka i proizvod/promocija preko vezne tabele. Vezna tabela promocija sprečava dupliranje istog para proizvoda i promotivnog događaja pomoću složenog `UniqueConstraint`-a
+
+Lekcija 13 dodaje nullable samoreferencirajući FK `Kategorija.roditelj_id` ka `kategorija.id` i ORM navigaciju `roditelj`/`deca` preko `remote_side`; pravila za cikluse i kaskadno brisanje nisu dodata.
+
+Tabele i polja koriste srpska ASCII imena, uz izričito dokumentovane praktične korekcije; engleski kursni snapshot-i ostaju neizmenjeni. U praktičnim modelima `izmenjeno_u` dobija `default=func.now()` uz `onupdate=func.now()` da bi obavezno polje imalo vrednost pri `INSERT`-u; kursni source nema taj početni default. Engine i sesije još nisu implementirani.
+
+Lekcija 14 dodaje bazno `ON DELETE RESTRICT` za tri odnosa iz kursnog primera: `kategorija.roditelj_id`, `proizvod.kategorija_id` i `porudzbina.korisnik_id`. Na roditeljskim kolekcijama `deca`, `proizvodi` i `porudzbine` koristi se `passive_deletes="all"` kako ORM ne bi poništavao FK pre nego što baza sprovede pravilo. Ostale FK veze, uključujući asocijativne redove, ostaju bez eksplicitnog `ondelete`; ORM `delete`/`delete-orphan` kaskade nisu dodate.
 
 `Base` je na jednom mestu da bi svi ORM modeli nasleđivali istu baznu klasu i registrovali svoje tabele u zajedničkom `Base.metadata`. Modeli će biti grupisani po domenu umesto da se pravi poseban fajl za svaku malu klasu.
 
 ## Dogovor za rad
 
 - Koristi se postojeći `.venv` iz root-a repozitorijuma. Ovaj paket nema zaseban `.venv` niti poseban `requirements.txt`.
+
 - Ovaj projekat se gradi lekciju po lekciju. Ne dodajemo unapred engine, sesije, sve modele ili PostgreSQL konfiguraciju pre nego što ih kurs uvede.
+
 - U sopstvenom kodu koristićemo SQLAlchemy 2.x tipizovani ORM stil: `Mapped[...]` i `mapped_column()`. Kada se kurski snapshot oslanja na stariji `Column` stil, sačuvaćemo ga neizmenjenog i objasniti razliku.
+
 - Nazive domena u ovom paketu pišemo na srpskom ASCII slovima; nazivi SQLAlchemy API-ja ostaju standardni.
+
 - Ne pokrećemo `drop_all()`/reset skripte nad bazom sa podacima koje treba sačuvati. Povezivanje i schema operacije uvode se tek u narednoj oblasti.
 
 ## Uvoz paketa

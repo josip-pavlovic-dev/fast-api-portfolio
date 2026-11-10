@@ -6,11 +6,16 @@
 
 Oba alata koriste `Python klase`, ali im daju različite uloge:
 
-- `SQLAlchemy ORM klasa` je Python klasa `mapirana` na tabelu ili drugi relacioni izvor (npr. baza podataka). Njeni `mapirani atributi` opisuju kolone, a `mapiranje` može da definiše i veze i ograničenja (npr. `ForeignKey`, `UniqueConstraint`, `CheckConstraint` itd.).
+- `SQLAlchemy ORM klasa` je Python klasa `mapirana` na tabelu ili drugi relacioni izvor (npr. baza podataka). Njeni `mapirani atributi` opisuju kolone, a `mapiranje` može da definiše i veze i ograničenja (npr. `ForeignKey`, `UniqueConstraint`, `CheckConstraint` itd.). `ORM instanca` te klase predstavlja jedan red u tabeli ili novi objekat koji još nije upisan u bazu.
+
 - `FastAPI` koristi `Pydantic modele` za opisivanje i validaciju strukturisanih podataka, na primer tela HTTP zahteva (`JSON` format) i podataka odgovora (takođe u `JSON` formatu).
-- Ne predstavljaju svi ulazni podaci `Pydantic model`: putanje (`Path` parametri) i query parametri (`Query` parametri), na primer, mogu biti obične tipizovane vrednosti (`int`, `str`, `float` itd.).
+
+- Ne predstavljaju svi ulazni podaci `Pydantic model`: putanje (`Path` parametri) i query parametri (`Query` parametri), na primer, mogu biti obične tipizovane vrednosti (`int`, `str`, `float` itd.). `FastAPI` će ih automatski validirati i konvertovati u odgovarajući tip pre nego što ih prosledi funkciji endpoint-a.
+
 - `Uvicorn` je `ASGI server` koji prima `HTTP zahteve` i poziva `FastAPI` aplikaciju preko `ASGI` interfejsa. `FastAPI` aplikacija je `ASGI aplikacija`, a ne server. Telo odgovora API-ja (`response body`) često je `JSON`, ali može biti i drugog formata (npr. `HTML`, `XML` itd.).
+
 - Python kod `endpoint-a` može da radi sa običnim Python vrednostima, Pydantic instancama i SQLAlchemy ORM instancama, u zavisnosti od zadatka. Potrebno je samo iznad Python funkcije preko dekoratora (`@app.get`, `@app.post` itd.) definisati kako se parametri dobijaju i kako se vraćaju.
+
 - `Instanca` je `konkretan` objekat sa `trenutnim` vrednostima. `ORM instanca` može predstavljati mapirani entitet odnosno `red u bazi`, ali može biti i `nova`, još neupisana instanca. `Pydantic instanca` sadrži strukturisane podatke (`fields` i njihove vrednosti). Ona sama `nije` HTTP zahtev (`request`) niti odgovor (`response`).
 
 Pre rada sa ORM-om zato je važno jasno razlikovati klasu od instance.
@@ -66,8 +71,11 @@ book = Book("Python osnove", 320)
 ```
 
 1. Python napravi novu instancu tipa `Book` preko `Book.__new__` metode. Inicijalizator `__init__` još nije pozvan. Pozicija izraza sa leve strane (`book = ...`) još nije relevantna i tek nakon što `__init__` završi, izraz sa leve strane dobija vrednost.
+
 2. Python pozove `Book.__init__(book, "Python osnove", 320)` i automatski mu prosledi tu instancu kao `self` argument, zajedno sa ostalim prosleđenim argumentima (`"Python osnove"`, `320`).
+
 3. `__init__` početno postavi `self.title` i `self.pages`.
+
 4. Tek na kraju se izrazu sa leve strane tj. promenljivoj `book`(`book = Book("Python osnove", 320)`) dodeli gotova instanca klase `Book`. I tek tada promenljiva `book` postaje referenca na tu instancu.
 
 NAPOMENA: `__init__` inicijalizuje već napravljeni objekat; sam po sebi ne vraća objekat. U takvom tipičnom kodu njegov povratni tip je `None`. Objekat se kreira i vraća u `__init__` iz `__new__` metode, tako da je uloga `__init__`-a samo `postavljanje početnog stanja` već kreirane instance.
