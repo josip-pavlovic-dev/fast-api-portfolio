@@ -2,6 +2,8 @@
 
 ## Cilj lekcije
 
+U ovoj lekciji naučićemo kako da definišemo baznu klasu za ORM modele koristeći SQLAlchemy deklarativni stil. Ova baza će služiti kao osnova za sve buduće modele i omogućiti SQLAlchemy-ju da prati mapiranja između Python klasa i tabela u bazi.
+
 Pre definisanja ORM modela potrebno je napraviti zajedničku baznu klasu od koje će modeli nasleđivati SQLAlchemy ORM ponašanje. Ova lekcija uvodi deklarativno mapiranje i pokazuje njegovu najmanju početnu definiciju:
 
 ```python
@@ -12,11 +14,17 @@ class Base(DeclarativeBase):
 	pass
 ```
 
-U ovoj skripti još nema konkretnih modela, kolona, engine-a, sesije niti povezivanja sa bazom. To je nameran prvi korak; konkretne klase tabela dolaze u sledećim lekcijama.
+U ovoj skripti još nema konkretnih `modela`, `kolona`, `engine-a`, `sesije` niti povezivanja sa bazom. To je nameran prvi korak; konkretne `klase tabela` dolaze u sledećim lekcijama.
 
-## Ispravka naziva iz transkripta
+---
 
-U transkriptu se nekoliko puta čuje „decorative mapping“ i „decorative base“. To je greška automatskog prepoznavanja govora. Ispravni termini su **declarative mapping** i **declarative base**, odnosno deklarativno mapiranje i deklarativna baza.
+## Deklarativno mapiranje i baza
+
+**declarative mapping** je način na koji SQLAlchemy povezuje Python klase sa tabelama u bazi. U deklarativnom stilu, programer definiše klase koje opisuju tabele i njihove kolone, a SQLAlchemy automatski kreira mapiranja između tih klasa i stvarnih tabela u bazi.
+
+Deklarativna baza (`DeclarativeBase`) je ključni deo ovog pristupa. Ona pruža zajedničku osnovu za sve ORM modele, omogućavajući SQLAlchemy-ju da prati sve klase koje nasleđuju ovu bazu i njihove odgovarajuće tabele. Na taj način, kada definišemo konkretne modele, SQLAlchemy automatski zna kako da ih mapira na tabele u bazi.
+
+---
 
 ## Šta je ORM mapiranje?
 
@@ -29,6 +37,8 @@ ORM (Object Relational Mapper) povezuje Python klase i objekte sa relacionom še
 
 U deklarativnom stilu programer opisuje modele pomoću Python klasa. SQLAlchemy pregleda te deklaracije i izgradi ORM mapiranja i opis šeme. To ne znači da se sirovi SQL više ne koristi: SQLAlchemy na kraju sastavlja i izvršava SQL prema bazi.
 
+---
+
 ## Tri koraka koja transkript uvodi
 
 Transkript predstavlja proces kao tri faze:
@@ -38,6 +48,8 @@ Transkript predstavlja proces kao tri faze:
 3. **SQLAlchemy mapira klase i kasnije se njihovi opisi koriste za pravljenje tabela.** U sledećoj oblasti engine i metadata će omogućiti da se opis šeme primeni na konkretnu bazu.
 
 U ovoj lekciji završavamo samo prvi korak. Korisno je razlikovati „SQLAlchemy zna kako je tabela opisana“ od „tabela je već napravljena u bazi“.
+
+---
 
 ## Šta radi `DeclarativeBase`?
 
@@ -51,6 +63,8 @@ Zajednički `Base` zato omogućava da modeli koji pripadaju istoj šemi budu pri
 
 Sama klasa `Base` iz ove lekcije nije tabela `base` i nema svoje kolone. Ona je osnova za buduće deklaracije. Konkretni ORM model obično nasleđuje `Base` i navodi `__tablename__` i mapirane atribute.
 
+---
+
 ### `Base` ne pravi vezu sa bazom
 
 U ovoj skripti ne postoje:
@@ -63,11 +77,15 @@ U ovoj skripti ne postoje:
 
 Zato se ovaj fajl može uvesti bez pokretanja baze. Engine i operacije nad stvarnom bazom obrađuju se kasnije.
 
+---
+
 ## Objašnjenje skripte red po red
 
 ### `from sqlalchemy.orm import DeclarativeBase`
 
 `DeclarativeBase` dolazi iz ORM sloja SQLAlchemy-ja. Uvozimo ga zato što pravimo ORM deklarativnu osnovu, a ne samo SQL izraz ili konekciju.
+
+---
 
 ### `class Base(DeclarativeBase):`
 
@@ -75,11 +93,15 @@ Definišemo svoju klasu nazvanu `Base` koja nasleđuje `DeclarativeBase`. Naziv 
 
 Kada kasnije napišemo, na primer, `class Proizvod(Base):`, model će biti deo deklarativnog sistema koji je ova baza postavila. U kursnom source-u isti model se zove `Product`; snapshot ostaje neizmenjen, dok u našem praktičnom paketu koristimo srpsko ime.
 
+---
+
 ### `pass`
 
 Python zahteva telo klase. `pass` je naredba koja ne radi ništa i služi da telo klase bude sintaksički validno dok nemamo sopstvena podešavanja za nju.
 
 ORM funkcionalnost ne dolazi od `pass`; dolazi od nasleđivanja `DeclarativeBase`. U ovom trenutku klasa nema dodatne metode ili atribute, pa je `pass` dovoljan. Kasnije se telo `Base` klase može proširiti, ali za primere iz kursa to nije potrebno.
+
+---
 
 ## Zašto svi modeli nasleđuju istu bazu?
 
@@ -88,6 +110,8 @@ Modeli koji pripadaju istoj šemi obično nasleđuju isti `Base`. Tako SQLAlchem
 Ako model ne nasleđuje odgovarajući `Base`, ne mora biti deo metadata objekta koji koristi ostatak aplikacije. Posledica može biti da se njegova tabela ne pojavi pri kreiranju šeme ili da ORM nema odgovarajuće mapiranje.
 
 Jedna aplikacija može imati više deklarativnih baza kada za to postoji razlog, na primer odvojene metadata kolekcije ili različiti sistemi. Za primere u ovom kursu koristimo jednu zajedničku bazu.
+
+---
 
 ## Od deklaracije do stvarne tabele
 
@@ -101,6 +125,8 @@ Proces je najbolje razumeti kao nekoliko odvojenih slojeva:
 Definisanje `Base` samo po sebi završava se prvim pripremnim korakom. Ne treba poistovećivati definisanje Python klase, kreiranje metadata opisa i izvršavanje DDL-a nad serverom baze.
 
 `create_all()` je koristan za početne primere i razvoj. On ne zamenjuje verzionisane migracije: kasnije izmene već postojeće šeme u ozbiljnom projektu obično se vode Alembicom.
+
+---
 
 ## Dopunski primer: konkretan model na istoj osnovi
 
@@ -124,6 +150,8 @@ class Kategorija(Base):
 
 Ovde `Kategorija` predstavlja model koji će se mapirati na tabelu `kategorija`; kursni snapshot koristi imena `Category` i `category`. `__tablename__` daje ime tabele, a `Mapped[...]` i `mapped_column(...)` deklarišu mapirane kolone u SQLAlchemy 2.0 stilu. Tabela još nije nužno napravljena u bazi; za to su potrebni engine i naredni korak.
 
+---
+
 ## `DeclarativeBase` naspram `declarative_base()`
 
 SQLAlchemy 2.0 preporučuje nasleđivanje od `DeclarativeBase`, kao u ovoj lekciji. Ovaj pristup prirodno se uklapa sa tipizovanim deklaracijama `Mapped[...]` i `mapped_column(...)`, a IDE i alati za proveru tipova lakše razumeju vezu između atributa modela i njihovih Python tipova.
@@ -138,14 +166,18 @@ Base = declarative_base()
 
 To je drugačiji način da se dobije deklarativna baza. Prisustvo tog oblika u starijem kodu samo po sebi ne znači da aplikacija ne može raditi u SQLAlchemy 2.0. Za novi tipizovani kod biramo `DeclarativeBase`, ali ne treba tvrditi da je svaka upotreba `declarative_base()` automatski nevažeća.
 
+---
+
 ## Šta transkript objašnjava dobro, a šta treba precizirati
 
 - Tačno je da se klasa `Base` koristi kao osnova za buduće ORM modele.
-- Tačno je da deklarativni stil omogućava opis modela pomoću Python klasa umesto ručnog pisanja DDL-a za svaku tabelu.
+- Tačno je da deklarativni stil omogućava opis modela pomoću Python klasa umesto ručnog pisanja DDL-a (Data Definition Language ili jezik za definisanje strukture baze podataka) za svaku tabelu.
 - Korist za tipizaciju i IDE podršku najjasnija je kada se uz `DeclarativeBase` koriste `Mapped` i `mapped_column`; sama prazna klasa `Base` ne dodaje tipizaciju kolonama koje još nisu napisane.
 - Izraz „svaka klasa koja nasleđuje Base automatski je tabela“ je pojednostavljenje. Konkretna ORM klasa mora imati odgovarajuću mapiranu tabelu ili nasleđeno mapiranje; mogu postojati i apstraktne bazne klase i mixin-i koji nisu samostalne tabele.
 - `pass` nije SQLAlchemy konfiguracija niti posebna ORM naredba. To je obična Python naredba koja popunjava prazno telo klase.
 - Baza u smislu `Base` klase nije isto što i server baze podataka. Ona ne otvara konekciju i ne čuva redove podataka.
+
+---
 
 ## Povezivanje sa TodoApp-om
 
@@ -153,14 +185,37 @@ TodoApp već koristi isti osnovni obrazac kroz `class Base(DeclarativeBase)` u `
 
 Kada modeli budu učitani, `Base.metadata` sadrži njihove opise tabela. Poziv `Base.metadata.create_all(bind=engine)` u TodoApp-u koristi engine da obezbedi tabele u podešenoj bazi. To je odvojeno od same definicije klase `Base`.
 
+Kada se pozove `Base.metadata` vraća `MetaData()` objekat koji sadrži opise svih registrovanih tabela.
+
+---
+
 ## Provera razumevanja
 
 1. Zašto pravimo prilagođenu klasu `Base` umesto da svaki model definišemo nezavisno?
+
+- Omogućava centralizovano upravljanje metapodacima i olakšava dosledno definisanje svih modela koji dele istu bazu. Takođe omogućava jednostavno kreiranje tabela i drugih struktura u bazi pomoću `Base.metadata.create_all(bind=engine)`.
+
 2. Koju ulogu ima nasleđivanje iz `DeclarativeBase`?
+
+- Nasleđivanje iz `DeclarativeBase` omogućava da se klasa `Base` ponaša kao centralna tačka za registraciju svih ORM modela i njihovih metapodataka. To znači da svi modeli koji nasleđuju `Base` automatski postaju deo istog metadata sistema, što olakšava kreiranje i upravljanje tabelama u bazi.
+
 3. Šta radi `pass`, a šta radi `DeclarativeBase`?
+
+- `pass` u telu klase znači da klasa nema dodatnu logiku ili atribute osim onih koje nasleđuje. U kontekstu SQLAlchemy ORM-a, `DeclarativeBase` već obezbeđuje potrebnu funkcionalnost za registraciju modela i metapodataka, pa je `pass` dovoljan da se definiše prazna osnovna klasa.
+
 4. Da li se baza podataka ili tabela pravi izvršavanjem ove skripte?
+
+- Ne, sama definicija klase `Base` i njenih potomaka ne pravi fizičke tabele u bazi. Tabele se kreiraju tek kada se pozove `Base.metadata.create_all(bind=engine)` sa odgovarajućim engine-om.
+
 5. Gde SQLAlchemy kasnije čuva opise modela i šta je potrebno da se ti opisi primene na stvarnu bazu?
+
+- SQLAlchemy čuva opise modela u `Base.metadata`, koji sadrži informacije o svim registrovanim tabelama i kolonama. Da bi se ti opisi primenili na stvarnu bazu, potrebno je pozvati `Base.metadata.create_all(bind=engine)` sa odgovarajućim engine-om koji je povezan sa ciljanom bazom.
+
 6. Zašto se `DeclarativeBase` preporučuje za novi SQLAlchemy 2.0 kod, a zašto `declarative_base()` ne treba automatski proglasiti nevažećim?
+
+- `DeclarativeBase` je preporučena za novi SQLAlchemy 2.0 kod jer pruža tipizovano deklarativno mapiranje i bolje integracije sa modernim Python funkcionalnostima. `declarative_base()` i dalje funkcioniše i nije automatski nevažeći, jer omogućava kompatibilnost sa starijim kodom i postupnu migraciju na novi stil.
+
+---
 
 ## Sažetak
 
@@ -170,3 +225,5 @@ Kada modeli budu učitani, `Base.metadata` sadrži njihove opise tabela. Poziv `
 - `pass` samo omogućava prazno telo klase; ne aktivira ORM.
 - Konkretni modeli i kolone dolaze u sledećoj lekciji, a kreiranje stvarnih tabela zahteva engine i zaseban korak.
 - Savremeni tipizovani stil koristi `Mapped` i `mapped_column`; stariji `declarative_base()` obrazac i dalje postoji u SQLAlchemy 2.0.
+
+---
