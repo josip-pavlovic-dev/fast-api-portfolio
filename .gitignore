@@ -17,3 +17,8 @@ __pycache__/
 scratch/
 scratch/fast-api-course/
 scratch/fast-api-course/
+
+# Personal daily notes for the TodoApp SQLAlchemy refactor
+/fast-api-course-my-work/TodoApp/dnevnik_refaktorizacije/
+
+/fast-api-course-my-work/Project_1/books1.py

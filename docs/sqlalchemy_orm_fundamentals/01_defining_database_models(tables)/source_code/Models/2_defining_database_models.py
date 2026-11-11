@@ -1,5 +1,5 @@
-from sqlalchemy.orm import DeclarativeBase
-
+from sqlalchemy import Boolean, ForeignKey, SmallInteger, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     pass
@@ -7,7 +7,12 @@ class Base(DeclarativeBase):
 
 class Category(Base):
     __tablename__ = "category"
-    pass
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(String(55), nullable=False, unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    level: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
 
 
 class PromotionEvent(Base):
@@ -17,7 +22,12 @@ class PromotionEvent(Base):
 
 class Product(Base):
     __tablename__ = "product"
-    pass
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category_id: Mapped[int] = mapped_column(ForeignKey("category.id"))
+
+    name: Mapped[str] = mapped_column(String(200))
+    slug: Mapped[str] = mapped_column(String(220))
 
 
 class ProductPromotionEvent(Base):

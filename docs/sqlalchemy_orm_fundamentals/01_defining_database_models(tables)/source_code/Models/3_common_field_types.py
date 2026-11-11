@@ -1,6 +1,7 @@
-from sqlalchemy import Boolean, Column, Integer, Numeric, SmallInteger, String, Text
-from sqlalchemy.orm import DeclarativeBase
+from decimal import Decimal
 
+from sqlalchemy import Boolean, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     pass
@@ -8,26 +9,33 @@ class Base(DeclarativeBase):
 
 class Category(Base):
     __tablename__ = "category"
-    name = Column(String(50))
-    slug = Column(String(55))
-    is_active = Column(Boolean)
-    level = Column(SmallInteger)
+
+    name: Mapped[str | None] = mapped_column(String(50))
+    slug: Mapped[str | None] = mapped_column(String(55))
+    is_active: Mapped[bool | None] = mapped_column(Boolean)
+    level: Mapped[int | None] = mapped_column(SmallInteger)
 
 
 class PromotionEvent(Base):
     __tablename__ = "promotion_event"
-    name = Column(String(50))
-    price_reduction = Column(Integer)
+
+    name: Mapped[str | None] = mapped_column(String(50))
+    price_reduction: Mapped[int | None] = mapped_column(Integer)
 
 
 class Product(Base):
     __tablename__ = "product"
-    name = Column(String(50))
-    slug = Column(String(55))
-    description = Column(Text)  # No length limit
-    is_digital = Column(Boolean)
-    is_active = Column(Boolean)
-    price = Column(Numeric(10, 2))  # 10 digits, 2 decimal places
+
+    name: Mapped[str | None] = mapped_column(String(50))
+    slug: Mapped[str | None] = mapped_column(String(55))
+    description: Mapped[str | None] = mapped_column(
+        Text
+    )  # Nema ograničenja dužine teksta
+    is_digital: Mapped[bool | None] = mapped_column(Boolean)
+    is_active: Mapped[bool | None] = mapped_column(Boolean)
+    price: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2)
+    )  # 10 cifara, 2 decimalna mesta, npr. 12345678.90
 
 
 class ProductPromotionEvent(Base):
@@ -37,14 +45,16 @@ class ProductPromotionEvent(Base):
 
 class StockManagement(Base):
     __tablename__ = "stock_management"
-    quantity = Column(Integer)
+
+    quantity: Mapped[int | None] = mapped_column(Integer)
 
 
 class User(Base):
     __tablename__ = "user"
-    username = Column(String(50), unique=True, nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
-    password = Column(String(100), nullable=False)
+
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class Order(Base):
@@ -54,4 +64,5 @@ class Order(Base):
 
 class OrderProduct(Base):
     __tablename__ = "order_product"
-    quantity = Column(Integer, nullable=False)
+
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
