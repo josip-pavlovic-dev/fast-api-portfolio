@@ -10,15 +10,17 @@ __pycache__/
 .idea/
 .vscode/
 
-# Local database snapshots can contain personal data and password hashes.
+# Lokalne baze podataka i backup fajlovi koji mogu sadržati lične podatke i lozinke.
 /fast-api-course-my-work/backups/
 
-# Scratch folder for temporary files
+# Scratch folder za privremene fajlove i eksperimente
 scratch/
 scratch/fast-api-course/
 scratch/fast-api-course/
 
-# Personal daily notes for the TodoApp SQLAlchemy refactor
+# Lični dnevnici i beleške
 /fast-api-course-my-work/TodoApp/dnevnik_refaktorizacije/
 
-/fast-api-course-my-work/Project_1/books1.py
+# Ignoriši specifične fajlove sa primerima knjiga iz projekata
+/fast-api-course-my-work/Project_1/books11.py
+/fast-api-course-my-work/Project_2/books22.py
