@@ -1,6 +1,4 @@
-# Project 2 — beleške iz razgovora
-
-Beleške za teme obrađene uz [books2.py](./books2.py) i [books22.py](./books22.py).
+# Project 2 — beleške iz razgovora za 13.11.2026
 
 ## HTTP metode — kratki odgovori na engleskom
 
@@ -10,6 +8,8 @@ Beleške za teme obrađene uz [books2.py](./books2.py) i [books22.py](./books22.
 - **DELETE** — Remove a resource. _“I’d use DELETE to remove the book.”_
 
 Podsetnik: **GET = read, POST = create, PUT = update/replace, DELETE = remove.**
+
+---
 
 ## Zašto funkcija može da koristi `BOOKS` bez `global`?
 
@@ -21,6 +21,8 @@ na primer `BOOKS = []`. Nije potreban kada se menja postojeća lista, npr.
 U `automatski_id(book)` funkcija čita `BOOKS`, menja prosleđeni objekat `book`
 i vraća taj objekat. Promena njegovog atributa vidljiva je i pozivaocu jer oba
 imena upućuju na isti objekat.
+
+---
 
 ## Kako radi izraz za dodeljivanje ID-ja?
 
@@ -45,6 +47,8 @@ Izraz koristi ID poslednjeg elementa, ne nužno najveći ID. Zato pretpostavlja
 da se knjige dodaju redom. U kasnijoj verziji aplikacije ID-jeve obično dodeljuje
 baza podataka.
 
+---
+
 ## Da li POST može da vrati samo ID?
 
 Da. FastAPI može da vrati JSON broj: `return new_book.id` daje, na primer, `7`.
@@ -60,6 +64,8 @@ HTTP status i telo odgovora su odvojene stvari:
   broj `201` kao telo; ako dekorator već postavlja status, to je obično
   nepotrebno.
 
+---
+
 ## Razlika između `Book` i `BookRequest`
 
 - `Book` u ovim skriptama je obična Python klasa koja predstavlja knjigu.
@@ -68,6 +74,8 @@ HTTP status i telo odgovora su odvojene stvari:
   opseg ocene. Ne proverava sam da li knjiga sa datim ID-jem postoji u `BOOKS`.
 - `BookRequest.id` je opcionalan i podrazumevano `None`; aplikacija zatim
   dodeljuje ID novoj knjizi.
+
+---
 
 ## Zašto `books2.py` radi bez povratnih anotacija, a `books22.py` prijavljuje grešku?
 
@@ -106,6 +114,8 @@ napravi model odgovora.
   prijavljuje, npr. pomoću `HTTPException`.
 - **422 Unprocessable Entity** — FastAPI/Pydantic odbio je neispravan ulazni
   podatak.
+
+---
 
 ## Pokretanje `books22.py` preko projektne `.venv`
 
