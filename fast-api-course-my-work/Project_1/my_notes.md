@@ -1,4 +1,4 @@
-# Project 1 — beleške iz razgovora
+# Project 1 — beleške iz razgovora za 12.11.2026
 
 Beleške za materijal koji se u razgovoru obrađivao uz `books1.py` i `books11.py`.
 Po napomeni korisnika, sadržaj koji je u razgovoru nazvan `books11.py` odgovara
@@ -7,25 +7,27 @@ sadržaju koji je sada u [books.py](./books.py). U workspace-u se nalazi i
 
 ## HTTP metode — kratki odgovori na engleskom
 
-- **GET** — Retrieve data. *“I’d use GET to retrieve the book.”*
-- **POST** — Create a resource. *“I’d use POST to create a book.”*
-- **PUT** — Replace or update an existing resource. *“I’d use PUT to update the book.”*
-- **DELETE** — Remove a resource. *“I’d use DELETE to remove the book.”*
+- **GET** — Retrieve data. _“I’d use GET to retrieve the book.”_
+- **POST** — Create a resource. _“I’d use POST to create a book.”_
+- **PUT** — Replace or update an existing resource. _“I’d use PUT to update the book.”_
+- **DELETE** — Remove a resource. _“I’d use DELETE to remove the book.”_
 
 Podsetnik: **GET = read, POST = create, PUT = update/replace, DELETE = remove.**
+
+---
 
 ## GET: `None`, prazna lista i nedostajuća polja
 
 Izbor zavisi od toga da li endpoint vraća jednu knjigu ili listu:
 
-| Rezultat pretrage | Odgovor u vežbi bez HTTP grešaka |
-|---|---|
-| Jedna knjiga po naslovu nije pronađena | `None` |
-| Nema knjiga za kategoriju/autora ili je `BOOKS` prazna | `[]` |
+| Rezultat pretrage                                      | Odgovor u vežbi bez HTTP grešaka |
+| ------------------------------------------------------ | -------------------------------- |
+| Jedna knjiga po naslovu nije pronađena                 | `None`                           |
+| Nema knjiga za kategoriju/autora ili je `BOOKS` prazna | `[]`                             |
 
-`None` i `[]` nisu zamenljivi: `None` znači da nema pojedinačnog rezultata,
-dok je `[]` lista koja postoji, ali nema elemenata. Kada se koristi HTTP
-status kod, nedostupna pojedinačna knjiga obično se prijavljuje kao **404**;
+`None` i `[]` nisu zamenljivi: `None` znači da nema pojedinačnog rezultata, dok je `[]` lista koja postoji, ali nema elemenata.
+
+Kada se koristi HTTP status kod, nedostupna pojedinačna knjiga obično se prijavljuje kao **404**;
 pretraga liste bez poklapanja i dalje normalno vraća **200** i `[]`.
 
 Zaštita od nedostajućeg ključa u običnom rečniku:
@@ -39,36 +41,28 @@ if (
     lista_knjiga.append(book)
 ```
 
-`.get()` vraća `None` ako ključ ne postoji, pa se izbegava `KeyError`.
-Isti obrazac važi za `author` i `title`. Ova provera pokriva nedostajući ključ,
-ali ne proverava sve moguće neispravne tipove vrednosti. Pydantic model može
-kasnije da validira polja i tipove ulaznih podataka.
+`.get()` vraća `None` ako ključ ne postoji, pa se izbegava `KeyError`. Isti obrazac važi za `author` i `title`. Ova provera pokriva nedostajući ključ, ali ne proverava sve moguće neispravne tipove vrednosti, kao što su brojevi umesto stringova ili `None` umesto očekivanih vrednosti. Pydantic model može kasnije da validira polja i tipove ulaznih podataka.
 
-`if not BOOKS` pokriva praznu listu. Pošto je `BOOKS` definisana na nivou
-modula, provera preko `globals()` nije potrebna: nedefinisana `BOOKS` bila bi
-greška u programu koju ne treba prikrivati praznim rezultatom.
+`if not BOOKS` pokriva praznu listu. Pošto je `BOOKS` definisana na nivou modula, provera preko `globals()` nije potrebna: nedefinisana `BOOKS` bila bi greška u programu koju ne treba prikrivati praznim rezultatom.
+
+---
 
 ## Query parametar naspram path parametra
 
 - **Query** je posle `?` i ima oblik `ime=vrednost`:
   `GET /books/author/?author=Author%20One`
+
 - **Path** je deo putanje i mora imati `{ime}` u ruti:
   `@app.get("/books/author/{author}/")`, poziv:
   `/books/author/Author%20One/`
 
-URL `...?Author%20One` nema parametar po imenu `author`, zato obavezni
-`author: str` nedostaje i FastAPI vraća **422**. Razmak u vrednosti URL-a može
-da se kodira kao `%20`.
+URL `...?Author%20One` nema parametar po imenu `author`, zato obavezni `author: str` nedostaje i FastAPI vraća **422**. Razmak u vrednosti URL-a može da se kodira kao `%20`.
 
-Query parametar sam po sebi ne zahteva završnu kosu crtu. Putanja u zahtevu
-treba da odgovara putanji iz dekoratora: za `@app.get("/books/")` koristi
-`/books/?category=science`; za `@app.get("/books")` koristi
-`/books?category=science`.
+Query parametar sam po sebi ne zahteva završnu kosu crtu. Putanja u zahtevu treba da odgovara putanji iz dekoratora: za `@app.get("/books/")` koristi `/books/?category=science`; za `@app.get("/books")` koristi `/books?category=science`.
 
-FastAPI bira rutu prema HTTP metodi i putanji, ne prema imenu query parametra.
-Zato dve GET funkcije ne treba registrovati na istoj putanji očekujući da će
-`?category=...` izabrati jednu, a `?author=...` drugu. Koristi različite
-putanje ili jedan endpoint sa odgovarajućim parametrima.
+FastAPI bira rutu prema HTTP metodi i putanji, ne prema imenu query parametra. Zato dve GET funkcije ne treba registrovati na istoj putanji očekujući da će `?category=...` izabrati jednu, a `?author=...` drugu. Koristi različite putanje ili jedan endpoint sa odgovarajućim parametrima.
+
+---
 
 ## Šta Pydantic i FastAPI rešavaju?
 
@@ -86,6 +80,8 @@ Postavljanje `status_code` na dekoratoru određuje uspešan status, ali samo po
 sebi ne proverava da li knjiga postoji. PUT/DELETE kod mora da pronađe knjigu
 i podigne `HTTPException` sa **404** ako je nema.
 
+---
+
 ## POST i PUT
 
 ### POST — dodavanje
@@ -96,6 +92,8 @@ kada je `BOOKS` prazna, pa za taj slučaj nije potrebna posebna zaštita.
 Anotacija `dict[str, str]` opisuje rečnik stringova, ali sama po sebi ne
 zahteva da rečnik sadrži baš ključeve `title`, `author` i `category`. Pydantic
 request model može kasnije da zahteva ta polja i validira njihove vrednosti.
+
+---
 
 ### PUT — zamena postojeće knjige
 
@@ -124,6 +122,8 @@ novi u telo. Ako knjiga ne postoji, ruta podiže `HTTPException(404)`.
 Naslov je privremeni identifikator i trebalo bi da bude jedinstven. Stabilnije
 rešenje je ID u putanji, npr. `PUT /books/7`.
 
+---
+
 ## `curl` za ručno isprobavanje API-ja
 
 `curl` šalje HTTP zahteve iz terminala:
@@ -148,6 +148,8 @@ curl -X 'POST' \
 Kod `curl`-a `-d` već podrazumeva POST, tako da je `-X POST` tehnički
 suvišan, ali može da učini metodu očiglednom. Server mora biti pokrenut, a
 njegova POST ruta mora prihvatati poslata polja.
+
+---
 
 ## PUT/DELETE i status 404
 

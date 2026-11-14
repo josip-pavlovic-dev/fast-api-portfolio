@@ -5,14 +5,19 @@
 Ovo je sledeći logičan korak. Do sada si radio sa:
 
 - URL rutom
+  - `/books`
+
 - Path Parameters
+  - `/books/{book_id}`
+
 - Query Parameters
+  - `/books?category=python&limit=5`
 
 Sada učiš nešto što je najvažnije za “pravi API”:
 
-- kako klijent šalje podatke serveru
-- kako se ti podaci zovu Request Body
-- kako se kreira novi resurs preko POST zahteva
+- Kako klijent šalje podatke serveru (npr. preko POST zahteva)
+- Kako se ti podaci šalju serveru preko Request Body-a
+- Kako se kreira novi resurs preko POST zahteva i kako se ti podaci obrađuju na serveru
 
 ---
 
@@ -38,9 +43,9 @@ Primer JSON tela zahteva:
 
 To znači:
 
-- klijent šalje podatke
-- server ih prima
-- server može da ih snimi, obradi, ili vrati nazad
+- `Klijent` šalje podatke preko `HTTP zahteva` koji sadrži `Request Body` u koji se smeštaju ti podaci u obliku JSON-a
+- `Server` prima `Request Body` sa podacima koje je klijent poslao i koristi ih za kreiranje ili izmenu resursa
+- `Server` može da ih snimi, obradi, ili vrati nazad kao odgovor klijentu kroz `HTTP response` i tako obezbedi povratnu informaciju o izvršenoj operaciji. `HTTP Exception` pripada `response`-u i koristi se za vraćanje grešaka klijentu.
 
 ---
 
@@ -174,12 +179,14 @@ sa telom:
 }
 ```
 
-FastAPI će:
+FastAPI će automatski obraditi JSON body iz HTTP zahteva i mapirati ga na odgovarajući Pydantic model pre nego što pozove funkciju koja obrađuje zahtev.
 
-1. pročitati JSON body
-2. proveriti da li odgovara modelu `Book`
-3. proslediti objekat `book` funkciji `create_book`
-4. funkcija vraća odgovor
+Redosled operacija koje obavlja FastAPI je sledeći:
+
+1. Pročita JSON body iz HTTP zahteva
+2. Proveri da li odgovara modelu `Book` uz pomoć Pydantic validacije
+3. Prosledi objekat `book` funkciji `create_book` uz automatsko mapiranje JSON podataka na Pydantic model
+4. Funkcija vrati odgovor klijentu koji sadrži informacije o kreiranom resursu u JSON formatu
 
 ---
 
@@ -253,6 +260,8 @@ Koriste se za konkretan resurs:
 GET /books/7
 ```
 
+---
+
 ### Query Parameters
 
 Koriste se za dodatne opcije:
@@ -261,9 +270,11 @@ Koriste se za dodatne opcije:
 GET /books?category=python&limit=5
 ```
 
+---
+
 ### Request Body
 
-Koriste se za podake koje se šalju da bi se kreirao ili izmenio resurs:
+Koriste se za podatke koje se šalju da bi se kreirao ili izmenio resurs:
 
 ```http
 POST /books
