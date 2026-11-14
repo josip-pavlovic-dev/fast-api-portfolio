@@ -459,7 +459,6 @@ To je sledeći korak u razvoju API-ja.
 
 ---
 
-
 ## Dan 4 — PUT u FastAPI
 
 Sada kada znaš šta je Request Body i šta radi POST, prelazimo na sledeću vrlo važnu operaciju: PUT.
