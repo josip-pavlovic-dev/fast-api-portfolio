@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Query, HTTPException
+from fastapi import FastAPI, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 from starlette import status
 
@@ -41,6 +41,7 @@ class BookRequest(BaseModel):
     published_date: int = Field(gt=1999, lt=2100)
 
     model_config = {
+        "extra": "forbid",  # Zabranjuje dodatna polja koja nisu definisana u modelu
         "json_schema_extra": {
             "example": {
                 "title": "Nova Knjiga",
@@ -49,11 +50,11 @@ class BookRequest(BaseModel):
                 "rating": 5,
                 "published_date": 2026,
             }
-        }
+        },
     }
 
 
-# Poredjenja brojeva:
+# Poređenja brojeva:
 # lt - less than (manje od)
 # gt - greater than (veće od)
 # le - less than or equal to (manje ili jednako)
@@ -125,11 +126,10 @@ async def read_book(book_id: int = Path(gt=0)):
             return book
     raise HTTPException(status_code=404, detail="Knjiga nije pronađena")
 
+
 # Čitanje knjige po rejtingu:
 @app.get("/books/", status_code=status.HTTP_200_OK)
-async def read_books_by_rating(book_rating: int = Query(gt=0, le=5)):
-    if not 1 <= book_rating <= 5:
-        return {"error": "Rating must be between 1 and 5"}
+async def read_books_by_rating(book_rating: int = Query(ge=1, le=5)):
     # Ako je rejting validan, nastavljamo sa filtriranjem knjiga po rejtingu.
     books_by_rating = [book for book in BOOKS if book.rating == book_rating]
 
@@ -155,13 +155,14 @@ async def read_book_by_publish_date(publish_date: int = Query(gt=1999, lt=2100))
 
 
 # Kreiranje nove knjige:
-@app.post("/create-book/", status_code=status.HTTP_201_CREATED)
+@app.post("/create-book", status_code=status.HTTP_201_CREATED)
 async def create_book(book_request: BookRequest):
     new_book = Book(
         **book_request.model_dump()
     )  # konvertuje zahtev u objekat klase Book
-    BOOKS.append(find_book_id(new_book))  # type: ignore
-    return status.HTTP_201_CREATED
+    new_book = find_book_id(new_book)
+    BOOKS.append(new_book)
+    return {"id": new_book.id}
 
 
 # Funkcija koja omogućava da id knjige ide redom kako ih registrujemo u listi BOOKS
@@ -176,22 +177,35 @@ def find_book_id(book: Book):
     return book
 
 
-# Deo po deo `new_book= Book(**book_request.model_dump())`:
+# Zašto je BOOKS vidljivo unutar funkcija?
+
+# BOOKS je promenljiva na nivou modula. Funkcije u istom modulu mogu da je čitaju bez global. U books22.py funkcija čita BOOKS preko len(BOOKS) i BOOKS[-1].
+
+# global BOOKS je potreban tek ako želiš da promeniš na koju listu ime BOOKS pokazuje, npr. BOOKS = []. Nije potreban ako menjaš postojeću listu (BOOKS.append(...)) ili objekat u njoj.
+
+# U book.id = ... menjaš atribut objekta koji je prosleđen kao argument book; ne menjaš samu promenljivu BOOKS.
+
+# Ovo je važno jer Python prosleđuje objekte po referenci, što znači da promena atributa objekta unutar funkcije utiče na originalni objekat izvan funkcije.
+
+# Objašnjenje kreiranja nove knjige:
+# Kada kreiramo novu knjigu koristeći `Book(**book_request.model_dump())`, dešava se sledeće:
 # 1. `book_request.model_dump()` konvertuje Pydantic model u rečnik.
 # 2. `**book_request.model_dump()` raspakuje rečnik u ključne (keyword arguments naprimer `id=1, title="FastAPI for Beginners", ...`) argumente za konstruktor klase Book.
 # 3. `Book(**book_request.model_dump())` kreira novi objekat klase Book sa podacima iz zahteva.
-
-# Šta tačno radi funkcija `model_dump()`:
-# `model_dump()` je metoda Pydantic modela koja vraća podatke modela kao rečnik.
-# Ovo omogućava jednostavno kreiranje novih `objekata` koristeći te podatke.
+# Ovo omogućava jednostavno kreiranje novih objekata koristeći podatke iz Pydantic modela.
+# Funkcija `find_book_id(new_book)` zatim dodeljuje automatski ID novoj knjizi pre nego što je dodamo u listu BOOKS.
 
 
-@app.put("/books/update_book/", status_code=status.HTTP_204_NO_CONTENT)
+@app.put("/books/update_book", status_code=status.HTTP_204_NO_CONTENT)
 async def update_book(book: BookRequest):
     book_changed = False
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book.id:
-            BOOKS[i] = book  # type: ignore
+            # Kreiramo novi objekat klase Book koristeći podatke iz BookRequest
+            updated_book = Book(**book.model_dump())
+            # Zadržavamo isti ID kao originalna knjiga
+            updated_book.id = BOOKS[i].id
+            BOOKS[i] = updated_book
             book_changed = True
             return BOOKS[i]
     if not book_changed:
