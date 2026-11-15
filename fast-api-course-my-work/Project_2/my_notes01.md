@@ -173,7 +173,7 @@ U `books2.py` se `Query(gt=0, le=5)` već koristi za validaciju HTTP zahteva. Fa
 
 ## DELETE: status kod i JSON odgovor
 
-`204 No Content` znači da je DELETE uspešan i da odgovor **nema telo**. Zato Swagger ne prikazuje JSON za uspešan DELETE sa statusom 204. U proveri rute iz `books22.py`, odgovor je imao status `204`, a telo je bilo prazno (`b''`), iako je funkcija vraćala rečnik.
+`204 No Content` znači da je DELETE uspešan i da odgovor **nema telo**. Zato Swagger ne prikazuje JSON za uspešan DELETE sa statusom 204. U proveri rute iz `books2.py`, odgovor je imao status `204`, a telo je bilo prazno (`b''`), iako je funkcija vraćala rečnik.
 
 U praksi su oba uspešna odgovora uobičajena:
 
@@ -214,7 +214,7 @@ Ako promenljiva `BOOKS` uopšte nije definisana, to je greška u programu (`Name
 
 ---
 
-## Statusi, `Path` i `Query` u `books22.py`
+## Statusi, `Path` i `Query` u `books2.py`
 
 Provereni tokovi u skripti:
 
@@ -247,7 +247,7 @@ Isto tako, `Path(gt=0)` automatski odbija nulu i negativne ID-jeve pre izvršava
 
 ### Zašto PUT ručno proverava ID?
 
-U [books22.py](./books22.py), `BookRequest.id` je `int | None` sa podrazumevanom vrednošću `None`, jer POST može da primi knjigu bez ID-ja. Kada je isti model upotrebljen u PUT ruti, nedostajući ID je po modelu dozvoljen, pa Pydantic ga automatski ne odbacuje. Ruta proverava da li je ID prisutan sa `if update_book.id is None` i vraća `400`.
+U [books2.py](./books2.py), `BookRequest.id` je `int | None` sa podrazumevanom vrednošću `None`, jer POST može da primi knjigu bez ID-ja. Kada je isti model upotrebljen u PUT ruti, nedostajući ID je po modelu dozvoljen, pa Pydantic ga automatski ne odbacuje. Ruta proverava da li je ID prisutan sa `if update_book.id is None` i vraća `400`.
 
 Provera `hasattr(update_book, "id")` je suvišna: `BookRequest` uvek ima to polje. Dovoljno je:
 
@@ -260,3 +260,104 @@ if update_book.id is None:
 ```
 
 Ako želiš automatski `422` za PUT bez ID-ja, napravi poseban model za izmenu sa obaveznim poljem `id: int`. Tada će Pydantic odbiti nedostajući ID pre poziva funkcije. Nezavisno od toga, ID koji postoji u zahtevu, ali ne odgovara nijednoj knjizi, i dalje treba da dobije `404`.
+
+---
+
+## Opcionalni filter po godini izdavanja
+
+Ruta za godinu je definisana kao opcionalni query parametar:
+
+```python
+published_date: int | None = Query(
+    default=None,
+    gt=1999,
+    lt=2100,
+)
+```
+
+Anotacija `int | None` odgovara podrazumevanoj vrednosti `None`. Ako parametar nije poslat, funkcija vraća sve knjige — filter se ne primenjuje. Ako je poslat, prihvata godine **2000–2099** i vraća knjige koje imaju tačnu godinu;
+Ako nema poklapanja, vraća `[]`. Godina `1999` ili `2100` odbacuje se sa
+`422 Unprocessable Entity`.
+
+Bez posebne provere `published_date is None`, lista-komprehencija bi tražila
+knjige čija je godina baš `None`, umesto da vrati sve knjige.
+
+---
+
+## Šta radi skripta
+
+`books2.py` je mala FastAPI biblioteka knjiga sa podacima u memoriji:
+
+- `BOOKS` je Python lista instanci obične klase `Book`; podaci nisu sačuvani u bazi i vraćaju se na početno stanje kada se aplikacija ponovo pokrene.
+- `BookRequest` je Pydantic model za validaciju tela POST i PUT zahteva:
+  - Naslov ima najmanje 3 znaka
+  - Autor najmanje 1
+  - Opis 1–100 znakova
+  - Rejting je 1–5
+  - Godina izdavanja je opcionalna i, ako je navedena, mora biti između 2000–2099.
+    Dodatna polja nisu dozvoljena.
+- `automatski_id()` postavlja ID na 1 ako je lista prazna, inače na ID
+  poslednje knjige plus 1. Ovo je pojednostavljeno rešenje za listu u memoriji;
+  u aplikaciji sa bazom ID se obično dodeljuje u bazi.
+- Kreiranje i izmena vraćaju JSON odgovore; uspešan DELETE nema telo zbog 204.
+
+### Endpointi
+
+| Metoda i putanja                              | Namena                                                           |
+| --------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /`                                       | Vraća osnovni opis API-ja.                                       |
+| `GET /books`                                  | Vraća sve knjige; prazna kolekcija je `[]`.                      |
+| `GET /books/{book_id}`                        | Vraća jednu knjigu po ID-ju.                                     |
+| `GET /books/?book_rating=5`                   | Filtrira knjige po rejtingu 1–5; bez parametra vraća sve knjige. |
+| `GET /books/bypublished/?published_date=2022` | Opcionalno filtrira po godini; bez parametra vraća sve knjige.   |
+| `POST /create-book`                           | Validira i kreira knjigu, automatski joj dodeljuje ID.           |
+| `PUT /books/update_book`                      | Ažurira postojeću knjigu po ID-ju; šalje se ceo zahtevni model.  |
+| `DELETE /books/{book_id}`                     | Briše knjigu po ID-ju.                                           |
+
+---
+
+### Status kodovi
+
+| Status                     | Kada se koristi                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| `200 OK`                   | GET uspeh, uključujući prazne rezultate; PUT uspešno ažuriranje.                              |
+| `201 Created`              | POST uspešno kreira knjigu.                                                                   |
+| `204 No Content`           | DELETE uspeh; odgovor nema JSON telo.                                                         |
+| `400 Bad Request`          | PUT telo nema ID (`BookRequest.id` je opcionalan za POST, pa PUT to proverava ručno).         |
+| `404 Not Found`            | Traženi ID ne postoji u listi.                                                                |
+| `422 Unprocessable Entity` | FastAPI/Pydantic odbija neispravan tip, vrednost van `Path`/`Query` opsega ili nevažeće telo. |
+
+`Path(gt=0)` dozvoljava samo pozitivne ID-jeve; `Query(ge=1, le=5)` dozvoljava rejtinge 1–5. `Query(gt=1999, lt=2100)` dozvoljava godine 2000–2099. Nevažeći ulazi dobijaju 422 pre ulaska u endpoint. Kod i dalje mora eksplicitno
+proveriti postojanje zapisa i podići 404 kada vrednost jeste validna, ali zapis ne postoji.
+
+`status_code` u dekoratoru određuje uspešan status, a ne proverava uspeh poslovne operacije. Na primer, PUT dekorator postavlja 200; telo funkcije proverava ID i podiže 400 ili 404 kada je potrebno.
+
+---
+
+## Inline `assert` testovi u skripti
+
+Dodati su testovi koji koriste FastAPI `TestClient`, pa proveravaju stvarne HTTP zahteve, ne samo direktne pozive Python funkcija. Pokrivaju:
+
+- GET odgovore i praznu kolekciju;
+- postojeći ID, nepostojeći ID i nevažeći Path parametar;
+- validne, nevažeće i izostavljene Query parametre za rejting i godinu;
+- POST uspeh, automatsku dodelu ID-ja i nevažeći Pydantic ulaz;
+- PUT uspeh, nedostajući ID (`400`), nepostojeći ID (`404`) i nevažeće telo;
+- DELETE uspeh (`204` bez tela), nevažeći ID i nepostojeći zapis;
+- dodelu ID-ja 1 kada se knjiga doda u praznu listu.
+
+Testovi se pokreću samo pri direktnom izvršavanju skripte; Uvicorn ih ne pokreće pri uvozu aplikacije. `finally` vraća `BOOKS` na početno stanje.
+
+`TestClient` se uvozi unutar test-funkcije kako testna zavisnost ne bi bila potrebna za normalno pokretanje aplikacije.
+
+Iz korena repozitorijuma pokreni:
+
+```bash
+./.venv/bin/python fast-api-course-my-work/Project_2/books2.py
+```
+
+Uspešan rezultat:
+
+```text
+Svi books2 assert testovi su prosli.
+```
