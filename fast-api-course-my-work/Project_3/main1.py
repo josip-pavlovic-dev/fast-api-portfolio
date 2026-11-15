@@ -3,11 +3,9 @@ from typing import Annotated
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
-import models
-from models import Todos
-from database import SessionLocal, engine
-
-
+from . import models
+from .database import SessionLocal, engine
+from .models import Todos
 
 app = FastAPI()
 
