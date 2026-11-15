@@ -25,6 +25,7 @@ Kada pozoves:
 # Primer poziva create_all
 Base.metadata.create_all(bind=engine)
 ```
+
 SQLAlchemy koristi:
 
 1. `Base.metadata` (registar tabela)

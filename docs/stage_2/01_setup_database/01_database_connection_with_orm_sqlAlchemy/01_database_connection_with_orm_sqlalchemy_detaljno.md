@@ -90,7 +90,7 @@ Značenje:
 - `sqlite:` - koristi SQLite driver za SQLite bazu
 - `///`- označava da je baza fajl u trenutnom direktorijumu
 - `./todosapp.db` baza je fajl u trenutnom working directory-ju i biće kreirana ako ne postoji pod imenom `todosapp.db`.
-- `.` ispred `todosapp.db` označava trenutni direktorijum.
+- `.` ispred `todosapp.db` označava trenutni radni direktorijum odakle pokrećeš aplikaciju.
 
 Važna početnička zamka:
 Ako menjaš folder iz kog pokrećeš app, možeš nenamerno praviti više različitih `todosapp.db` fajlova.
@@ -126,17 +126,50 @@ finally:
 
 Parametri:
 
-- `autocommit=False`: ništa se ne upisuje automatski, ti kontrolišeš commit
-- `autoflush=False`: flush (predstavlja upis promena u bazu) se ne radi automatski u svakom koraku
+- `autocommit=False`: ti kontrolišeš kada se transakcija potvrđuje pomoću `commit()`
+- `autoflush=False`: isključuje automatski `flush` pre određenih operacija, na primer ORM upita; ne isključuje `flush` pri `commit()`
 - `bind=engine`: sesije koriste engine ka tvojoj bazi
+
+#### Razlika između `flush()` i `commit()`
+
+- **`flush()`** šalje promene iz sesije u bazu kao SQL naredbe, ali ih još ne potvrđuje. Promene su deo otvorene transakcije i mogu da se ponište pomoću `rollback()`.
+- **`commit()`** potvrđuje transakciju. Promene nakon toga ostaju sačuvane.
+
+Na primer:
+
+```python
+db.add(novi_todo)  # objekat je pripremljen u sesiji
+
+db.flush()         # INSERT je poslat bazi, ali nije potvrđen
+# db.rollback()    # ovde bi mogao da poništiš transakciju
+
+db.commit()        # transakcija je potvrđena
+```
+
+Važno: `commit()` automatski poziva `flush()` i kada je `autoflush=False`. Dakle, `flush` šalje promene unutar transakcije, a `commit` potvrđuje transakciju.
 
 ---
 
-### 3.5 Base = declarative_base()
+### 3.5 Base = declarative_base() i moderni DeclarativeBase
 
 `Base` je roditeljska klasa za `ORM` modele.
 Svaka tabela-model nasleđuje `Base`.
 Bez toga `SQLAlchemy` ne zna koje sve tabele treba da mapira.
+
+#### Moderan način kreiranja `Base`
+
+U novijim verzijama SQLAlchemy, preporučuje se korišćenje `DeclarativeBase` klase:
+
+```python
+from sqlalchemy.orm import DeclarativeBase
+
+class Base(DeclarativeBase):
+    pass
+```
+
+Ovo zamenjuje stariji `declarative_base()` pristup i omogućava bolju integraciju sa modernim ORM funkcionalnostima.
+
+U praksi se smešta u fajl `base.py` ili `database.py`, odakle se importuje u modele i glavnu aplikaciju.
 
 ---
 
@@ -144,7 +177,7 @@ Bez toga `SQLAlchemy` ne zna koje sve tabele treba da mapira.
 
 U [scratch/fast-api-course/Project 3/TodoApp/models.py](scratch/fast-api-course/Project%203/TodoApp/models.py):
 
-- Klase Users i Todos u `models.py` nasleđuju `Base`. Zbog toga radimo `from database import Base` i koristimo ga u `models.py`.
+- Klase Users i Todos u `models.py` nasleđuju `Base`. Zbog toga radimo `from base import Base` i koristimo ga u `models.py`.
 
 - to znači da `SQLAlchemy` sada zna kako da mapira Python klase u SQL tabele na osnovu `Base` klase.
 

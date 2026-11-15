@@ -232,6 +232,7 @@ def read_one(todo_id: int):
     finally:
         db.close()
 ```
+
 Problem: dupliranje koda i veća šansa za grešku. Ovo se dešava kada svaki endpoint sam otvara i zatvara sesiju, umesto da se koristi centralizovana dependency funkcija.
 
 ---
@@ -268,6 +269,7 @@ async def read_all(db: DbDep):
 async def read_one(todo_id: int, db: DbDep):
     return db.query(Todos).filter(Todos.id == todo_id).first()
 ```
+
 `DbDep` se čita kao "database dependency". To znači da svaki put kada se `DbDep` koristi kao tip u endpoint funkciji, FastAPI će automatski pozvati `get_db()` i proslediti otvorenu sesiju kao argument. Ovo je centralizovani način za upravljanje životnim ciklusom sesije čime se izbegava dupliranje koda i smanjuje šansa za greške čak i u većim aplikacijama sa više endpoint-a.
 
 ---
@@ -293,6 +295,7 @@ Ako umeš da odgovoris na sledeće bez gledanja, tema je legla:
 async def read_all(db: DbDep):
     return db.query(Todos).all()
 ```
+
 2. Kada se izvršava `db.close()`?
 
 `db.close()` se izvršava nakon što FastAPI završi obradu request-a i izađe iz `yield` bloka u `get_db()` funkciji.
