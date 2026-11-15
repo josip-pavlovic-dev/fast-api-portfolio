@@ -167,7 +167,7 @@ Ovo znači: “uzmi korisnike, ali samo one sa rolom admin”.
 
 ---
 
-## 7) Jasan primer poređenja
+## 7) Jasan primer poređenja Path i Query parametara
 
 ### Ruta sa path parametrom
 
@@ -500,11 +500,3 @@ Pošto smo prošli Path i Query, sledeće teme koje dolaze prirodno su:
 To je sledeći logičan korak, i tu već ulazimo u “pravi API” način rada, ne samo u jednostavne URL parametre.
 
 ---
-
-Ako želiš, mogu odmah da nastavim sa sledećim tekstom:
-
-1. Request Body i POST
-2. Pydantic model
-3. primer sa formiranjem celog API endpointa
-
-i to ću napisati u istom nastavnom stilu, samo malo detaljnije od ovoga.

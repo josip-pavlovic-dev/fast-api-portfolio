@@ -221,12 +221,6 @@ To je drugi “sloj” u teoriji FastAPI-ja.
 
 ---
 
-Updated todo list
-
-Nastavljam sa sledećim delom i fokusiraću se samo na request/response i jednostavan mentalni model, bez dodatnih detalja koji bi previše opteretili početak.
-
-Naravno — nastavljamo sa sledećim korakom: Request i Response. Ovo je veoma važno, jer bez toga ne razumeš kako API zapravo radi.## Request i Response u FastAPI
-
 Sada kada znaš šta je ruta i funkcija, treba da razumeš još dve stvari:
 
 - Request
@@ -319,6 +313,8 @@ Ulaz su podaci koje klijent šalje:
 - query parametar
 - JSON body
 
+---
+
 ### Izlaz (output)
 
 Izlaz su podaci koje server vraća:
@@ -331,6 +327,9 @@ Izlaz su podaci koje server vraća:
 
 ## 5) Primer sa input i output
 
+Ovaj primer pokazuje kako FastAPI funkcija prima ulaz (input) i vraća izlaz (output).
+U ovom primeru, ulaz je zahtev na `/hello`, a izlaz je JSON sa porukom "Zdravo".
+
 ```python
 from fastapi import FastAPI
 
@@ -341,9 +340,16 @@ def say_hello():
     return {"message": "Zdravo"}
 ```
 
+---
+
 ### Ulaz:
 
 Nema nikakvih dodatnih parametara, samo je zahtev na `/hello`.
+Ovo je ulaz koji server prima i obrađuje.
+Server koristi ove podatke da odluči šta će vratiti kao odgovor.
+Ovo je ključna razlika između ulaza i izlaza: ulaz dolazi od klijenta, a izlaz je ono što server generiše na osnovu ulaza.
+
+Server koristi ulaz da odluči koji će izlaz vratiti, i to je suština rada API-ja.
 
 ### Izlaz:
 
@@ -356,6 +362,7 @@ Nema nikakvih dodatnih parametara, samo je zahtev na `/hello`.
 ## 6) Šta je JSON?
 
 JSON je format podataka koji se najčešće koristi u API-ju.
+To je tekstualni format koji je lako čitljiv i za ljude i za računare.
 
 Primer:
 
@@ -366,7 +373,7 @@ Primer:
 }
 ```
 
-FastAPI uglavnom vraća JSON.
+FastAPI uglavnom vraća JSON. To znači da kada funkcija u FastAPI vrati Python dict, FastAPI ga automatski konvertuje u JSON format pre nego što pošalje kao response.
 
 ---
 
@@ -374,13 +381,13 @@ FastAPI uglavnom vraća JSON.
 
 Status code je broj koji govori da li je zahtev uspešan.
 
-Najčešći primeri:
+Najčešći primeri status kodova koje ćeš sresti u FastAPI-ju su (i šta oni znače):
 
-- `200` → OK
-- `201` → Created
-- `400` → Bad Request
-- `404` → Not Found
-- `422` → Validation error
+- `200` → OK (zahtev je uspešno obrađen)
+- `201` → Created (resurs je uspešno kreiran)
+- `400` → Bad Request (kada klijent pošalje neispravan zahtev)
+- `404` → Not Found (kada traženi resurs ne postoji)
+- `422` → Validation error (kada podaci koje klijent pošalje ne zadovoljavaju očekivani format ili tip)
 
 Na primer, ako pošalješ pogrešan tip podatka, FastAPI može vratiti `422`.
 
@@ -388,16 +395,16 @@ Na primer, ako pošalješ pogrešan tip podatka, FastAPI može vratiti `422`.
 
 ## 8) Jednostavna analogija
 
-Zamislite da je API kao restoran:
+Zamislite da je API kao restoran: gost šalje zahtev (request) kuvaru (serveru) preko konobara (ruta), a kuvar priprema jelo (response) na osnovu zahteva gosta.
 
-- klijent = gost
-- server = restoran
-- request = zahtev gosta
-- response = jelo koje mu se servira
-- ruta = koju sobu ili sto gost traži
-- funkcija = kuvar koji priprema jelo
+- klijent = gost (koji šalje zahtev)
+- server = restoran (koji prima zahteve i šalje odgovore)
+- request = zahtev gosta (informacija o tome šta gost želi)
+- response = jelo koje mu se servira (odgovor na zahtev gosta)
+- ruta = koju sobu ili sto gost traži (određuje gde zahtev ide i koja funkcija će ga obraditi)
+- funkcija = kuvar koji priprema jelo (obrada zahteva i generisanje odgovora)
 
-To ti odmah daje sliku: API je komunikacija između gosta i kuvara.
+To ti odmah daje sliku: API je komunikacija između gosta i kuvara gde konobar (ruta) prenosi zahteve i odgovore između njih.
 
 ---
 
@@ -453,17 +460,16 @@ To je sledeći deo koji sledi odmah posle ovog.
 
 ---
 
-Updated todo list
-
-I will go deeper into Path Parameters in a simple, beginner-friendly way and keep it to a clear, usable lesson for today.
-
 ## Path Parameters – detaljno, ali jednostavno
 
 Danas ćemo obraditi samo ono što ti treba da razumeš da bi mogao da nastaviš kurs bez zastoja.
+U ovom delu ćemo naučiti kako da definišemo promenljive delove URL-a, kako da ih prosledimo funkciji i zašto su korisni za rad sa specifičnim resursima. Na taj način možemo lako pristupiti pojedinačnim objektima kao što su korisnici, proizvodi ili narudžbine, koristeći njihove jedinstvene identifikatore.
+
+Primer: ako želimo da dohvatimo korisnika sa određenim ID-jem, path parameter nam omogućava da napišemo URL `/users/{user_id}` i funkciju koja će obraditi taj zahtev, bez potrebe da pravimo posebnu rutu za svakog korisnika. Na taj način možemo dinamički pristupati različitim korisnicima samo menjajući vrednost path parametra u URL-u. Ovo je posebno korisno kada radimo sa velikim brojem resursa, jer nam omogućava da kreiramo fleksibilne i skalabilne API-jeve bez potrebe za definisanjem svake moguće rute pojedinačno.
 
 ---
 
-## 1) Šta su Path Parameters?
+### 1) Šta su Path Parameters?
 
 Path Parameters su promenljivi delovi URL-a.
 
@@ -483,7 +489,7 @@ Dakle, deo URL-a koji se menja zove se path parameter.
 
 ---
 
-## 2) Kako se pišu?
+### 2) Kako se pišu?
 
 U FastAPI-ju path parametar se piše u zagradama:
 
@@ -501,7 +507,7 @@ To je sintaksa koju FastAPI prepoznaje.
 
 ---
 
-## 3) Kako to radi u funkciji?
+### 3) Kako to radi u funkciji?
 
 Ruta i funkcija moraju imati isto ime.
 
@@ -538,7 +544,7 @@ To znači:
 
 ---
 
-## 4) Zašto je ovo korisno?
+### 4) Zašto je ovo korisno?
 
 Jer često želimo da radimo sa konkretnim objektom.
 
@@ -552,7 +558,7 @@ To je idealno za resurse koji imaju jedinstven identifikator.
 
 ---
 
-## 5) Path parameter i funkcija – pravilo koje je važno
+### 5) Path parameter i funkcija – pravilo koje je važno
 
 Ruta i parametar moraju imati isto ime:
 
@@ -574,7 +580,7 @@ Zato što FastAPI očekuje da se naziv parametra poklapa sa nazivom u ruti.
 
 ---
 
-## 6) Tipovi path parametara
+### 6) Tipovi path parametara
 
 Najčešće koristiš:
 
@@ -607,7 +613,7 @@ Zaključak je da FastAPI automatski validira tipove path parametara i vraća gre
 
 ---
 
-## 7) Validacija tipa
+### 7) Validacija tipa
 
 Primer:
 
@@ -631,7 +637,7 @@ To je jedan od najvažnijih FastAPI mehanizama.
 
 ---
 
-## 8) Više path parametara u istoj ruti
+### 8) Više path parametara u istoj ruti
 
 Možeš imati više promenljivih delova u URL-u.
 
@@ -669,11 +675,11 @@ Ovo je vrlo često u API-ju.
 
 ---
 
-## 9) Path Parameters vs Query Parameters
+### 9) Path Parameters vs Query Parameters
 
 Ovo je vrlo važno da razlikuješ.
 
-### Path Parameters
+#### Path Parameters
 
 Koriste se za konkretan resurs:
 
@@ -683,7 +689,7 @@ GET /users/5
 
 Ovo znači: “daj mi korisnika sa ID 5”.
 
-### Query Parameters
+#### Query Parameters
 
 Koriste se za filtere, pretragu, opcije:
 
@@ -695,7 +701,7 @@ Ovde je `role=admin` dodatni parametar pa se ne koristi za identifikaciju konkre
 
 ---
 
-## 10) Jednostavno pravilo
+### 10) Jednostavno pravilo
 
 Pitaj se:
 
@@ -721,7 +727,7 @@ onda je query parameter.
 
 ---
 
-## 11) Najvažnije stvari koje treba da zapamtiš
+### 11) Najvažnije stvari koje treba da zapamtiš
 
 - Path parameter je deo URL-a
 - Piše se kao `{ime}`
@@ -732,7 +738,7 @@ onda je query parameter.
 
 ---
 
-## 12) Kratki primer za pamćenje
+### 12) Kratki primer za pamćenje
 
 ```python
 from fastapi import FastAPI
@@ -754,7 +760,7 @@ Jednostavno i jasno.
 
 ---
 
-## 13) Dobar način razmišljanja
+### 13) Dobar način razmišljanja
 
 Zamislite da je URL “šablon”:
 
@@ -778,7 +784,7 @@ To je u suštini cela logika.
 
 ---
 
-## 14) Mala vežba za danas
+### 14) Mala vežba za danas
 
 Pokušaj da sam napišeš ovaj kod:
 
@@ -810,7 +816,7 @@ Ako to razumeš, onda si savladao osnovu path parameters.
 
 ---
 
-## 15) Dovoljno za danas
+### 15) Dovoljno za danas
 
 Za danas je dovoljno da razumeš:
 
