@@ -1,32 +1,24 @@
 # Portfolio Items API
 
-Mini-projekat za postepeno učenje SQL-a, SQLite-a, SQLAlchemy-ja 2.0,
-Pydantic-a 2 i FastAPI-ja. Struktura je pripremljena po uzoru na
-`fast-api-course-my-work/TodoApp`, ali su Python fajlovi za sada prazni.
+Mini-projekat za postepeno učenje `SQL`-a, `SQLite-a`, `SQLAlchemy-ja 2.0`, `Pydantic 2` i `FastAPI`-ja. Cilj je kroz praktične vežbe savladati rad sa `bazama podataka`, `ORM`-om, `validacijom podataka` i izgradnjom `REST API`-ja i testiranjem istog.
 
 ---
 
 ## Cilj projekta
 
-Napraviti API koji čuva korisnike, kategorije i portfolio stavke u SQLite
-bazi, a zatim postepeno dodati validaciju, CRUD operacije, testove i migracije.
-Rad ide u fazama: prvo razumeti i vežbati SQL, pa tek onda preći na ORM i API.
+Napraviti `API` koji čuva `korisnike`, `kategorije` i `portfolio stavke` u `SQLite` bazi, a zatim postepeno dodati `validaciju`, `CRUD` operacije, `testove` i `migracije`.
+
+Rad ide u fazama: prvo razumeti i vežbati `SQL`, pa tek onda preći na ORM i `API` sloj kroz `FastAPI` i `Pydantic`.
 
 ---
 
 ## Planirane tabele
 
-- **users** — korisnici projekta; početni model u materijalu sadrži `id`,
-  `name` i `email`.
+- **users** — korisnici projekta; početni model u materijalu sadrži `id`, `name` i `email`.
 - **categories** — kategorije stavki; početni model sadrži `id` i `name`.
-- **items** — portfolio stavke sa poljima kao što su `title`,
-  `description`, `price`, `status`, `created_at` i `updated_at`.
-  `owner_id` povezuje stavku sa `users.id`, a `category_id` sa
-  `categories.id`.
+- **items** — portfolio stavke sa poljima kao što su `title`, `description`, `price`, `status`, `created_at` i `updated_at`. `owner_id` povezuje stavku sa `users.id`, a `category_id` sa `categories.id`.
 
-Ovo je početni plan iz materijala. Konačna polja, obaveznost, ograničenja i
-pravila brisanja potvrdićemo tokom lekcija o modelovanju; ovaj README ne
-definiše niti kreira šemu baze.
+Trenutni modeli su u [models.py](./models.py). `description` je opcion, `status` je ograničen na `draft`/`published`, a cena, status, datumi i oba strana ključa su obavezni. Ovo je edukativna početna šema; pre prve baze potrebno je potvrditi sva domenska pravila.
 
 ---
 
@@ -45,7 +37,7 @@ PortfolioItemsAPI/
 │   ├── __init__.py
 │   └── config.py       # konfiguracija aplikacije, npr. putanja do baze, tajni ključevi, environment varijable
 │
-├── data/                 # lokalni SQLite fajlovi; ne commit-ovati bazu
+├── data/                 # lokalni SQLite fajlovi; ne commit-ovati bazu podataka
 ├── db/
 │   ├── __init__.py
 │   ├── base.py
@@ -54,7 +46,7 @@ PortfolioItemsAPI/
 ├── progress/             # dnevni zapisi i retrospektive
 ├── main.py
 ├── models.py
-├── schemas.py
+├── schemas.py           # Pydantic modeli za validaciju i serijalizaciju API ulaza i izlaza
 ├── __init__.py
 └── README.md
 ```
@@ -81,36 +73,38 @@ Uloga koju planiramo za slojeve:
 
 - `README.md` — dokumentacija projekta. Ovaj fajl sadrži informacije o strukturi projekta, uputstva za instalaciju, konfiguraciju i korišćenje aplikacije, kao i plan rada i eventualne napomene za dalji razvoj. Omogućava novim članovima tima ili korisnicima da brzo razumeju svrhu i organizaciju projekta. Tipično uključuje opis direktorijuma i fajlova, uputstva za pokretanje aplikacije, informacije o zavisnostima i eventualno linkove ka dodatnim resursima ili dokumentaciji.
 
-Za sada su moduli prazni. Nema implementiranih `modela`, `konekcije`, `ruta`, `endpoint-a` ni `migracija`.
+`models.py`, `db/base.py`, `db/database.py` i `main.py` sadrže početnu `ORM` i `SQLite` postavku. `Pydantic` šeme, `rute`, `endpoint`-i i `migracije` još nisu implementirani.
+
+`main.py` poziva `create_all()` pri uvozu aplikacije, zato pre njenog pokretanja proveri DB URL i postojanje `data/` direktorijuma. Ako direktorijum ne postoji, SQLite neće automatski kreirati roditeljske direktorijume, što može dovesti do greške pri inicijalizaciji baze. Takođe, ako `portfolioitemsapp.db` već postoji, `create_all()` se neće izvršiti nad postojećom bazom, pa neće menjati njenu šemu. Trenutno rešenje je brisanje postojeće baze i ponovo pokretanje aplikacije kako bi se kreirala nova baza sa ažuriranom šemom. Mana je što se pri svakom brisanju gube svi podaci, što nije prihvatljivo u produkcionom okruženju.
 
 ---
 
 ## Plan rada
 
-1. Vežbati osnovne `SELECT`, `WHERE`, `INSERT`, `UPDATE` i `DELETE` upite iz
-   `docs/stage_2/01_setup_database/04_queries_introduction` nad postojećom
-   bazom `Project_3/data/todosapp3.db`.
-2. Nastaviti SQL materijale o modelovanju i SQLite transakcijama, uključujući
-   kreiranje i proveru `users`, `categories` i `items` šeme u ovoj aplikaciji.
-3. Uvesti SQLAlchemy 2.0: engine, `Base`, tipizovane ORM modele i sesije.
-4. Povezati FastAPI i Pydantic 2, pa dodavati CRUD endpoint-e postepeno.
+1. Vežbati osnovne `SELECT`, `WHERE`, `INSERT`, `UPDATE` i `DELETE` upite iz `docs/stage_2/01_setup_database/04_queries_introduction` nad postojećom bazom `Project_3/data/todosapp3.db`. Ovaj korak omogućava razumevanje osnovnih SQL operacija i priprema za rad sa složenijim upitima i ORM slojem u narednim fazama razvoja aplikacije.
+
+2. Nastaviti SQL materijale o modelovanju i SQLite transakcijama, uključujući kreiranje i proveru `users`, `categories` i `items` šeme u `Portfolio Items` aplikaciji.
+
+3. Uvesti SQLAlchemy 2.0: `engine`, `Base`, tipizovane ORM modele i sesije.
+
+4. Povezati FastAPI i `Pydantic 2`, pa dodavati CRUD endpoint-e postepeno.
+
 5. Dodati izolovane testove i kasnije migracije.
 
-Ne preskačemo direktno na ORM CRUD: prvo treba razumeti SQL upite i strukturu
-relacionih tabela.
+Ne preskačemo direktno na ORM CRUD: prvo treba razumeti SQL upite i strukturu relacionih tabela. Dok razvojna baza nema podatke koje treba sačuvati, može se planski obrisati i ponovo napraviti radi promene početne šeme. Kada se uvede Alembic i baza sadrži podatke, promene šeme treba raditi migracijama, a ne brisanjem baze.
 
 ---
 
 ## Beleške po danima
 
-U `progress/` čuvamo po jedan Markdown fajl po radnom danu, nazvan `YYYY-MM-DD.md`. Fajl beleži šta smo stvarno obradili, naučili, proverili i šta ostaje za sledeći put. Ne označavamo planirane vežbe kao završene pre nego
-što ih uradimo.
+U `progress/` čuvamo po jedan Markdown fajl po radnom danu, nazvan `YYYY-MM-DD.md`. Fajl beleži šta smo stvarno obradili, naučili, proverili i šta ostaje za sledeći put. Ne označavamo planirane vežbe kao završene pre nego što ih uradimo.
 
 - [Retrospektiva za 2026-11-16](./progress/2026-11-16.md)
+- [SQLite terminal vežbe](./sqlite3_exercises.md)
 
 ---
 
-## Materijali
+## Materijal za učenje
 
 - [SQL Database kursni materijali](../../docs/sql_database/README.md)
 - [SQL upiti: SELECT, WHERE, INSERT, UPDATE, DELETE](../../docs/stage_2/01_setup_database/04_queries_introduction/04_queries_introduction_detaljno.md)
