@@ -2,9 +2,10 @@
 
 ## Zašto uopšte baza podataka
 
-Do sada si radio CRUD nad listama u memoriji.
+Do sada si radio `CRUD` nad listama u memoriji.
 To je odličan prvi korak, ali ima ograničenja:
 
+- podaci u memoriji nisu trajni
 - podaci nestaju kada se aplikacija ugasi
 - nema pouzdanosti pri većem broju korisnika
 - teško je tražiti i filtrirati podatke efikasno
@@ -12,10 +13,12 @@ To je odličan prvi korak, ali ima ograničenja:
 
 Baza podataka rešava baš te probleme.
 
+---
+
 ## Šta je DBMS
 
-DBMS je sistem koji čuva, organizuje i vraća podatke.
-Primeri:
+`DBMS` je sistem koji čuva, organizuje i vraća podatke.
+Primeri `DBMS` sistema:
 
 - SQLite
 - PostgreSQL
@@ -25,13 +28,13 @@ U ovoj fazi počinjemo sa SQLite, jer je lak za lokalni razvoj.
 
 ## Relaciona baza u jednoj slici
 
-Relacione baze rade sa tabelama.
+`Relacione baze` rade sa tabelama.
 Tabela ima redove i kolone.
 
 - red = jedan zapis (jedan konkretan objekat)
 - kolona = jedno svojstvo objekta
 
-Primer tabele users:
+Primer tabele `users`:
 
 ```sql
 CREATE TABLE users (
@@ -43,37 +46,39 @@ CREATE TABLE users (
 );
 ```
 
-- id -> jedinstveni identifikator korisnika
-- username -> korisničko ime
-- email -> email adresa korisnika
-- updated_at -> vreme poslednje izmene
-- created_at -> vreme kreiranja korisnika
+- `id` -> jedinstveni identifikator korisnika
+- `username` -> korisničko ime
+- `email` -> email adresa korisnika
+- `updated_at` -> vreme poslednje izmene
+- `created_at` -> vreme kreiranja korisnika
 
 ---
 
 ## Ključni pojmovi
 
-- Primary Key (PK) -> jedinstveni identifikator reda u tabeli
-- Foreign Key (FK) -> kolona koja povezuje red u jednoj tabeli sa redom u drugoj tabeli (referencira primarni ključ druge tabele)
-- Unique Key (UK) -> kolona koja mora imati jedinstvene vrednosti u tabeli (ne sme biti duplikata)
-- Index -> struktura koja ubrzava pretragu po jednoj ili više kolona
-- Check Constraint -> pravilo koje ograničava vrednosti koje kolona može imati
+- `Primary Key (PK)` -> jedinstveni identifikator reda u tabeli
+- `Foreign Key (FK)` -> kolona koja povezuje red u jednoj tabeli sa redom u drugoj tabeli (referencira primarni ključ druge tabele)
+- `Unique Key (UK)` -> kolona koja mora imati jedinstvene vrednosti u tabeli (ne sme biti duplikata)
+- `Index` -> struktura koja ubrzava pretragu po jednoj ili više kolona
+- `Check Constraint` -> pravilo koje ograničava vrednosti koje kolona može imati
+
+---
 
 ## Primarni ključ (Primary Key)
 
-Primary key je jedinstveni identifikator reda.
+`Primary key` je jedinstveni identifikator reda.
 Najčešće je to kolona id.
 
-Pravila:
+Pravila za `primary key`:
 
-- ne sme biti NULL
-- mora biti jedinstven
+- ne sme biti `NULL`
+- mora biti jedinstven (`unique`)
 
 ---
 
 ## Strani ključ (Foreign Key)
 
-Foreign key povezuje dve tabele.
+`Foreign key` povezuje dve tabele.
 
 Primer:
 
@@ -85,8 +90,11 @@ CREATE TABLE orders (
 );
 ```
 
-- tabela `orders` ima `user_id` kolonu koja referencira `users.id` koji je primarni ključ tabele `users`
-- `user_id` pokazuje na `users.id` što pravi vezu između porudžbina i korisnika. Ovo je primer relacije 1:N, gde jedan korisnik može imati više porudžbina.
+Tabela `orders` ima `user_id` kolonu koja referencira `users.id` koji je primarni ključ tabele `users`
+
+`user_id` pokazuje na `users.id` što pravi vezu između porudžbina i korisnika. Ovo je primer relacije 1:N, gde jedan korisnik može imati više porudžbina. Na taj način orders tabela zna kojem korisniku pripada svaka porudžbina. Pošto `user_id` referencira `users.id` koji je primarni ključ tabele `users` i koji ne može biti NULL i mora biti jedinstven, samim time i `user_id` ne može biti NULL i mora biti jedinstven u kontekstu te relacije. Zbog toga jedna porudžbina uvek pripada tačno jednom korisniku.
+
+U praksi, ovo znači da baza garantuje integritet podataka i sprečava situacije gde bi porudžbina mogla biti vezana za nepostojećeg korisnika ili da jedna porudžbina pripada većem broju korisnika što nije logički moguće.
 
 ---
 
@@ -94,9 +102,9 @@ CREATE TABLE orders (
 
 Baza čuva pravila:
 
-- ne možeš uneti vrednost pogrešnog tipa
-- ne možeš uneti dupli jedinstveni podatak ako postoji UNIQUE
-- ne možeš obrisati roditeljski red bez pravila za povezane redove (zavisi od on delete pravila)
+- ne možeš uneti vrednost pogrešnog tipa (`type mismatch`)
+- ne možeš uneti dupli jedinstveni podatak ako postoji `UNIQUE`
+- ne možeš obrisati roditeljski red bez pravila za povezane redove (zavisi od `ON DELETE` pravila)
 
 ---
 
@@ -168,31 +176,44 @@ Menja se mesto gde podaci žive i način pristupa podacima.
 
 1. Zašto lista u memoriji nije dovoljna za ozbiljniju aplikaciju?
 
-Lista u memoriji nije dovoljna jer se podaci gube kada aplikacija prestane da radi i nije lako deliti podatke između više instanci aplikacije.
+- Lista u memoriji nije dovoljna jer se podaci gube kada aplikacija prestane da radi i nije lako deliti podatke između više instanci aplikacije.
 
-2. Šta je razlika između primarnog (Primary Key) ključa i stranog (Foreign Key) ključa?
+2. Šta je razlika između primarnog (`Primary Key`) ključa i stranog (`Foreign Key`) ključa?
 
-Primarni ključ je jedinstveni identifikator reda u tabeli, dok strani ključ povezuje red u jednoj tabeli sa redom u drugoj tabeli.
+- Primarni ključ je jedinstveni identifikator reda u tabeli, dok strani ključ povezuje red u jednoj tabeli sa redom u drugoj tabeli (`Foreign Key`).
 
-3. Kako bi opisao relaciju 1:N na primeru users i posts?
+3. Kako bi opisao relaciju `1:N` na primeru `users` i `posts`?
 
-Jedan korisnik može imati više postova, dok svaki post pripada tačno jednom korisniku.
+- Jedan korisnik može imati više postova, dok svaki post pripada tačno jednom korisniku (`1:N` relacija).
 
-4. Zašto je transaction važna?
+4. Zašto je `transaction` važna?
 
-Transaction je važna jer omogućava da grupa operacija bude izvršena zajedno ili da se sve ponište u slučaju greške, čime se održava integritet podataka.
+- `Transaction` (transakcija) je važna jer omogućava da grupa operacija bude izvršena zajedno ili da se sve ponište u slučaju greške, čime se održava integritet podataka.
 
 ---
 
 ## Zadaci
 
 1. Nacrataj 3 tabele za mini app: users, categories, items.
-2. Obeleži primary i foreign ključeve.
-3. Opisi dve situacije gde integrity pravila sprečavaju bug.
+
+- `users` tabela: `id` (`Primary Key`), `name`, `email`
+- `categories` tabela: `id` (`Primary Key`), `name`
+- `items` tabela: `id` (`Primary Key`), `name`, `user_id` (`Foreign Key` ka `users.id`), `category_id` (`Foreign Key` ka `categories.id`)
+
+2. Obeleži `primary` i `foreign` ključeve.
+
+- `users.id` je `Primary Key`, pa ne može postojati dva korisnika sa istim `id`.
+- `items.user_id` je `Foreign Key` ka `users.id`, pa ne može postojati `item` koji pripada nepostojećem korisniku.
+- `items.category_id` je `Foreign Key` ka `categories.id`, pa ne može postojati `item` koji pripada nepostojećoj kategoriji.
+
+3. Opiši dve situacije gde `integrity` pravila (`Primary Key` i `Foreign Key`) sprečavaju bug.
+
+- Situacija 1: Pokušaj dodavanja korisnika sa već postojećim `id` će biti odbijen zbog `Primary Key` pravila, čime se sprečava duplikat i gubitak integriteta podataka.
+- Situacija 2: Pokušaj dodavanja `item` koji pripada nepostojećem korisniku ili kategoriji će biti odbijen zbog `Foreign Key` pravila, čime se sprečava referencijalni integritet i potencijalni bugovi u aplikaciji.
 
 ---
 
 ## Zaključak
 
-Ulaziš u sledeći veliki korak: od API endpoint logike ka pravom data sloju.
-Ako savladaš relacije i integritet, SQLAlchemy će ti biti mnogo lakši.
+Ulaziš u sledeći veliki korak: od `API endpoint logike` ka pravom data sloju.
+Ako savladaš `relacije` i `integritet`, SQLAlchemy će ti biti mnogo lakši.
