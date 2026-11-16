@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from .database import SessionLocal
 
-# Ovde ide get_db() dependency kada dođe na red lekcija o Depends i DB sesiji po requestu
+
+# Dependency za dobijanje DB sesije po requestu u FastAPI aplikaciji
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:

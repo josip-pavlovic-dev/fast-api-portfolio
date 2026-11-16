@@ -18,20 +18,41 @@ Cilj je da razumeš tačno šta FastAPI radi "iza scene" kada endpoint dobije `d
 
 - `Dependency function`: funkcija koja priprema resurs (npr. `DB sesiju`, `current user`, `config`). Ovo je funkcija koja se izvršava pre endpoint logike i čiji rezultat se ubrizgava u endpoint parametar. Primer je `get_db` funkcija koja priprema SQLAlchemy sesiju.
 
+- `SessionLocal`: fabrika SQLAlchemy sesija. Svaki put kada pozoveš `SessionLocal()`, dobijaš novu sesiju koja je nezavisna od drugih sesija i koja se koristi unutar `jednog request`-a.
+
+- `Generator[Session, None, None]`: tip koji opisuje generator koji yield-uje SQLAlchemy `Session`, ne prima nikakve vrednosti iz `send()` zbog toga što dependency funkcija ne očekuje spoljašnje inpute, i ne vraća nikakvu vrednost na kraju izvršavanja već samo obavlja `cleanup` zatvaranjem sesije u `finally` bloku.
+
+- `Priprema i cleanup resursa`: opisuje faze kroz koje prolazi dependency funkcija `get_db` koja koristi `yield`. U fazi pripreme funkcija `kreira` i `yield`-uje resurs (npr. SQLAlchemy/database sesiju), dok u fazi `cleanup`-a obavlja zatvaranje ili oslobađanje resursa u `finally` bloku.
+
+Ovo je standardni tip za `dependency` funkcije koje koriste `yield` za `pripremu` i `cleanup` resursa:
+
 ```python
-def get_db():
-    db = SessionLocal()
+from collections.abc import Generator
+from sqlalchemy.orm import Session
+from .db.database import SessionLocal
+
+def get_db() -> Generator[Session, None, None]:
+    # Faza pripreme: kreira se nova sesija koja će biti korišćena u endpoint-u
+    db = SessionLocal() # Kreiranje nove sesije za trenutni request
     try:
-        yield db
+        yield db # Faza pripreme: yield-uje se sesija koja će biti korišćena u endpoint-u
     finally:
+        # Faza cleanup-a: zatvaranje sesije nakon što request završi
         db.close()
+        # Pravilo: Jedna sesija po request-u, koja se kreira u fazi pripreme i zatvara u fazi cleanup-a!
 ```
 
 - `Dependency injection`: automatsko izvršavanje dependency funkcije i ubacivanje rezultata u endpoint parametar. Ovo omogućava da `endpoint` dobije sve potrebne resurse od FastAPI-ja bez da ih ručno kreira.
 
+- `yield` u `get_db` funkciji označava fazu pripreme resursa (kreiranje sesije) i omogućava FastAPI-ju da izvrši cleanup (zatvaranje sesije) nakon što request završi. Ovo je ključni deo pattern-a "jedna sesija po request-u".
+
 - `Session`: SQLAlchemy radni kontekst za `query/add/commit`. Ovo nije globalni objekat i treba ga koristiti unutar request-a. To znači da se nova sesija kreira za svaki request i zatvara nakon što request završi. Zatvaranje se obavlja u `finally` bloku unutar dependency funkcije.
 
 - `Annotated`: tip-safe način da kažeš "ovaj parametar je `Session` i dolazi preko `Depends(get_db)`". U praksi ovo znači da IDE i alati za statičku analizu koda mogu pravilno razumeti tip parametra, dok FastAPI i dalje koristi dependency injection mehanizam. Ne menja runtime ponašanje, već poboljšava statičku proveru tipova.
+
+- `Depends(get_db)`: specifičan način da kažeš FastAPI-ju da ovaj parametar zavisi od `get_db` funkcije. FastAPI će automatski pozvati `get_db`, uzeti vrednost iz `yield` i ubaciti je u parametar `db`. Ovo omogućava da se lifecycle resursa (kreiranje i zatvaranje sesije) pravilno upravlja bez ručnog koda u endpoint-u.
+
+U praksi, ovo znači da ne moraš ručno da kreiraš i zatvaraš sesiju u svakom endpoint-u. FastAPI se brine o lifecycle-u sesije, čime se smanjuje rizik od curenja resursa i grešaka u radu sa bazom.
 
 ---
 
@@ -44,6 +65,8 @@ Kada napišeš endpoint ovako:
 async def read_all(db: Annotated[Session, Depends(get_db)]):
     return db.query(Todos).all()
 ```
+
+ili u `SQLAlchemy-ju 2.x` sa `future` API-jem, princip je isti: ne pozivaš `get_db()` ručno, već FastAPI upravlja lifecycle-om sesije kroz dependency injection.
 
 TI ne pozivaš `get_db()` ručno.
 

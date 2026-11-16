@@ -9,6 +9,8 @@ stmt = select(Users).where(Users.id == user_id)
 user = db.execute(stmt).scalars().first()
 ```
 
+---
+
 ## Mapiranje sa tvog koda
 
 Trenutno:
@@ -23,6 +25,8 @@ db.query(Users).filter(Users.id == user_id).first()
 stmt = select(Users).where(Users.id == user_id)
 user = db.execute(stmt).scalars().first()
 ```
+
+---
 
 ## Lista rezultata
 
@@ -39,9 +43,11 @@ stmt = select(Todos).where(Todos.owner_id == current_user.id)
 todos = db.execute(stmt).scalars().all()
 ```
 
+---
+
 ## Mentalni model
 
-- `select(...)` = gradis SQL izraz
-- `execute(...)` = pokreces izraz
-- `scalars()` = uzimas ORM instance
+- `select(...)` = gradiš SQL izraz
+- `execute(...)` = pokrećeš izraz
+- `scalars()` = uzimaš ORM instance
 - `first()/all()` = finalni shape rezultata

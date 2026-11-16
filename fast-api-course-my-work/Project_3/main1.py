@@ -17,7 +17,7 @@ app = FastAPI(
     license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
 )
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine) # Izvršava se samo ako todosapp3.db ne postoji
 
 
 # def get_db() -> Generator[Session, None, None]:

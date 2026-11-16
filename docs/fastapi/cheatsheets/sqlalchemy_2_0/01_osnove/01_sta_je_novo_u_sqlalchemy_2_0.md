@@ -4,10 +4,10 @@
 
 `SQLAlchemy 2.0` uvodi:
 
-1. konzistentniji `API`, što znači da je lakše predvideti ponašanje i koristiti ga u kodu
-2. čistiji `typing` (bolja integracija sa Python type hintovima),
-3. moderniji ORM obrazac (`Mapped` i `mapped_column` u SQLAlchemy 2.0)
-4. manje "magije" i predvidljiviji kod. (`explicit is better than implicit`)
+1. Konzistentniji `API`, što znači da je lakše predvideti ponašanje i koristiti ga u kodu
+2. Čistiji `typing` (bolja integracija sa Python type hintovima),
+3. Moderniji ORM obrazac (`Mapped` i `mapped_column` u SQLAlchemy 2.0)
+4. Manje "magije" i predvidljiviji kod. (`explicit is better than implicit`)
 
 `Objektno-relacioni maper` sloj ili `ORM` sloj predstavlja sloj koji povezuje `Python objekte` i `objekte/tabele` u bazi podataka. Time on spaja objektno-orijentisani svet Pythona i relacioni svet baze podataka. `orm` je skraćeni naziv za `Object Relational Mapper` i deo je SQLAlchemy biblioteke. On omogućava rad sa bazom podataka koristeći Python objekte umesto direktnog pisanja SQL upita.
 
