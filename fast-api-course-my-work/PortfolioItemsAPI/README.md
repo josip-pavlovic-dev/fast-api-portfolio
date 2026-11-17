@@ -45,7 +45,10 @@ ORM modeli su u [models.py](./models.py):
 
 SQLite po podrazumevanom podešavanju ne sprovodi strane ključeve. Oni su deklarisani u modelu, ali `db/database.py` još ne uključuje eksplicitno izvršavanje `PRAGMA foreign_keys=ON` nakon uspostavljanja konekcije.
 
-Detaljan dijagram je u [ERD_PortfolioItemsAPI.drawio](./ERD_PortfolioItemsAPI.drawio).
+Predloženi, normalizovani ciljni dijagram je u
+[ERD_PortfolioItemsAPI.drawio](./ERD_PortfolioItemsAPI.drawio). Dodaci
+`cities`, `tags` i `item_tags` prikazani su kao planirana šema za učenje i
+još nisu implementirani u `models.py` niti kreirani u bazi.
 
 ---
 
@@ -70,9 +73,11 @@ PortfolioItemsAPI/
 │   ├── database.py                # engine, URL i SessionLocal
 │   └── session.py                 # prazan kostur
 ├── notes/
-│   └── dan_01.md                  # nullable, datetime, Decimal, Enum
+│   ├── dan_01.md                  # nullable, datetime, Decimal, Enum
+│   └── dan_02.md                  # SQLite indeksi i rowid
 ├── progress/
-│   └── 2026-11-16.md              # dnevna retrospektiva
+│   ├── 2026-11-16.md              # dnevna retrospektiva
+│   └── 2026-11-17.md              # plan modelovanja i normalizacije
 ├── __init__.py
 ├── main.py                        # FastAPI aplikacija i create_all()
 ├── models.py                      # SQLAlchemy modeli
@@ -119,7 +124,9 @@ Trenutno aplikacija još nema CRUD endpoint-e.
 ## Beleške i materijali
 
 - [Dnevnik rada za 2026-11-16](./progress/2026-11-16.md)
+- [Plan modelovanja i normalizacije za 2026-11-17](./progress/2026-11-17.md)
 - [Detaljne beleške za prvi dan](./notes/dan_01.md)
+- [SQLite indeksi i rowid — beleške za drugi dan](./notes/dan_02.md)
 - [SQLite terminal vežbe za PortfolioItemsAPI](./sqlite3_exercises.md)
 - [SQLAlchemy ERD](./ERD_PortfolioItemsAPI.drawio)
 - [SQL Database kursni materijali](../../docs/sql_database/README.md)

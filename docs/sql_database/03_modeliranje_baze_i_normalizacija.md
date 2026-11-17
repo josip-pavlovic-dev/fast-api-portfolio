@@ -70,14 +70,14 @@ Tabela items:
 
 ## Normalizacija ukratko
 
-Cilj normalizacije je smanjenje dupliranja i anomalija pri izmeni.
+Cilj normalizacije je smanjenje dupliranja i anomalija pri izmeni. Ovo se postiže organizovanjem podataka u tabele tako da svaka informacija ima svoje mesto i zavisi samo od primarnog ključa. Na taj način se obezbeđuje konzistentnost i integritet podataka.
 
 ---
 
 ## 1NF
 
-Svaka kolona treba da sadrži atomsku vrednost.
-Nema liste vrednosti u jednoj celiji.
+Svaka kolona treba da sadrži atomsku vrednost (nedeljivu, pojedinačnu vrednost npr. broj, tekst, datum).
+Nema liste vrednosti u jednoj ćeliji.
 
 Loše: `tags` kolona sa "python,fastapi,sql"
 Bolje: posebna `item_tags` tabela.
@@ -86,8 +86,8 @@ Bolje: posebna `item_tags` tabela.
 
 ## 2NF
 
-Ako imas slozen PK, ne-key kolone moraju zavisiti od celog kljuca.
-(U praksi je češće bitno kod spojnih tabela.)
+Ako imas slozen PK, ne-key kolone moraju zavisiti od celog ključa.
+(U praksi je češće bitno kod spojnica tabela.)
 
 ---
 
@@ -97,13 +97,13 @@ Ne-key kolone ne treba da zavise od drugih ne-key kolona.
 
 Primer problema:
 
-- users tabela ima city_id i city_name
-- city_name zavisi od city_id, ne direktno od users PK
+- `users` tabela ima `city_id` i `city_name`
+- `city_name` zavisi od `city_id`, ne direktno od `users` PK
 
 Rešenje:
 
-- posebna cities tabela
-- users.city_id FK
+- posebna `cities` tabela
+- `users.city_id` FK -> `cities.id`
 
 ---
 

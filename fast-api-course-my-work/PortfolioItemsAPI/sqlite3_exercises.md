@@ -35,14 +35,17 @@ PRAGMA foreign_keys = ON; # Uključi proveru stranih ključeva za trenutnu konek
 PRAGMA foreign_keys; # Proveri da li je provera stranih ključeva uključena
 ```
 
-Poslednji upit treba da vrati `1`. SQLite strane ključeve po podrazumevanom
-ne sprovodi, pa ih treba uključiti za svaku novu konekciju. Ovo je važno jer bez uključene provere stranih ključeva, SQLite neće sprečiti unos nevalidnih referenci u kolone koje imaju FOREIGN KEY ograničenje.
+Poslednji upit treba da vrati `1`. SQLite strane ključeve po podrazumevanom ne sprovodi, pa ih treba uključiti za svaku novu konekciju. Ovo je važno jer bez uključene provere stranih ključeva, SQLite neće sprečiti unos nevalidnih referenci u kolone koje imaju FOREIGN KEY ograničenje.
+
+`PRAGMA` je SQLite komanda koja omogućava podešavanje i proveru različitih opcija baze podataka, uključujući proveru stranih ključeva. Svaka `PRAGMA` naredba važi samo za trenutnu konekciju, pa je potrebno ponovo je izvršiti pri svakoj novoj konekciji ako želiš da zadržiš iste postavke.
 
 ---
 
 ## 2. Kreiraj početnu šemu
 
-Ova DDL šema odgovara početnim ORM modelima u `models.py`. Pokreni je samo pri prvom radu sa praznom bazom. Ako tabele već postoje, prvo ih pregledaj sa `.schema` umesto da pokušavaš ponovo da ih kreiraš.
+Ova `DDL` (`Data Definition Language`) šema odgovara početnim ORM modelima u `models.py`.
+
+`DDL` se koristi za definisanje `strukture baze podataka`, uključujući kreiranje `tabela`, `kolona`, `indeksa` i `ograničenja`. Pokreni je samo pri prvom radu sa praznom bazom. Ako tabele već postoje, prvo ih pregledaj sa `.schema` umesto da pokušavaš ponovo da ih kreiraš.
 
 ```sql
 CREATE TABLE users (
