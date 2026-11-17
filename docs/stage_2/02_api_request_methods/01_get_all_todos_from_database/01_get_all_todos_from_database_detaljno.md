@@ -4,346 +4,304 @@
 
 ## 0) Gde se nalazimo u progresiji
 
-Završio si setup baze:
+Posle podešavanja baze, modela i upoznavanja SQLite-a, sledeći korak je čitanje zapisa kroz API. U ovoj lekciji pravimo osnovni `GET` za sve zadatke, objašnjavamo DB sesiju po zahtevu i zatim prikazujemo kako se upit ograničava na prijavljenog korisnika, tako da svaki korisnik vidi samo svoje zadatke.
 
-- `database.py` (engine, SessionLocal, Base)
-- `models.py` (Users, Todos)
-- `main.py` (create_all)
-- `sqlite3` osnove
-
-Sada prelazimo na novu oblast: API request methods.
-Prvi korak je da kroz endpoint vratiš sve todo zapise iz baze.
+Primeri su napisani u **SQLAlchemy 2.0 stilu**: `select()` i `Session.scalars()` zamenjuju stariji `Session.query()` obrazac. Stari obrazac i dalje postoji u SQLAlchemy 2.x kao legacy API i nije neispravan samo zato što koristi 2.x.
+Transkript kursa i postojeći kod projekta mogu koristiti stariji stil SQLAlchemy-ja. Izmena ove lekcije ne menja automatski njegovu implementaciju.
 
 ---
 
-## 1) Šta je cilj ove lekcije
+## 1) Cilj lekcije
 
-Cilj nije samo `GET` endpoint, nego 3 stvari zajedno:
+Povezujemo tri stvari:
 
-1. napraviti DB dependency (`get_db`)
-2. ubaciti dependency injection u endpoint (`Depends`)
-3. uraditi query i vratiti listu (`db.query(Todos).all()`)
+1. `get_db()` pravi sesiju i obezbeđuje njeno zatvaranje.
+2. FastAPI `Depends` prosleđuje tu sesiju endpoint-u.
+3. `select(Todos)` formira upit, a `db.scalars(stmt).all()` vraća listu ORM objekata.
 
-To je osnovni obrazac koji ćeš koristiti gotovo svuda u FastAPI + SQLAlchemy.
-
----
-
-## 2) Šta transcript pokriva (verno lekciji)
-
-U transkriptu se radi sledeće:
-
-1. pominje se da `create_all` kreira tabele samo kada ne postoje
-2. pravi se `get_db()` funkcija sa `yield`
-3. objašnjava se `Depends` i `Annotated`
-4. pravi se `read_all` endpoint
-5. endpoint vraća sve todo zapise
-6. uvodi se skraćenica tipa `db_dependency = Annotated[...]`
-
-To je odličan uvod u lifecycle DB sesije po request-u.
+U ovoj lekciji koristimo **sinhroni** SQLAlchemy `Session`, pa su primeri endpoint-a obične `def` funkcije ali se i dalje oslanjaju na FastAPI dependency sistem za upravljanje sesijom.
 
 ---
 
-## 3) Realni kod iz Project 4 i kako je evoluirao
+## 2) Šta pokriva lekcija iz kursa
 
-U tvom Project 4 kodu ovaj obrazac već postoji u router fajlu.
-Bitna razlika u odnosu na najraniju verziju iz transkripta:
+- `create_all()` kreira nedostajuće tabele, ne migrira postojeće.
+- `get_db()` i `yield` omogućavaju rad sa sesijom i njeno zatvaranje.
+- `Depends` i `Annotated` povezuju sesiju sa endpoint-om.
+- `read_all` vraća zadatke iz baze.
+- Skraćenica `db_dependency` smanjuje ponavljanje tipa i dependency-ja.
 
-- ne vraća se više bukvalno sve iz tabele
-- vraćaju se samo todos za ulogovanog korisnika
+Kursni upit je ovde prikazan novijim stilom, ali cilj lekcije ostaje isti.
 
-Praktično:
+---
+
+## 3) `get_db`: sesija i `yield`
+
+U postojećem TodoApp-u `SessionLocal` je `sessionmaker` definisan u `TodoApp/db/database.py`, a `get_db` i `db_dependency` nalaze se u `TodoApp/db/session.py`. Pojednostavljeno:
 
 ```python
-return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
-```
+from collections.abc import Generator
 
-Ovo je naprednija i bezbednija varijanta.
+from sqlalchemy.orm import Session
 
-Zašto je bolje:
+from .database import SessionLocal
 
-- korisnik vidi samo svoje podatke
-- nema curenja tuđih todo zapisa
-- endpoint je spremniji za realnu aplikaciju
 
----
-
-## 4) Detaljno: get_db i zašto je `yield` bitan
-
-Klasičan obrazac:
-
-```python
-def get_db():
-    db = SessionLocal() # otvara novu DB (database) sesiju
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
     try:
-        yield db # pošalji DB sesiju endpoint funkciji
+        yield db
     finally:
         db.close()
 ```
 
-Šta se dešava po koracima:
+1. `SessionLocal()` pravi novu SQLAlchemy sesiju, **ne nužno i odmah fizičku konekciju**: ona se obično preuzima iz pool-a kada zatreba.
+2. `yield db` predaje sesiju FastAPI-ju za korišćenje u endpoint-u.
+3. Kod u `finally` zatvara sesiju i ako obrada uspe i ako se desi izuzetak. Konekcija se oslobađa i, ako se koristi pool, obično vraća u pool; to ne mora značiti da je fizička konekcija odmah zatvorena.
+4. `close()` ne radi `commit()`. Za upis je potrebna posebna kontrola transakcije; ova lekcija čita podatke i ne poziva `commit`.
 
-1. FastAPI pozove dependency pre endpoint logike, što znači da se `get_db` izvršava pre nego što se endpoint funkcija pozove.
-2. `SessionLocal()` otvara DB sesiju
-3. `yield db` prosleđuje sesiju endpoint funkciji i omogućava joj da koristi bazu podataka. Koristimo `yield` umesto `return` da bismo osigurali da se `finally` blok izvrši nakon što endpoint završi sa radom. Kada naiđe kraj endpoint funkcije, kontrola se vraća nazad u `get_db` funkciju i izvršava se `finally` blok.
-4. endpoint vrati response klijentu u obliku HTTP odgovora.
-5. posle response-a radi se `finally: db.close()` i konekcija se zatvara.
+FastAPI izvršava završni deo dependency-ja u skladu sa njegovim životnim ciklusom. Tačan trenutak u odnosu na slanje odgovora može zavisiti od verzije FastAPI-ja i podešavanja scope-a. Nemoj računati da se `finally` uvek izvršava tek nakon slanja odgovora.
 
-Ključna prednost:
+Jedna sesija nije zamišljena kao globalni objekat koji istovremeno dele konkurentni zahtevi. `yield` pomaže da svaki zahtev dobije odgovarajuću sesiju i da se resurs oslobodi nakon upotrebe.
 
-- Konekcija je otvorena samo dok treba, što smanjuje opterećenje na bazu i rizik od curenja konekcija.
-- Obrazac je skalabilan i standardan, i preporučuje se za većinu FastAPI aplikacija.
+Pravilo je da svaka HTTP zahtev dobija svoju instancu sesije, koja se zatim oslobađa nakon upotrebe, čime se izbegava deljenje sesije između konkurentnih zahteva. Jedinstvena sesija po zahtevu omogućava sigurnu i izolovanu obradu podataka.
 
 ---
 
-## 5) Annotated + Depends bez magije
+## 4) `Annotated` i `Depends`
 
-Sintaksa za definisanje dependency-ja sa Annotated i Depends je sledeća:
+U istom `db/session.py` može se definisati skraćenica:
 
 ```python
 from typing import Annotated
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from ...database import get_db
-
-# Primer:
 db_dependency = Annotated[Session, Depends(get_db)]
 ```
 
-Ovo čitaj ovako:
-
-- `db` parametar treba da bude `Session`
-- FastAPI će ga popuniti preko `get_db` kada se endpoint funkcija pozove.
-
-U endpointu:
+Čitaj je ovako: „parametar je `Session`, a FastAPI ga dobija pozivom `get_db`“. Kada je modul sa endpoint-om na drugom mestu, uvezi tu skraćenicu iz odgovarajućeg paketa:
 
 ```python
-async def read_all(db: db_dependency):
+def read_all(db: db_dependency):
     ...
 ```
 
-Zašto je ovo korisno:
-
-- ne ponavljaš dugi tip u svakom endpointu
-- kod je čitljiviji
-- lakše održavanje
+`Depends` sam ne poziva bazu u trenutku definisanja funkcije. FastAPI razrešava dependency kada obrađuje zahtev.
 
 ---
 
-## 6) Endpoint logika za “get all”
-
-Osnovna (rani nivo):
+## 5) SQLAlchemy 2.0: `select` i `scalars`
 
 ```python
-@router.get("/")
-async def read_all(db: db_dependency):
-    return db.query(Todos).all()
+from sqlalchemy import select
+
+stmt = select(Todos)
+todos = db.scalars(stmt).all()
 ```
 
-Project 4 varijanta (sa auth):
+- `select(Todos)` pravi SQL izraz za izbor redova mapiranih na model `Todos`. Samo pravljenje izraza **ne izvršava** upit.
+- `db.scalars(stmt)` izvršava izraz preko sesije i daje `ScalarResult`. Za ovaj upit pojedinačne vrednosti su `Todos` ORM objekti.
+- `.all()` preuzima rezultate kao listu. Ako nema redova, rezultat je prazna lista `[]`, ne `None`.
+
+Alternativni zapis koji daje istu listu za ovaj upit je:
 
 ```python
-@router.get("/", status_code=200)
-async def read_all(user: user_dependency, db: db_dependency):
-    if user is None:
-        raise HTTPException(status_code=401, detail="Authentication Failed")
-    return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
+stmt = select(Todos)
+todos = db.execute(stmt).scalars().all()
 ```
 
-Napomena:
+`execute()` prvo vraća rezultat sastavljen od redova; `.scalars()` izdvaja prvi element svakog reda. Kod `select(Todos)` taj prvi element je ORM objekat `Todos`. Ako odabereš više kolona i trebaju ti sve, koristi `db.execute(stmt).all()` umesto `.scalars()`, jer `.scalars()` uzima samo prvu izabranu vrednost po redu.
 
-- druga varijanta je bezbednija i realnija
+SQL ekvivalent osnovne ideje je:
 
----
+```sql
+SELECT * FROM todos;
+```
 
-## 7) Važno o create_all iz transkripta
-
-Transkript ispravno pominje:
+Redosled bez `ORDER BY` nije garantovan. Za stabilan redosled po ID-u:
 
 ```python
-Base.metadata.create_all(bind=engine)
+stmt = select(Todos).order_by(Todos.id)
+todos = db.scalars(stmt).all()
 ```
 
-Ovo:
-
-- kreira nedostajuće tabele
-- ne radi kompleksne izmene postojećih tabela
-
-Ako posle menjaš model (dodaješ kolonu), `create_all` nije pun migration alat.
-Zato u ozbiljnijoj fazi koristiš Alembic migracije.
-
 ---
 
-## 8) Najčešće greške početnika u ovoj lekciji
+## 6) Osnovni endpoint: svi zadaci
 
-1. Zaboravljen `db.close()`
-
-- može dovesti do curenja konekcija za svaku novu konekciju koja se otvori, a ne zatvori pravilno.
-
-2. Pisanje globalne sesije umesto per-request sesije za svaki zahtev
-
-- opasno za konkurentne zahteve, može dovesti do neočekivanih ponašanja.
-
-3. Endpoint bez `auth` filtera vraća sve korisnike širom baze.
-
-- može biti bezbednosni problem u realnoj aplikaciji, jer svaki korisnik može videti podatke drugih korisnika.
-
-4. Mešanje `sync/async` bez razumevanja šta se dešava ispod haube
-
-- endpoint je `async`, ali SQLAlchemy Session ovde radi sinhrono
-- to je normalno za ovaj kurs setup
-
-5. Očekivanje da `create_all` radi migracije
-
-- ne radi ih pouzdano za sve promene shema.
-
----
-
-## 9) “Šta se dešava ispod haube” kada pozoveš GET
-
-Tok izgleda ovako:
-
-1. HTTP zahtev pogodi rutu po kojoj je definisan endpoint.
-2. FastAPI razreši dependency-je od endpointa od kojih zavisi (npr. `get_db`).
-3. `get_db` otvori sesiju za bazu podataka.
-4. endpoint izvrsi query (ORM izraz) nad bazom podataka.
-5. SQLAlchemy prevede query (ORM izraz) u SQL koji se izvršava nad bazom podataka.
-6. baza vrati redove koji odgovaraju SQL upitu.
-7. FastAPI serijalizuje response u JSON format.
-8. `finally` zatvori sesiju za bazu podataka.
-
-Ako ovo razumeš, razumećeš srce FastAPI + DB request lifecycle-a.
-
----
-
-## 10) SQL ekvivalent ORM izraza
-
-ORM izraz:
+Sledeći primer je **edukativni router** koji se može napisati unutar `TodoApp/api/routes/`. Relativni importi polaze od te lokacije. Koristi postojeći `db_dependency` i model `Todos`, ali definiše zasebnu response šemu za potrebe primera:
 
 ```python
-db.query(Todos).filter(Todos.owner_id == user_id).all()
+from fastapi import APIRouter
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import select
+
+from ...db.session import db_dependency
+from ...models import Todos
+
+router = APIRouter(prefix="/todos", tags=["todos"])
+
+
+class TodoRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str | None
+    description: str | None
+    priority: int | None
+    complete: bool | None
+    owner_id: int | None
+
+
+@router.get("/", response_model=list[TodoRead])
+def read_all(db: db_dependency) -> list[Todos]:
+    stmt = select(Todos).order_by(Todos.id)
+    return list(db.scalars(stmt).all())
 ```
+
+`response_model=list[TodoRead]` koristi **Pydantic šemu**, ne ORM klasu `Todos`. Sa `from_attributes=True` Pydantic može da čita vrednosti iz ORM objekata. Polja u primeru dozvoljavaju `None` tamo gde ih trenutni TodoApp ORM model dopušta kao `NULL`.
+
+Primer namerno vraća sve zadatke i **nema autentikaciju**. Pogodan je za učenje nad lokalnom bazom, ali u aplikaciji sa privatnim podacima nije prikladan za javno izlaganje. Sam kod ne dodaje rutu u aplikaciju: router treba uključiti sa `app.include_router(router)`, uz izbegavanje dupliranja postojeće rute.
+
+Postojeći `TodoResponse` u TodoApp-u, za razliku od ove edukativne šeme, zahteva nenulte `title`, `description`, `priority` i `complete`, i ne izlaže `owner_id`. Ako baza sadrži `NULL` u tim kolonama, njegova validacija odgovora može da ne uspe. Pravila šeme i baze treba uskladiti pre upotrebe te šeme. Ne pretpostavljaj da svaki postojeći red zadovoljava API šemu.
+
+---
+
+## 7) Filtriranje po prijavljenom korisniku
+
+Kasnije, kada postoji pouzdana autentikacija, dodaje se `WHERE` uslov:
+
+```python
+stmt = (
+    select(Todos)
+    .where(Todos.owner_id == current_user.id)
+    .order_by(Todos.id)
+)
+todos = db.scalars(stmt).all()
+```
+
+`current_user` ovde mora biti korisnik koji je već **proveren kroz autentikaciju**, a ne korisnički ID koji klijent slobodno navodi. Na primer, postojeći TodoApp ima `get_current_user` dependency; njegova GET ruta u trenutnom kodu koristi legacy upit. Gornji izraz prikazuje kako se isti ownership filter piše u SQLAlchemy 2.0 stilu, bez tvrdnje da je ruta već
+prepravljena.
+
+Ako korisnik nema zadataka, rezultat je `[]`. Filter obezbeđuje da se preuzimaju samo redovi tog vlasnika, ali ne zamenjuje autentikaciju ili druga pravila autorizacije.
 
 SQL ideja:
 
 ```sql
 SELECT *
 FROM todos
-WHERE owner_id = :user_id;
+WHERE owner_id = :user_id
+ORDER BY id;
 ```
 
-`:user_id` je parametrizovana vrednost.
-To je bezbednije od konkatenacije (concatenating) stringova. Ovo smanjuje rizik od SQL injection napada.
-
-`injection` napad predstavlja situaciju kada napadač može da ubaci maliciozni SQL kod u upit, što može dovesti do neovlašćenog pristupa ili manipulacije podacima. Zato je parametrizacija upita važna.
+SQLAlchemy obrađuje vrednost ID-a kao vezani parametar; nemoj praviti SQL konkatenacijom korisničkog unosa. Parametrizacija sprečava da se vrednost tumači kao deo SQL sintakse i pomaže zaštiti od SQL injection-a.
 
 ---
 
-## 11) Praktična mini vežba (20-30 min)
-
-1. Napiši endpoint koji vraća sve todos (bez filtera).
+## 8) `create_all()` nije migracija
 
 ```python
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
-from app.database import get_db
-from app.models import Todos
-
-router = APIRouter()
-
-@router.get("/todos", response_model=list[Todos])
-def get_all_todos(db: Session = Depends(get_db)):
-    return db.query(Todos).order_by(Todos.id).all()
+Base.metadata.create_all(bind=engine)
 ```
 
-2. Zatim dodaj auth i filter po `owner_id`.
+Na osnovu registrovanih modela kreira tabele koje nedostaju. Ne dodaje automatski novu kolonu postojećoj tabeli i ne usklađuje postojeće constraint-e sa izmenjenim modelom. Za kontrolisane promene postojeće šeme
+koriste se migracije, npr. Alembic.
 
-```python
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+U trenutnom TodoApp `main.py` poziv se izvršava pri import-u. Zato pre pokretanja obrati pažnju na radni direktorijum i relativni SQLite URL: aplikacija može kreirati bazu ili nedostajuće tabele. Nemoj je pokretati samo da bi proverio tekst lekcije.
 
-from app.database import get_db
-from app.models import Todos
+---
 
-router = APIRouter()
+## 9) Sinhroni i asinhroni rad
 
-@router.get("/todos/{user_id}", response_model=list[Todos])
-def get_all_todos(user_id: int, db: Session = Depends(get_db)):
-    # Dodaj filter po owner_id
-    return db.query(Todos).filter(Todos.owner_id == user_id).order_by(Todos.id).all()
-```
+`Session` u primerima je sinhron: poziv baze blokira nit u kojoj se izvršava. Zato za sinhronu DB logiku u FastAPI-ju koristimo `def` endpoint. FastAPI ga izvršava u thread pool-u.
 
-3. Uoči razliku u rezultatima.
+Ako bi sinhroni poziv baze bio direktno unutar `async def`, mogao bi da blokira event loop. Pravi asinhroni rad zahteva odgovarajući async drajver, `AsyncSession` i `await`; samo pisanje `async def` ne pretvara sinhroni `Session` u asinhroni. To je posebna tema, ne moraš je uvoditi u ovoj lekciji.
 
-Razlika je u tome što prvi endpoint vraća sve todos bez obzira na vlasnika, dok drugi endpoint vraća samo todos koji pripadaju korisniku sa datim `user_id`.
+---
 
-4. Testiraj 2 korisnika i potvrdi da svaki vidi samo svoje podatke.
+## 10) Tok jednog GET zahteva
+
+1. HTTP zahtev stiže na rutu.
+2. FastAPI razrešava dependency-je i dobija sesiju iz `get_db`.
+3. Endpoint formira `select(Todos)` izraz i izvršava ga sa `db.scalars`.
+4. Baza vraća rezultate; SQLAlchemy ih mapira na ORM objekte.
+5. FastAPI/Pydantic priprema odgovor koristeći response šemu.
+6. FastAPI zatvara dependency u odgovarajućoj fazi njegovog životnog ciklusa; `finally` poziva `db.close()`.
+
+Za velike tabele `.all()` učitava sve rezultate; kasnije treba razmotriti paginaciju. Za trenutnu lokalnu vežbu cilj je razumeti osnovni tok.
+
+---
+
+## 11) Praktične mini vežbe
+
+1. U osnovnom endpoint-u iz odeljka 6 pronađi deo koji **pravi upit** i deo koji ga **izvršava**. Zameni `order_by(Todos.id)` sa `order_by(Todos.id.desc())` i objasni razliku u redosledu.
+2. Sa podacima u lokalnoj bazi proveri da ruta vraća listu. Kada tabela nema redova, očekuj `[]`, ne grešku `404`.
+3. Kao odvojenu vežbu dodaj ownership filter iz odeljka 7 tek kada postoji pouzdan `current_user` dependency. Uloguj se kao dva korisnika i potvrdi da svaki dobija samo svoje zadatke.
+4. Uporedi ORM model sa response šemom. Koje kolone baze dozvoljavaju `NULL`, a koje šema dozvoljava kao `None`?
+
+Ako si edukativni router iz odeljka 6 uključio u pokrenutu aplikaciju, primer poziva je:
 
 ```bash
-# Testiranje prvog endpointa (svi todos)
-curl -X GET "http://127.0.0.1:8000/todos"
-
-# Testiranje drugog endpointa (samo todos za korisnika sa user_id=1)
-curl -X GET "http://127.0.0.1:8000/todos/1"
+curl -i http://127.0.0.1:8000/todos/
 ```
 
-Testiranje treba da pokaže da prvi endpoint vraća sve todos, dok drugi endpoint vraća samo todos za korisnika sa datim `user_id`.
-Bonus:
-
-- Dodaj sortiranje po `id` od najmanjeg ka najvećem u oba endpointa.
-
-Dodato sortiranje po `id` od najmanjeg ka najvećem u oba endpointa. Pogledaj kako se koristi `order_by(Todos.id)` u oba primera.
+Taj primer **nema autentikaciju** i prikazuje sve redove. Ne može dokazati izolaciju korisnika. Za test ownership filtera potrebni su stvarni autentikovani zahtevi sa odgovarajućim tokenima za dva korisnika. Sam `/todos/{user_id}` ili filter po proizvoljnom `user_id` ne dokazuje da je pristup bezbedan.
 
 ---
 
-## 12) Samoprovera razumevanja
+## 12) Najčešće greške
 
-Ako možeš jasno da odgovoriš, lekcija je legla:
-
-1. Zasto je `yield` bolji obrazac od prostog `return` u DB dependency?
-
-`yield` omogućava da se izvrši neki kod nakon što endpoint završi sa radom, što je korisno za zatvaranje resursa kao što je DB sesija. U suprotnom, ako bi se koristio samo `return`, sesija bi mogla ostati otvorena duže nego što je potrebno, što može dovesti do curenja resursa.
-
-2. Kada se tačno izvrši `db.close()`?
-
-`db.close()` se izvršava nakon što endpoint završi sa radom i nakon što se kod iza `yield` u dependency-ju izvrši. To obezbeđuje da se DB sesija zatvori pravilno, čak i ako dođe do greške tokom obrade zahteva. Ovo je ključni razlog zašto je `yield` bolji obrazac od prostog `return` u DB dependency-ju.
-
-3. Čemu služi `Depends(get_db)`?
-
-`Depends(get_db)` služi za injektovanje DB sesije u endpoint. FastAPI će automatski pozvati `get_db` dependency, obezbediti DB sesiju i proslediti je endpoint funkciji. Nakon što endpoint završi, FastAPI će izvršiti kod iza `yield` u `get_db`, čime se sesija pravilno zatvara. Ovo omogućava sigurno i efikasno rukovanje DB resursima u svakom request-u.
-
-4. Zašto je `owner_id` filter bitan u realnom API-ju?
-
-`owner_id` filter je bitan jer omogućava da svaki korisnik vidi samo svoje podatke. Bez ovog filtera, korisnici bi mogli da pristupe podacima drugih korisnika, što predstavlja ozbiljan bezbednosni rizik. Zato je važno uvek filtrirati po `owner_id` u realnim API-jevima.
-
-5. Koja je granica `create_all`, a kada treba Alembic migrations?
-
-`create_all` je koristan za jednostavne projekte ili inicijalno kreiranje šeme baze podataka. Međutim, kada se šema baze menja tokom razvoja (dodavanje kolona, tabela, itd.), Alembic migrations su preporučeni jer omogućavaju kontrolisano i verzionisano upravljanje promenama u bazi podataka. Ovo je posebno važno u produkcionim okruženjima gde direktno menjanje šeme može dovesti do gubitka podataka ili nekompatibilnosti.
+1. **Globalna sesija:** ne deli jednu `Session` između konkurentnih zahteva.
+2. **Bez zatvaranja sesije:** koristi dependency sa `yield` i `finally`.
+3. **ORM klasa kao response model:** koristi Pydantic šemu sa
+   `ConfigDict(from_attributes=True)`, ne `response_model=list[Todos]`.
+4. **Nepodudaranje `NULL` pravila:** response validacija može da padne ako
+   šema zahteva vrednost, a baza sadrži `NULL`.
+5. **Neautorizovan filter:** ID iz URL-a nije dokaz identiteta korisnika.
+6. **Sinhroni DB poziv u `async def`:** može blokirati event loop.
+7. **Očekivanje migracija od `create_all()`:** postojeće tabele ne ažurira.
+8. **Mešanje `.execute()` i `.scalars()`:** rezultat `execute()` sadrži redove, dok `scalars()` izdvaja prvu vrednost svakog reda.
 
 ---
 
-## 13) Veza sa sledećim lekcijama
+## 13) Samoprovera
 
-Ova lekcija je baza za sve dalje request methods:
+1. Zašto se u `get_db` koristi `yield`, a ne samo `return`?
 
-- `GET` by id
-- `POST` create
-- `PUT` update
-- `DELETE`
+- `yield` omogućava da se sesija pravilno zatvori u `finally` bloku nakon što se završi sa korišćenjem. Ako bi se koristio samo `return`, sesija ne bi imala priliku da se zatvori, što može dovesti do curenja konekcija i problema sa konkurentnim pristupom bazi.
 
-Svi oni koriste isti dependency pattern za DB.
-Zato je važno da ga sada razumeš potpuno.
+2. Da li `SessionLocal()` mora odmah otvoriti fizičku DB konekciju?
+
+- Ne, `SessionLocal()` može odložiti otvaranje konekcije dok se zaista ne izvrši neki upit. Ovo omogućava efikasnije korišćenje resursa i smanjuje broj nepotrebno otvorenih konekcija. Fizička konekcija se otvara tek kada je zaista potrebna baza podataka za izvršavanje upita (npr. prilikom prvog `SELECT` ili `INSERT` upita).
+
+3. Koja je razlika između `select(Todos)` i `db.scalars(stmt)`?
+
+- `select(Todos)` gradi SQL izraz koji opisuje šta želimo da dohvatimo iz baze, dok `db.scalars(stmt)` izvršava taj izraz i vraća samo prve vrednosti iz svakog reda rezultata. Ovo je korisno kada nas zanima samo jedna kolona ili kada želimo da dobijemo listu objekata iz upita.
+
+4. Šta vraća `.all()` kada nema nijednog reda?
+
+- `.all()` vraća praznu listu kada upit ne pronađe nijedan red u bazi. Ovo omogućava jednostavno rukovanje situacijama kada nema rezultata, bez potrebe za dodatnom proverom `None` vrednosti.
+
+5. Zašto `response_model` treba da bude Pydantic šema, a ne ORM klasa?
+
+- Zato što Pydantic šema omogućava validaciju i serijalizaciju podataka koji se vraćaju iz API-ja, dok ORM klasa predstavlja strukturu baze podataka i ne pruža automatsku validaciju izlaza. Pored toga, Pydantic šema može definisati dodatna pravila i transformacije podataka koji se šalju klijentu, čime se osigurava konzistentan i siguran API izlaz.
+
+6. Zašto `WHERE owner_id = ...` nije dovoljan ako je ID proizvoljan unos klijenta?
+
+- Zato što klijent može da unese proizvoljan ID i pristupi tuđim podacima. Identitet korisnika mora se proveravati kroz autentikaciju, a ne samo kroz parametre URL-a. Na taj način se osigurava da korisnik može pristupiti samo svojim podacima, čime se štiti privatnost i integritet podataka.
+
+7. Zašto je `def` prikladan za sinhronu sesiju u FastAPI-ju?
+
+- Zato što sinhrona sesija blokira thread dok se izvršava, a FastAPI koristi thread pool za sinhrone rute. Korišćenje `def` omogućava da se sinhroni kod izvršava u thread pool-u bez blokiranja event loop-a. `thread pool` predstavlja mehanizam koji omogućava paralelno izvršavanje sinhronih funkcija u odvojenim thread-ovima. Funkcioniše tako što se sinhrone funkcije delegiraju na thread pool, dok glavni event loop ostaje slobodan za obradu drugih asinhronih zadataka.
+
+8. Šta `create_all()` radi sa novom, a šta sa postojećom tabelom?
+
+- `create_all()` kreira sve tabele koje ne postoje u bazi, ali ne menja postojeće tabele. Za migracije postojećih tabela potrebno je koristiti alatke kao što je Alembic.
 
 ---
 
-## 14) Zaključak
+## 14) Veza sa sledećim lekcijama
 
-Lekcija deluje jednostavno (jedan GET), ali zapravo uvodi najvažniji backend obrazac:
-
-- per-request DB session (sa zatvaranjem nakon request-a uz `yield`)
-- dependency injection (`Depends(get_db)` za DB sesiju)
-- query kroz ORM (SQLAlchemy ORM model za tvoju tabelu `todos`)
-- bezbedno filtriranje po korisniku (`owner_id` filter za identifikaciju vlasnika)
-
-Kad ovo savladaš, ostali CRUD endpointi postaju samo varijacije iste osnove.
+Ovaj obrazac sesije i dependency-ja koristi se i za `GET` po ID-u, kao i kasnije za `POST`, `PUT` i `DELETE`. Razlika je u upitu i radu sa transakcijom; promena podataka zahteva pažljivo upravljanje `commit` i `rollback` postupcima.
