@@ -1,14 +1,13 @@
 # SQLite3 vežbe — PortfolioItemsAPI
 
-Ove vežbe su vezane za bazu PortfolioItemsAPI i njegove tri tabele:
-`users`, `categories` i `items`. Radićeš direktno nad
-`PortfolioItemsAPI/data/portfolioitemsapp.db`, bez kopiranja baze u `/tmp/`.
+Ove vežbe su vezane za bazu PortfolioItemsAPI i njegove tri tabele: `users`, `categories` i `items`. Radićeš direktno nad `PortfolioItemsAPI/data/portfolioitemsapp.db`.
+
 Promene koje napraviš ostaju sačuvane u toj bazi.
 
-> Baza se ne kreira unapred. Komanda `sqlite3` će je napraviti kada je prvi
-> put otvoriš. Ako `PortfolioItemsAPI/data/` direktorijum ne postoji, prvo
-> ga napravi. Ove vežbe kreiraju tabele direktno kroz SQLite; nemoj
-> pokretati `main.py` samo radi njihovog kreiranja.
+> Baza se ne kreira unapred. Komanda `sqlite3` će je napraviti kada je prvi put otvoriš.
+> Ako `PortfolioItemsAPI/data/` direktorijum ne postoji, prvo ga napravi.
+> Ove vežbe kreiraju tabele direktno kroz SQLite, bez korišćenja ORM-a ili drugih alata.
+> Nemoj pokretati `main.py` samo radi njihovog kreiranja.
 
 ## 1. Otvori bazu za ovaj projekat
 
@@ -26,24 +25,24 @@ U SQLite prompt-u proveri putanju:
 ```
 
 Treba da prikazuje `fast-api-course-my-work/PortfolioItemsAPI/data/portfolioitemsapp.db`.
-Podešavanja prikaza i uključivanje provere stranih ključeva važe za trenutnu
-SQLite konekciju:
+
+Podešavanja prikaza i uključivanje provere stranih ključeva važe za trenutnu SQLite konekciju:
 
 ```sql
 .headers on
 .mode table
-PRAGMA foreign_keys = ON;
-PRAGMA foreign_keys;
+PRAGMA foreign_keys = ON; # Uključi proveru stranih ključeva za trenutnu konekciju
+PRAGMA foreign_keys; # Proveri da li je provera stranih ključeva uključena
 ```
 
 Poslednji upit treba da vrati `1`. SQLite strane ključeve po podrazumevanom
-ne sprovodi, pa ih treba uključiti za svaku novu konekciju.
+ne sprovodi, pa ih treba uključiti za svaku novu konekciju. Ovo je važno jer bez uključene provere stranih ključeva, SQLite neće sprečiti unos nevalidnih referenci u kolone koje imaju FOREIGN KEY ograničenje.
+
+---
 
 ## 2. Kreiraj početnu šemu
 
-Ova DDL šema odgovara početnim ORM modelima u `models.py`. Pokreni je samo
-pri prvom radu sa praznom bazom. Ako tabele već postoje, prvo ih pregledaj
-sa `.schema` umesto da pokušavaš ponovo da ih kreiraš.
+Ova DDL šema odgovara početnim ORM modelima u `models.py`. Pokreni je samo pri prvom radu sa praznom bazom. Ako tabele već postoje, prvo ih pregledaj sa `.schema` umesto da pokušavaš ponovo da ih kreiraš.
 
 ```sql
 CREATE TABLE users (
@@ -85,12 +84,11 @@ Pregledaj kreirane tabele i kolone:
 PRAGMA table_info(items);
 ```
 
+---
+
 ## 3. Dodaj korisnike i kategorije
 
-Dodaj dva korisnika i dve kategorije. Email i ime kategorije moraju biti
-različiti jer su jedinstveni. Ovaj primer unesi jednom; ako si ga već
-koristio, izaberi druge email adrese i nazive kategorija, pa ih koristi i u
-upitima za dodavanje stavki:
+Dodaj dva korisnika i dve kategorije. Email i ime korisnika kao i ime kategorije moraju biti različiti jer su jedinstveni. Ovaj primer unesi jednom; ako si ga već koristio, izaberi druge email adrese i nazive kategorija, pa ih koristi i u upitima za dodavanje stavki:
 
 ```sql
 INSERT INTO users (name, email)
@@ -119,13 +117,13 @@ ORDER BY id;
 Zapiši ID-jeve koje su dobili. ID se automatski dodeljuje i ne treba
 pretpostaviti da je uvek `1`.
 
+---
+
 ## 4. Dodaj portfolio stavke
 
-Za probne stavke pronađi `owner_id` i `category_id` po email-u i imenu
-kategorije. Tako ne moraš da pretpostavljaš njihove ID vrednosti.
+Za probne stavke pronađi `owner_id` i `category_id` po email-u i imenu kategorije. Tako ne moraš da pretpostavljaš njihove ID vrednosti.
 
-Prvi red izostavlja `status`, pa će baza postaviti `draft`. Drugi eksplicitno
-postavlja `published`:
+Prvi red izostavlja `status`, pa će baza postaviti `draft`. Drugi eksplicitno postavlja `published`:
 
 ```sql
 INSERT INTO items (title, description, price, owner_id, category_id)
@@ -155,6 +153,8 @@ SELECT id, title, description, price, status, created_at, updated_at
 FROM items
 ORDER BY id;
 ```
+
+---
 
 ## 5. Vežbaj `SELECT` i `WHERE`
 
@@ -202,10 +202,11 @@ ORDER BY id;
    ORDER BY items.id;
    ```
 
+---
+
 ## 6. Vežbaj `UPDATE`
 
-Najpre pronađi ID stavke koju želiš da ažuriraš. Zatim zameni
-`ID_STAVKE` stvarnim brojem iz rezultata:
+Najpre pronađi ID stavke koju želiš da ažuriraš. Zatim zameni `ID_STAVKE` stvarnim brojem iz rezultata:
 
 ```sql
 UPDATE items
@@ -224,9 +225,9 @@ WHERE id = ID_STAVKE;
 SELECT changes();
 ```
 
-Kod direktnog `sqlite3 UPDATE`, `updated_at` se ne osvežava automatski.
-`onupdate=func.now()` iz modela se primenjuje kroz SQLAlchemy, a nije
-SQLite trigger, zato ga u ovom SQL upitu postavljamo ručno.
+Kod direktnog `sqlite3 UPDATE`, `updated_at` se ne osvežava automatski. `onupdate=func.now()` iz modela se primenjuje kroz SQLAlchemy, što znači da će se `updated_at` automatski osvežavati pri svakoj izmeni kroz ORM. Međutim, to nije ugrađeni SQLite trigger, zato ga u ovom SQL upitu postavljamo ručno.
+
+---
 
 ## 7. Vežbaj `DELETE`
 
@@ -246,25 +247,30 @@ WHERE id = ID_STAVKE;
 `changes()` treba da prijavi `1`, a završni `SELECT` da ne vrati red.
 Brisanje stavke ne briše njenog korisnika ni kategoriju.
 
+---
+
 ## 8. Razmisli i odgovori
 
 1. Zašto se u `INSERT` navode imena kolona?
+
 2. Šta se dešava ako `status` izostavimo iz `INSERT`-a?
+
 3. Zašto se `NULL` proverava pomoću `IS NULL`?
+
 4. Zašto su `JOIN` potrebni da bi se uz stavku prikazali vlasnik i kategorija?
+
 5. Zašto je `UPDATE` ili `DELETE` bez preciznog `WHERE` uslova rizičan?
+
 6. Zašto se `updated_at` u ovom direktnom SQL primeru postavlja ručno?
+
 7. Šta ograničavaju `UNIQUE`, `NOT NULL`, `CHECK` i strani ključevi?
+
+---
 
 ## Napomena o vrednostima i kasnijem ORM radu
 
-`price` je definisana kao `NUMERIC(10, 2)`, ali SQLite ne garantuje istu
-fiksnu decimalnu preciznost kao neke druge baze. Status dozvoljava samo
-`draft` i `published`. Strani ključevi povezuju stavke sa postojećim
-korisnikom i kategorijom, pod uslovom da je `PRAGMA foreign_keys` uključen.
+`price` je definisana kao `NUMERIC(10, 2)`, ali SQLite ne garantuje istu fiksnu decimalnu preciznost kao neke druge baze.
 
-Ove vežbe prave početnu šemu direktno u ciljnoj PortfolioItemsAPI bazi.
-Kasnije, kada se aplikacija pokrene iz `fast-api-course-my-work`, relativni
-URL `sqlite:///./PortfolioItemsAPI/data/portfolioitemsapp.db` pokazuje na
-isti fajl. `create_all()` može da napravi tabele koje nedostaju, ali ne
-menja postojeće tabele; za promene šeme ćemo kasnije učiti migracije.
+Status dozvoljava samo dve vrednosti: `draft` i `published`. Strani ključevi povezuju stavke sa postojećim korisnikom i kategorijom, pod uslovom da je `PRAGMA foreign_keys` uključen.
+
+Ove vežbe prave početnu šemu direktno u ciljnoj PortfolioItemsAPI bazi. Kasnije, kada se aplikacija pokrene iz `fast-api-course-my-work`, relativni URL `sqlite:///./PortfolioItemsAPI/data/portfolioitemsapp.db` pokazuje na isti fajl. `create_all()` može da napravi tabele koje nedostaju, ali ne menja postojeće tabele; za promene šeme ćemo kasnije učiti migracije.

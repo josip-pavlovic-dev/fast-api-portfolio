@@ -114,15 +114,20 @@ Baza čuva pravila:
 
 Jedan korisnik ima jedan profil, i profil pripada jednom korisniku.
 
+---
+
 ### 1:N
 
 Jedan korisnik ima više postova.
 Svaki post pripada jednom korisniku.
 
+---
+
 ### N:M
 
 Student može slušati više kurseva, kurs ima više studenata.
-To se rešava pomoćnom tabelom.
+
+To se rešava pomoćnom tabelom koja sadrži strane ključeve ka obe tabele, čime se omogućava povezivanje više studenata sa više kurseva.
 
 ---
 

@@ -25,8 +25,13 @@ class Users(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
 
 
 class Categories(Base):
@@ -55,6 +60,8 @@ class Items(Base):
         server_default=ItemStatus.DRAFT.value,
         nullable=False,
     )
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey("categories.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
@@ -66,5 +73,3 @@ class Items(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    category_id: Mapped[int] = mapped_column(Integer, ForeignKey("categories.id"), nullable=False)

@@ -595,3 +595,318 @@ U tvom projektu i `get_current_user` je `async def` sa sinhronim DB upitom. Ako 
 ### Ukratko
 
 Thread pool omogućava FastAPI-ju da sinhrone `def` funkcije izvršava u radnim nitima umesto direktno na event loop-u. To je korisno kada sinhroni SQLAlchemy poziv čeka bazu. Za tvoju trenutnu fazu učenja `def` ruta uz običan `Session` je jednostavan izbor; `AsyncSession` je zaseban pristup koji možeš učiti kasnije, kada budeš želeo da koristiš potpuno asinhrone DB operacije.
+
+---
+
+## Pitanje 4
+
+Da li da u `session.py` u `finally bloku` koristim `add()` i `commit()` ili `close()` koja je razlika?
+
+---
+
+## Odgovor 4
+
+### 1. Kratak odgovor
+
+U tvom trenutnom `PortfolioItemsAPI/db/session.py` ostavi **db.close() u finally bloku**. To je mesto za oslobađanje sesije, bez obzira na to da li je obrada zahteva uspela ili je došlo do greške.
+
+`add()`, `commit()` i `close()` ne rade isto:
+
+| Metoda            | Svrha                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `db.add(objekat)` | Dodaje objekat u sesiju da bi se njime upravljalo i da bi novi objekat mogao biti upisan. |
+| `db.flush()`      | Šalje potrebne SQL izmene bazi unutar trenutne transakcije, ali ih još ne potvrđuje.      |
+| `db.commit()`     | Potvrđuje transakciju; pre potvrde obavlja i potreban `flush`.                            |
+| `db.rollback()`   | Poništava nepotvrđenu transakciju i vraća sesiju u stanje pogodno za dalji rad.           |
+| `db.close()`      | Završava rad sa sesijom i oslobađa njene resurse; ne potvrđuje izmene.                    |
+
+`add()` i `commit()` koristiš kada poslovna operacija zaista želi da upiše podatke u bazu. `close()` koristiš kada završavaš rad sa sesijom.
+
+---
+
+### 2. Šta sada radi tvoj `get_db`?
+
+U `PortfolioItemsAPI/db/session.py` imaš:
+
+```python
+def get_db() -> Iterator[Session]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+Ovaj dependency ima jednu jasnu odgovornost: **obezbedi sesiju za obradu HTTP zahteva i zatvori je kada se završi njena upotreba**.
+
+1. `SessionLocal()` pravi SQLAlchemy sesiju.
+2. `yield db` predaje sesiju endpoint-u.
+3. Endpoint po potrebi čita ili menja podatke.
+4. `finally` poziva `db.close()`, uključujući i situacije u kojima nastane greška tokom obrade.
+
+`finally` je pogodan za cleanup upravo zato što se izvršava i u slučaju greške. Zbog istog razloga **nije dobro mesto za bezuslovni `commit()`**: mogao bi pokušati da potvrdi izmene i kada operacija nije uspešno završena.
+
+Tačan trenutak `cleanup`-a u odnosu na slanje `HTTP odgovora` zavisi od `FastAPI verzije` i `scope-a dependency-ja`, pa ga ne treba opisivati kao nešto što se uvek dešava posle poslatog odgovora.
+
+---
+
+### 3. Šta radi `db.add()`?
+
+Na primer, napraviš Python objekat korisnika:
+
+```python
+user = Users(name="Ana", email="ana@example.test")
+```
+
+Ovo još ne šalje `INSERT` bazi. Sledeći korak je:
+
+```python
+db.add(user)
+```
+
+Sesija sada prati novi objekat i planira njegovo upisivanje. Sam `add()` **ne garantuje da je red već upisan u bazu** i ne potvrđuje transakciju.
+
+`INSERT` se obično šalje tokom `flush()`-a, koji može biti eksplicitan ili se desiti kao deo `commit()`-a.
+
+`add()` prima konkretan objekat koji želiš da sačuvaš. `get_db` ne zna da li se obrađuje korisnik, kategorija ili stavka, niti da li je zahtev uopšte upis. Zato `db.add(...)` pripada kodu koji pravi konkretnu promenu, a ne opštem `finally` bloku.
+
+Za već učitan ORM objekat koji je vezan za istu sesiju, promena atributa se obično prati automatski i nije potreban novi `add()`:
+
+```python
+user.name = "Novo ime"
+db.commit()
+```
+
+Ovde se pretpostavlja da je `user` prethodno učitan pomoću iste sesije.
+
+---
+
+### 4. Šta rade `flush()` i `commit()`?
+
+Razmotrimo redosled:
+
+```python
+user = Users(name="Ana", email="ana@example.test")
+db.add(user)
+db.flush()
+db.commit()
+```
+
+- Nakon `add()`, novi objekat je u sesiji i čeka upis.
+- `flush()` šalje potreban `INSERT` bazi **unutar otvorene transakcije**. Na primer, tada može postati dostupan automatski generisani `user.id`.
+- I posle uspešnog `flush()`-a transakcija još nije potvrđena. Ako se pre potvrde pozove `rollback()`, te nepotvrđene izmene se poništavaju.
+- `commit()` najpre obavlja potreban `flush`, a zatim potvrđuje transakciju.
+
+Zato ne moraš da pišeš eksplicitni `flush()` pre svakog `commit()`-a:
+
+```python
+db.add(user)
+db.commit()  # uključuje potreban flush pre potvrde
+```
+
+U tvom `database.py` je `autoflush=False`. To znači da je automatski flush pre određenih upita isključen; **ne isključuje flush koji `commit()` mora da izvrši**. Ako ti ID ili provera ograničenja zatreba pre `commit()`-a, možeš namerno pozvati `db.flush()`.
+
+Uspešan `commit()` potvrđuje transakciju u bazi, dok `flush()` sam po sebi to ne radi. Vidljivost nepotvrđenih promena drugim konekcijama zavisi od baze i izolacije transakcije; ne treba se oslanjati na to da će ih drugi odmah videti.
+
+---
+
+### 5. Šta radi `rollback()`?
+
+`rollback()` poništava **trenutnu nepotvrđenu transakciju**:
+
+```python
+db.add(user)
+db.flush()
+db.rollback()
+```
+
+Čak i ako je `flush()` već poslao `INSERT`, `rollback()` može da poništi taj upis jer transakcija još nije potvrđena. Ali `rollback()` ne može da poništi prethodni uspešni `commit()` kao da se nije desio. Za poništavanje već potvrđene promene bila bi potrebna nova odgovarajuća promena.
+
+Ako `flush()` ili `commit()` ne uspe, na primer zbog `UNIQUE` ograničenja, SQLAlchemy sesiju je potrebno vratiti u ispravno stanje pomoću `rollback()` pre ponovne upotrebe. Grešku ne treba prećutati: možeš je propustiti dalje ili je smisleno obraditi.
+
+---
+
+### 6. Šta radi `close()`?
+
+```python
+db.close()
+```
+
+`close()` završava rad sa sesijom: oslobađa njene resurse, odvaja ORM objekte od sesije i oslobađa korišćene DB konekcije. Ako je transakcija ostala otvorena, njene nepotvrđene izmene se poništavaju. Konekcija se, kada postoji pool, obično vraća u pool; to nije nužno fizičko zatvaranje konekcije.
+
+**`close()` ne poziva `commit()` umesto tebe.** Ako si dodao objekat, a nisi potvrdio transakciju, ne treba očekivati da će `close()` sačuvati taj objekat.
+
+Oslobađanje resursa i potvrda podataka su različite odgovornosti:
+
+```text
+commit()  → potvrdi transakciju
+rollback() → poništi nepotvrđenu transakciju
+close()   → oslobodi sesiju i njene resurse
+```
+
+---
+
+### 7. Kako bi izgledao budući upis korisnika?
+
+Ovo je **edukativni isečak**, ne već implementirana ruta. Pretpostavimo da `db` dolazi iz `get_db`, a `Users` je tvoj ORM model:
+
+```python
+from sqlalchemy.exc import SQLAlchemyError
+
+user = Users(name="Ana", email="ana@example.test")
+
+try:
+    db.add(user)
+    db.commit()
+except SQLAlchemyError:
+    db.rollback()
+    raise
+
+db.refresh(user)
+```
+
+- `add()` označava novi objekat za upis.
+
+- `commit()` potvrđuje uspešnu operaciju.
+
+- Ako SQLAlchemy prijavi grešku tokom upisa, `rollback()` čisti neuspelu transakciju, a `raise` prosleđuje grešku dalje umesto da se predstavi uspeh.
+
+- `refresh(user)` ponovo učitava vrednosti iz baze kada su potrebne, na primer generisani ID. Greška pri `refresh()` nakon uspešnog `commit()`-a ne poništava već potvrđen upis.
+
+- `get_db` na kraju zatvara sesiju pomoću `close()`. Ovaj isečak ne treba dodatno da zatvara sesiju koju je dobio od dependency-ja.
+
+Ako kreiraš API endpoint, treba smisleno odlučiti kako se poznate greške predstavljaju klijentu. Na primer, duplikat email-a je drugačiji od neočekivane greške baze. Detaljna obrada grešaka je zaseban korak.
+
+---
+
+### 8. Da li se `commit()` ikada može centralizovati?
+
+Postoje dizajni u kojima sloj koji upravlja transakcijom potvrđuje transakciju **samo nakon uspešnog rada**, a na grešku radi `rollback`. To je drugačije od bezuslovnog `commit()`-a u `finally`.
+
+Takav pristup zahteva pažljivu odluku o životnom ciklusu FastAPI dependency-ja, trenutku potvrde i načinu prijavljivanja greške. Ne treba ga dodavati samo zato što koristiš `yield`. Za tvoju trenutnu fazu najjasnije je da operacija koja menja podatke eksplicitno odluči kada radi `commit()`, a `get_db` se pobrine za `close()`.
+
+---
+
+### Ukratko
+
+- **Ostavi `db.close()` u `finally` bloku.**
+- `add()` dodaje konkretan objekat u sesiju; samo po sebi ne potvrđuje upis.
+- `flush()` šalje promene bazi, ali ih ne potvrđuje.
+- `commit()` potvrđuje transakciju i prethodno radi potreban `flush`.
+- `rollback()` poništava nepotvrđene promene; `close()` oslobađa sesiju.
+- Nemoj stavljati bezuslovni `commit()` u `finally`, jer se `finally` izvršava i pri grešci.
+
+---
+
+## Pitanje 5
+
+Zar se `.db` fajl neće kreirati u root-u repozitorijuma ako pokrenem `sqlite3` iz root-a? Zar ne treba da ga pokrenem iz `fast-api-course-my-work`? Kako se putanja određuje kada bazu koristim preko Uvicorn-a i FastAPI-ja?
+
+---
+
+## Odgovor 5
+
+Ne moraš da pokreneš `sqlite3` iz istog direktorijuma kao aplikaciju. Važno je **koju putanju navodiš i iz kog je trenutnog direktorijuma računaš**.
+
+### 1. `sqlite3` iz root-a repozitorijuma
+
+Ako si u root-u repozitorijuma, komanda iz vežbi je:
+
+```bash
+mkdir -p fast-api-course-my-work/PortfolioItemsAPI/data
+sqlite3 fast-api-course-my-work/PortfolioItemsAPI/data/portfolioitemsapp.db
+```
+
+Iako komandu pokrećeš iz root-a, SQLite dobija **putanju do fajla**, ne samo njegovo ime. Zato cilja:
+
+```text
+root-repozitorijuma/
+└── fast-api-course-my-work/
+    └── PortfolioItemsAPI/
+        └── data/
+            └── portfolioitemsapp.db
+```
+
+Ako baza postoji, otvara se postojeća baza. Ako ne postoji i putanja je ispravna, SQLite je može kreirati.
+
+`mkdir -p` osigurava da direktorijum `data/` postoji. SQLite ne pravi nedostajuće roditeljske direktorijume.
+
+Samo kada bi iz root-a naveo **isključivo ime fajla**, baza bi bila u root-u:
+
+```bash
+sqlite3 portfolioitemsapp.db
+```
+
+Ta komanda cilja drugi fajl, a ne bazu u `PortfolioItemsAPI/data/`.
+
+---
+
+### 2. `sqlite3` iz `fast-api-course-my-work`
+
+Ako se prvo premestiš u `fast-api-course-my-work`, relativna putanja je kraća:
+
+```bash
+cd fast-api-course-my-work
+sqlite3 PortfolioItemsAPI/data/portfolioitemsapp.db
+```
+
+Ova komanda cilja **isti fajl** kao prethodni primer, pod uslovom da je prva komanda pokrenuta iz root-a repozitorijuma, a druga iz `fast-api-course-my-work`.
+
+Možeš proveriti gde se nalaziš pomoću `pwd`, a nakon ulaska u SQLite shell i koja je baza otvorena:
+
+```sql
+.databases
+```
+
+Ako putanja nije ona koju očekuješ, nemoj nastavljati sa izmenama. Pogrešna putanja može dovesti do otvaranja ili kreiranja **druge, prazne baze**.
+
+---
+
+### 3. Kako putanju određuje FastAPI aplikacija?
+
+U `PortfolioItemsAPI/db/database.py` trenutno stoji:
+
+```python
+SQLALCHEMY_DATABASE_URL = "sqlite:///./PortfolioItemsAPI/data/portfolioitemsapp.db"
+```
+
+Deo `sqlite:///` označava SQLAlchemy SQLite URL, a deo posle njega:
+
+```text
+./PortfolioItemsAPI/data/portfolioitemsapp.db
+```
+
+Predstavlja relativnu putanju. `.` označava **trenutni radni direktorijum procesa**, a ne automatski direktorijum u kome se nalazi `database.py`.
+
+Zato pri trenutnoj konfiguraciji Uvicorn treba pokrenuti iz `fast-api-course-my-work` da bi URL pokazao na željeni fajl:
+
+```bash
+# Iz root-a repozitorijuma:
+cd fast-api-course-my-work
+../.venv/bin/uvicorn PortfolioItemsAPI.main:app --reload
+```
+
+Tada i aplikacija i prethodne `sqlite3` komande ciljaju **isti fajl**: `fast-api-course-my-work/PortfolioItemsAPI/data/portfolioitemsapp.db`. Direktorijum `data/` mora prethodno postojati.
+
+Ako aplikaciju pokreneš iz drugog radnog direktorijuma, isti relativni URL pokazuje na drugu lokaciju. Ako tamo roditeljski direktorijum ne postoji, povezivanje može da prijavi grešku; ako postoji, može se otvoriti ili kreirati druga baza.
+
+---
+
+### 4. Ko zapravo kreira bazu i tabele?
+
+- Komanda `sqlite3` otvara SQLite bazu na zadatoj putanji i može napraviti novi fajl ako ne postoji. Sama činjenica da postoji fajl ne znači da već ima tabele; njih praviš SQL komandama ili drugim alatom.
+
+- Uvicorn pokreće i uvozi FastAPI aplikaciju. U ovom projektu `main.py` pri uvozu poziva `Base.metadata.create_all(bind=engine)`. Taj poziv traži konekciju preko SQLAlchemy engine-a, pa SQLite može kreirati nedostajući fajl, a SQLAlchemy kreira registrovane **nedostajuće tabele**.
+
+- Sam `create_engine()` postavlja engine, ali obično ne otvara konekciju odmah. `create_all()` ne menja postojeće tabele da bi ih uskladio sa izmenjenim modelima. Za to su kasnije potrebne migracije.
+
+U oba slučaja radiš nad fajlom koji je određen putanjom, ne nad posebnom „FastAPI bazom“ i posebnom „sqlite3 bazom“. Ako putanje vode do istog fajla, podaci su isti.
+
+---
+
+### Ukratko
+
+- Relativna putanja računa se od **trenutnog radnog direktorijuma**.
+- Iz root-a koristi `fast-api-course-my-work/PortfolioItemsAPI/data/...`.
+- Iz `fast-api-course-my-work` koristi `PortfolioItemsAPI/data/...`.
+- SQLAlchemy URL u ovom projektu podrazumeva pokretanje aplikacije iz `fast-api-course-my-work`.

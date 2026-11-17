@@ -42,6 +42,10 @@ U postojećem TodoApp-u `SessionLocal` je `sessionmaker` definisan u `TodoApp/db
 ```python
 from collections.abc import Generator
 
+# Može i from collections.abc import Iterator
+# U tom slučaju bi definicija bila:
+# def get_db() -> Iterator[Session]:
+
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal
@@ -96,12 +100,36 @@ def read_all(db: db_dependency):
 
 ```python
 from sqlalchemy import select
-
+# Pretpostavlja se da postoji aktivna SQLAlchemy sesija `db` i model `Todos` definisan negde ranije.
 stmt = select(Todos)
 todos = db.scalars(stmt).all()
 ```
 
 - `select(Todos)` pravi SQL izraz za izbor redova mapiranih na model `Todos`. Samo pravljenje izraza **ne izvršava** upit.
+- `scalars()` je funkcija koja iz rezultata upita (kreiranog SQLAlchemy `select` izrazom) izdvaja samo prve kolone svakog reda, što je korisno kada se očekuje jedan ORM objekat po redu ili jedna kolona. Naprimer, ako se selektuje cela tabela `Todos`, prvi element svakog reda je ceo ORM objekat `Todos`. Isto važi i za pojedinačne kolone. Ako se selektuje više kolona, `scalars()` će izdvojiti samo prvu kolonu svakog reda. Primeri kroz kod:
+
+```python
+stmt = select(Todos)
+todos = db.scalars(stmt).all()
+# `todos` sada sadrži listu svih `Todos` objekata iz baze.
+# Ako tabela `Todos` nema redova, `todos` će biti prazna lista `[]`.
+```
+
+Primer sa `select` izrazom koji vraća sve redove iz tabele `Todos` i koristi `scalars()` za izdvajanje ORM objekata.
+
+Primer za pojedinačne kolone:
+
+```python
+stmt = select(Todos.title)
+titles = db.scalars(stmt).all() # nemamo execute, direktno koristimo scalars() na sesiji
+# `titles` sada sadrži listu svih naslova iz tabele `Todos`.
+# Ako tabela `Todos` nema redova, `titles` će biti prazna lista `[]`.
+```
+
+Primer sa pojedinačnom kolonom pokazuje kako `scalars()` izdvaja samo prvu kolonu svakog reda.
+
+- Direktno korišćenje `db.scalars(stmt).all()` je zgodno kada očekuješ listu rezultata i ne treba ti dodatna obrada rezultata pre nego što ih dobiješ. Kada se koristi `db.execute(stmt)` možeš dodatno manipulisati rezultatima pre nego što ih konvertuješ u listu, na primer filtrirati, mapirati ili kombinovati sa drugim upitima.
+
 - `db.scalars(stmt)` izvršava izraz preko sesije i daje `ScalarResult`. Za ovaj upit pojedinačne vrednosti su `Todos` ORM objekti.
 - `.all()` preuzima rezultate kao listu. Ako nema redova, rezultat je prazna lista `[]`, ne `None`.
 
@@ -112,7 +140,9 @@ stmt = select(Todos)
 todos = db.execute(stmt).scalars().all()
 ```
 
-`execute()` prvo vraća rezultat sastavljen od redova; `.scalars()` izdvaja prvi element svakog reda. Kod `select(Todos)` taj prvi element je ORM objekat `Todos`. Ako odabereš više kolona i trebaju ti sve, koristi `db.execute(stmt).all()` umesto `.scalars()`, jer `.scalars()` uzima samo prvu izabranu vrednost po redu.
+`execute()` prvo vraća rezultat sastavljen od redova; `.scalars()` izdvaja prvi element svakog reda. Kod `select(Todos)` taj prvi element je ORM objekat `Todos`.
+
+Ako odabereš više kolona i trebaju ti sve, koristi `db.execute(stmt).all()` umesto `.scalars()`, jer `.scalars()` uzima samo prvu izabranu vrednost po redu.
 
 SQL ekvivalent osnovne ideje je:
 
@@ -120,7 +150,7 @@ SQL ekvivalent osnovne ideje je:
 SELECT * FROM todos;
 ```
 
-Redosled bez `ORDER BY` nije garantovan. Za stabilan redosled po ID-u:
+Redosled bez `ORDER BY` nije garantovan. SQL baza može da vrati redove u proizvoljnom redosledu. Za stabilan i predvidljiv redosled po ID-u, uvek koristi `order_by(Todos.id)` u svom `select` izrazu:
 
 ```python
 stmt = select(Todos).order_by(Todos.id)
@@ -182,8 +212,9 @@ stmt = (
 todos = db.scalars(stmt).all()
 ```
 
-`current_user` ovde mora biti korisnik koji je već **proveren kroz autentikaciju**, a ne korisnički ID koji klijent slobodno navodi. Na primer, postojeći TodoApp ima `get_current_user` dependency; njegova GET ruta u trenutnom kodu koristi legacy upit. Gornji izraz prikazuje kako se isti ownership filter piše u SQLAlchemy 2.0 stilu, bez tvrdnje da je ruta već
-prepravljena.
+`current_user` ovde mora biti korisnik koji je već **proveren kroz autentikaciju**, a ne korisnički ID koji klijent slobodno navodi.
+
+Na primer, postojeći TodoApp ima `get_current_user` dependency; njegova GET ruta u trenutnom kodu koristi legacy upit. Gornji izraz prikazuje kako se isti ownership filter piše u SQLAlchemy 2.0 stilu, bez tvrdnje da je ruta već prepravljena.
 
 Ako korisnik nema zadataka, rezultat je `[]`. Filter obezbeđuje da se preuzimaju samo redovi tog vlasnika, ali ne zamenjuje autentikaciju ili druga pravila autorizacije.
 
@@ -196,7 +227,7 @@ WHERE owner_id = :user_id
 ORDER BY id;
 ```
 
-SQLAlchemy obrađuje vrednost ID-a kao vezani parametar; nemoj praviti SQL konkatenacijom korisničkog unosa. Parametrizacija sprečava da se vrednost tumači kao deo SQL sintakse i pomaže zaštiti od SQL injection-a.
+SQLAlchemy obrađuje vrednost ID-a kao vezani parametar; **uvek koristi vezane parametre** i nemoj praviti SQL konkatenacijom korisničkog unosa. Parametrizacija sprečava da se vrednost tumači kao deo SQL sintakse i pomaže zaštiti od SQL injection-a.
 
 ---
 
