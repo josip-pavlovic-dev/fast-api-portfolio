@@ -1,55 +1,58 @@
-<mxfile host="app.diagrams.net" modified="2026-11-17T14:00:00.000Z" agent="GitHub Copilot" version="26.0.16" type="device">
-  <diagram id="erd-portfolio-items-api" name="PortfolioItemsAPI proposed ERD">
-    <mxGraphModel dx="1400" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="title" value="PortfolioItemsAPI - predložena normalizovana šema" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=22;fontStyle=1;fontColor=#243746;" vertex="1" parent="1">
-          <mxGeometry x="30" y="20" width="1100" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="subtitle" value="Ciljni ERD za vežbanje 1NF/2NF/3NF; još nije implementiran u models.py niti kreiran u bazi" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=13;fontColor=#526575;" vertex="1" parent="1">
-          <mxGeometry x="30" y="58" width="1200" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="cities" value="&lt;b&gt;cities&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN]&lt;br&gt;country_code : String(2) [NN]&lt;br&gt;UQ(name, country_code)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2df;strokeColor=#b18a50;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="40" y="130" width="330" height="165" as="geometry" />
-        </mxCell>
-        <mxCell id="users" value="&lt;b&gt;users&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN]&lt;br&gt;email : String(255) [NN, UQ]&lt;br&gt;city_id : Integer [FK, NULL, IDX]&lt;br&gt;created_at : DateTime [NN, server_default=func.now()]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2df;strokeColor=#b18a50;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="40" y="380" width="360" height="200" as="geometry" />
-        </mxCell>
-        <mxCell id="categories" value="&lt;b&gt;categories&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN, UQ]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#e8f1f8;strokeColor=#5b7f99;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="470" y="130" width="300" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="items" value="&lt;b&gt;items&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;title : String(200) [NN]&lt;br&gt;description : String [NULL]&lt;br&gt;price : Numeric(10, 2) [NN, CHECK(price &gt;= 0)]&lt;br&gt;status : Enum [draft, published] [NN, default=draft, CHECK]&lt;br&gt;owner_id : Integer [FK, NN, IDX]&lt;br&gt;category_id : Integer [FK, NN, IDX]&lt;br&gt;created_at : DateTime [NN, server_default=func.now()]&lt;br&gt;updated_at : DateTime [NN, server_default=func.now(), onupdate=func.now()]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="880" y="120" width="470" height="325" as="geometry" />
-        </mxCell>
-        <mxCell id="tags" value="&lt;b&gt;tags&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(50) [NN, UQ]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="880" y="610" width="300" height="125" as="geometry" />
-        </mxCell>
-        <mxCell id="item_tags" value="&lt;b&gt;item_tags&lt;/b&gt;&lt;br&gt;&lt;hr&gt;item_id : Integer [PK, FK]&lt;br&gt;tag_id : Integer [PK, FK]&lt;br&gt;PK(item_id, tag_id)&lt;br&gt;IDX(tag_id)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" vertex="1" parent="1">
-          <mxGeometry x="470" y="650" width="330" height="145" as="geometry" />
-        </mxCell>
-        <mxCell id="legend" value="&lt;b&gt;Oznake&lt;/b&gt;&lt;br&gt;PK = primarni ključ; FK = strani ključ; NN = NOT NULL; NULL = opciono&lt;br&gt;UQ = jedinstveno; IDX = običan indeks; CHECK = ograničenje vrednosti&lt;br&gt;PK(item_id, tag_id) sprečava dupliranje iste veze između stavke i taga.&lt;br&gt;PK kolone nemaju dodatni index=True." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f4f6f7;strokeColor=#9aa9b2;fontColor=#344955;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="40" y="680" width="390" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="scope_note" value="&lt;b&gt;Napomene o predlogu&lt;/b&gt;&lt;br&gt;city_name se čuva samo u cities; users.city_id je opcioni FK. cities je edukativno proširenje za 3NF.&lt;br&gt;Kategorija je 1:N; tagovi su M:N preko item_tags. relationship() atributi su ORM navigacija, ne dodatne kolone.&lt;br&gt;Indeksi su predlog prema očekivanim FK upitima; FK enforcement u SQLite-u mora biti posebno uključen.&lt;br&gt;Brisanje roditelja i ON DELETE pravila nisu još odlučeni. Dijagram nije trenutna implementacija." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff8e8;strokeColor=#c8a557;fontColor=#4c432d;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="470" y="830" width="880" height="95" as="geometry" />
-        </mxCell>
-        <mxCell id="fk_cities_users" value="1:N; user 0..1 city" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="cities" target="users">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="fk_users_items" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#526575;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="users" target="items">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="fk_categories_items" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#526575;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" edge="1" parent="1" source="categories" target="items">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="fk_items_item_tags" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0.45;exitY=1;entryX=1;entryY=0.2;" edge="1" parent="1" source="items" target="item_tags">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="fk_tags_item_tags" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0;exitY=0.5;entryX=1;entryY=0.8;" edge="1" parent="1" source="tags" target="item_tags">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="erd-portfolio-items-api" name="PortfolioItemsAPI proposed ERD">
+        <mxGraphModel dx="1120" dy="460" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=22;fontStyle=1;fontColor=#243746;" value="PortfolioItemsAPI - predložena normalizovana šema" vertex="1">
+                    <mxGeometry height="36" width="1100" x="30" y="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=13;fontColor=#526575;" value="Ciljni ERD za vežbanje 1NF/2NF/3NF; još nije implementiran u models.py niti kreiran u bazi" vertex="1">
+                    <mxGeometry height="24" width="1200" x="30" y="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="cities" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2df;strokeColor=#b18a50;fontColor=#243746;fontSize=13;" value="&lt;b&gt;cities&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN]&lt;br&gt;country_code : String(2) [NN]&lt;br&gt;UQ(name, country_code)" vertex="1">
+                    <mxGeometry height="165" width="330" x="40" y="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="users" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2df;strokeColor=#b18a50;fontColor=#243746;fontSize=13;" value="&lt;b&gt;users&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN]&lt;br&gt;email : String(255) [NN, UQ]&lt;br&gt;city_id : Integer [FK, NULL, IDX]&lt;br&gt;created_at : DateTime [NN, server_default=func.now()]" vertex="1">
+                    <mxGeometry height="200" width="360" x="40" y="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="categories" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#e8f1f8;strokeColor=#5b7f99;fontColor=#243746;fontSize=13;" value="&lt;b&gt;categories&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(100) [NN, UQ]" vertex="1">
+                    <mxGeometry height="130" width="300" x="470" y="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="items" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" value="&lt;b&gt;items&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;title : String(200) [NN]&lt;br&gt;description : String [NULL]&lt;br&gt;price : Numeric(10, 2) [NN, CHECK(price &gt;= 0)]&lt;br&gt;status : Enum [draft, published] [NN, default=draft, CHECK]&lt;br&gt;owner_id : Integer [FK, NN, IDX]&lt;br&gt;category_id : Integer [FK, NN, IDX]&lt;br&gt;created_at : DateTime [NN, server_default=func.now()]&lt;br&gt;updated_at : DateTime [NN, server_default=func.now(), onupdate=func.now()]" vertex="1">
+                    <mxGeometry height="325" width="470" x="880" y="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="tags" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" value="&lt;b&gt;tags&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : Integer [PK]&lt;br&gt;name : String(50) [NN, UQ]" vertex="1">
+                    <mxGeometry height="125" width="300" x="880" y="610" as="geometry"/>
+                </mxCell>
+                <mxCell id="item_tags" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=13;" value="&lt;b&gt;item_tags&lt;/b&gt;&lt;br&gt;&lt;hr&gt;item_id : Integer [PK, FK]&lt;br&gt;tag_id : Integer [PK, FK]&lt;br&gt;PK(item_id, tag_id)&lt;br&gt;IDX(tag_id)" vertex="1">
+                    <mxGeometry height="145" width="330" x="470" y="650" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f4f6f7;strokeColor=#9aa9b2;fontColor=#344955;fontSize=12;" value="&lt;b&gt;Oznake&lt;/b&gt;&lt;br&gt;PK = primarni ključ; FK = strani ključ; NN = NOT NULL; NULL = opciono&lt;br&gt;UQ = jedinstveno; IDX = običan indeks; CHECK = ograničenje vrednosti&lt;br&gt;PK(item_id, tag_id) sprečava dupliranje iste veze između stavke i taga.&lt;br&gt;PK kolone nemaju dodatni index=True." vertex="1">
+                    <mxGeometry height="150" width="390" x="40" y="680" as="geometry"/>
+                </mxCell>
+                <mxCell id="scope_note" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff8e8;strokeColor=#c8a557;fontColor=#4c432d;fontSize=12;" value="&lt;b&gt;Napomene o predlogu&lt;/b&gt;&lt;br&gt;city_name se čuva samo u cities; users.city_id je opcioni FK. cities je edukativno proširenje za 3NF.&lt;br&gt;Kategorija je 1:N; tagovi su M:N preko item_tags. relationship() atributi su ORM navigacija, ne dodatne kolone.&lt;br&gt;Indeksi su predlog prema očekivanim FK upitima; FK enforcement u SQLite-u mora biti posebno uključen.&lt;br&gt;Brisanje roditelja i ON DELETE pravila nisu još odlučeni. Dijagram nije trenutna implementacija." vertex="1">
+                    <mxGeometry height="95" width="880" x="470" y="830" as="geometry"/>
+                </mxCell>
+                <mxCell id="fk_cities_users" edge="1" parent="1" source="cities" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="users" value="1:N; user 0..1 city">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fk_users_items" edge="1" parent="1" source="users" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#526575;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" target="items" value="1:N">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fk_categories_items" edge="1" parent="1" source="categories" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#526575;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" target="items" value="1:N">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fk_items_item_tags" edge="1" parent="1" source="items" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0.45;exitY=1;entryX=1;entryY=0.2;" target="item_tags" value="1:N">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fk_tags_item_tags" edge="1" parent="1" source="tags" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#526575;exitX=0;exitY=0.5;entryX=1;entryY=0.8;" target="item_tags" value="1:N">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mH7ywULNsCMxgYxcCIg--1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Text" vertex="1">
+                    <mxGeometry height="30" width="60" x="480" y="300" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

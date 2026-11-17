@@ -13,17 +13,31 @@ Edukativni mini-projekat za postepeno učenje SQL-a, SQLite-a, SQLAlchemy-ja 2.0
 - Timestamp kolone `created_at` i `updated_at`.
 - FastAPI aplikacija u `main.py`, koja poziva `Base.metadata.create_all()`
   pri uvozu.
+- `db/session.py` definiše sinhronu SQLAlchemy `Session` dependency funkciju.
+- Izdvojeni demonstracioni model sa svih šest planiranih tabela u
+  `models1.py` i FastAPI CRUD primer u `main1.py`. Oni ne menjaju postojeći
+  `models.py` i `main.py`.
 - ERD dijagram, SQLite vežbe za ovu bazu, dnevnik rada i detaljne beleške.
 
 ---
 
 ### Još nije implementirano
 
-- Pydantic modeli u `schemas.py`.
-- CRUD endpoint-i i router-i u `api/routes/`.
-- DB session dependency za FastAPI.
-- Posebna konfiguracija SQLite foreign-key enforcement-a.
+- Pydantic modeli i CRUD router-i za osnovnu aplikaciju u `schemas.py` i
+  `api/routes/`.
+- Pydantic šeme i CRUD router-i za osnovnu aplikaciju u `schemas.py` i
+  `api/routes/`; postojeći `main.py` ih još ne koristi.
+- SQLite foreign-key enforcement za osnovni `db/database.py` engine.
 - Testovi i Alembic migracije.
+
+`main1.py` je nastavna referentna verzija: sadrži pun CRUD za `items`, kao i
+kreiranje i listanje gradova, korisnika, kategorija i tagova potrebnih za
+testiranje veza. Njeni request i response modeli su privremeno definisani u
+istom fajlu; kasnije ih možeš premestiti u `schemas.py`, a endpoint-e u
+`api/routes/`. Za razliku od osnovnog engine-a, demonstracioni engine uključuje
+SQLite foreign-key enforcement. Endpoint-i su sinhroni jer koriste sinhroni
+SQLAlchemy `Session`. `Base1` ima odvojene metadata podatke kako bi ovaj model
+mogao da se uvozi bez sudara sa imenima tabela iz `models.py`.
 
 ---
 
@@ -71,7 +85,7 @@ PortfolioItemsAPI/
 │   ├── __init__.py
 │   ├── base.py                    # DeclarativeBase
 │   ├── database.py                # engine, URL i SessionLocal
-│   └── session.py                 # prazan kostur
+│   └── session.py                 # sinhroni get_db dependency
 ├── notes/
 │   ├── dan_01.md                  # nullable, datetime, Decimal, Enum
 │   └── dan_02.md                  # SQLite indeksi i rowid
@@ -80,7 +94,9 @@ PortfolioItemsAPI/
 │   └── 2026-11-17.md              # plan modelovanja i normalizacije
 ├── __init__.py
 ├── main.py                        # FastAPI aplikacija i create_all()
+├── main1.py                       # demonstracioni endpoint-i i API šeme
 ├── models.py                      # SQLAlchemy modeli
+├── models1.py                     # ciljna normalizovana šema sa 6 tabela
 ├── schemas.py                     # prazan kostur Pydantic šema
 ├── ERD_PortfolioItemsAPI.drawio
 ├── sqlite3_exercises.md
@@ -104,7 +120,7 @@ SQLite fajl se kreira tek kada ga otvoriš komandom iz vežbi ili kada aplikacij
 
 `main.py` poziva `create_all()` pri uvozu. To može kreirati nedostajuću bazu i tabele, zato aplikaciju pokreni tek kada želiš taj efekat. `create_all()` ne menja šemu postojećih tabela. Za kasnije izmene biće potrebne migracije.
 
-DB URL je relativan:
+Osnovna aplikacija koristi postojeći DB URL:
 
 ```text
 sqlite:///./PortfolioItemsAPI/data/portfolioitemsapp.db
@@ -117,7 +133,14 @@ cd fast-api-course-my-work
 ../.venv/bin/uvicorn PortfolioItemsAPI.main:app --reload
 ```
 
-Trenutno aplikacija još nema CRUD endpoint-e.
+Demonstraciona verzija koristi odvojenu bazu `PortfolioItemsAPI/data/portfolioitemsapp1.db`, jer `create_all()` ne migrira već postojeće tabele. Pokretaj je na isti način:
+
+```bash
+cd fast-api-course-my-work
+../.venv/bin/uvicorn PortfolioItemsAPI.main1:app --reload
+```
+
+Prvi start kreira demonstracionu bazu i njene tabele. Nju takođe ne treba commit-ovati.
 
 ---
 
