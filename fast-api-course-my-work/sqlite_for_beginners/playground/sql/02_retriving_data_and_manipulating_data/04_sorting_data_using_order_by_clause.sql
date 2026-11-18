@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/04_sorting_data_using_order_by_clause.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

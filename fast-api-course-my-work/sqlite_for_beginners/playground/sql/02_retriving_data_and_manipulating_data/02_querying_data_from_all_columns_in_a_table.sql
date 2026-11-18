@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/02_querying_data_from_all_columns_in_a_table.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/08_sqllite_data_types.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

@@ -1,6 +1,8 @@
 # Playground
 
-Mesto za male, samostalne primere iz SQLAlchemy 2.0 kursa. Ovi primeri su odvojeni od aplikacionih projekata i modela u `sqlalchemy_orm_fundamentals/`.
+Mesto za male, samostalne primere iz SQLAlchemy 2.0 kursa i direktne SQLite
+SQL vežbe. Ovi primeri su odvojeni od aplikacionih projekata i modela u
+`sqlalchemy_orm_fundamentals/`.
 
 Koristi se postojeći root `.venv`; ovaj folder nema svoj `requirements.txt` niti virtualno okruženje.
 
@@ -29,6 +31,12 @@ Komande pokreci iz root-a repozitorijuma:
 ## Početni primer
 
 `sqlalchemy_2/01_prva_tabela.py` prikazuje deklarativni ORM model, primarni ključ, obaveznu tekstualnu kolonu, pravljenje tabele, `Session`, INSERT i SELECT. Kasnije primere dodaj ovde redom dok prolaziš kroz kurs.
+
+## SQLite shell
+
+Za direktno vežbanje SQL naredbi otvori [SQLite3 playground](sqlite3/README.md).
+On koristi sopstvenu lokalnu bazu sačuvanu u datoteci i ne menja nijednu
+aplikacionu bazu.
 
 ## Rešeni primeri po lekcijama
 

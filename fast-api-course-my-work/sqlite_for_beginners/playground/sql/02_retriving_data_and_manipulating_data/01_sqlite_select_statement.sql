@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/01_sqlite_select_statement.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

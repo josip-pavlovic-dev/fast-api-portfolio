@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/05_removing_duplicate_records_using_distinct_clause.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

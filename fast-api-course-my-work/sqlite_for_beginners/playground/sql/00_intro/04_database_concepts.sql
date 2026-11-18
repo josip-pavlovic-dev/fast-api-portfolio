@@ -1,0 +1,2 @@
+-- Lekcija: ../../../00_intro/04_database_concepts.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

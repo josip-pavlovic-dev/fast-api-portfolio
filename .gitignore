@@ -27,3 +27,17 @@ scratch/fast-api-course/
 /fast-api-course-my-work/Project_3/main11.py
 /fast-api-course-my-work/PortfolioItemsAPI/main1.py
 fast-api-course-my-work/PortfolioItemsAPI/models1.py
+
+# Trajna lokalna SQLite baza za SQL upite i vežbe.
+/fast-api-course-my-work/playground/sqlite3/sqlite_playground.db
+
+# Transcripts folder za beleške i materijale iz SQLite za početnike
+/fast-api-course-my-work/sqlite_for_beginners/transcripts
+
+# Lokalni SQLite fajlovi u playground-u; SQL vežbe ostaju verzionisane.
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.db
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.db-*
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite-*
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite3
+/fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite3-*

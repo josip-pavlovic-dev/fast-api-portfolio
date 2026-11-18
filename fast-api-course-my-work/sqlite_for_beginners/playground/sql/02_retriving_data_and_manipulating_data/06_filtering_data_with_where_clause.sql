@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/06_filtering_data_with_where_clause.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

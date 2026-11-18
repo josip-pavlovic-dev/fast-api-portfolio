@@ -17,6 +17,8 @@ Na primer, tabela `user_account` može imati kolone `id`, `name` i `fullname`. J
 
 Kolona odgovara jednoj vrsti podatka, a red jednom zapisu. U Python ORM modelu kasnije ćemo povezati takav red sa instancom `User`, a tabelu i kolone sa deklarativnom klasom i njenim mapiranim atributima.
 
+---
+
 ## SQL naredba i konvencije
 
 SQL se sastoji od naredbi kao što su `CREATE TABLE`, `INSERT` i `SELECT`. U primerima pišemo ključne reči velikim slovima radi čitljivosti; većina SQL baza ne razlikuje velika i mala slova za ključne reči. Imena tabela/kolona i osetljivost njihovih navodnika mogu zavisiti od baze.
@@ -46,6 +48,8 @@ SQLite je fleksibilniji u čuvanju tipova nego, na primer, PostgreSQL: deklarisa
 
 Važno je razlikovati Python tip od SQL tipa. Python vrednost može biti `str`, a SQLAlchemy tip `String(120)` se prevodi u tip kolone za bazu. To su povezani, ali različiti slojevi.
 
+---
+
 ## Ograničenja: pravila nad kolonama
 
 Ograničenja (_constraints_) čuvaju osnovna pravila integriteta u samoj šemi baze.
@@ -62,6 +66,8 @@ U SQLite-u `INTEGER PRIMARY KEY` je poseban slučaj vezan za `rowid`; ako se pri
 
 Druge baze imaju svoje oblike za identity/auto-generated ključeve. SQLAlchemy `primary_key=True` izražava nameru u modelu, a dijalekt generiše odgovarajući DDL.
 
+---
+
 ### `NOT NULL`
 
 `NOT NULL` zabranjuje da kolona sadrži SQL `NULL`:
@@ -71,6 +77,8 @@ name TEXT NOT NULL
 ```
 
 Ono ne zabranjuje prazan tekst `''` niti tekst sastavljen od razmaka. To bi zahtevalo dodatnu validaciju ili ograničenje.
+
+---
 
 ### `UNIQUE`
 
@@ -82,6 +90,8 @@ email TEXT NOT NULL UNIQUE
 
 `NOT NULL` i `UNIQUE` su nezavisna pravila: jedno zahteva vrednost, drugo sprečava duplikate.
 
+---
+
 ### `DEFAULT`
 
 `DEFAULT` obezbeđuje vrednost kada `INSERT` izostavi kolonu:
@@ -91,6 +101,8 @@ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ```
 
 Ako upit izričito pošalje `NULL`, default se obično ne primenjuje; `NOT NULL` bi takav unos odbio. SQLAlchemy `server_default` se pretvara u ovakvo pravilo u DDL-u.
+
+---
 
 ### Strani ključ
 
@@ -102,7 +114,9 @@ user_id INTEGER NOT NULL REFERENCES user_account(id)
 
 To je FK kolona na strani „više“: jedan korisnik može imati više adresa, a svaka adresa upućuje na jedan korisnički ID. `NOT NULL` je dodatno pravilo koje kaže da adresa mora imati korisnika; FK sam po sebi ne znači da je kolona obavezna.
 
-SQLite zahteva da se FK enforcement uključi na svakoj konekciji pomoću `PRAGMA foreign_keys=ON`; bez toga constraint može biti naveden u tabeli, a da SQLite ipak ne odbija nevažeće reference. Druge baze uobičajeno sprovode FK constraint prema svojim pravilima.
+SQLite zahteva da se `FK enforcement` (provera stranih ključeva) uključi na svakoj konekciji pomoću `PRAGMA foreign_keys=ON`. Bez toga `constraint` (ograničenje) definisan u tabeli može biti naveden, a da SQLite ipak ne odbija nevažeće reference. Druge baze uobičajeno sprovode FK constraint prema svojim pravilima.
+
+---
 
 ## Kreiranje tabele: `CREATE TABLE`
 

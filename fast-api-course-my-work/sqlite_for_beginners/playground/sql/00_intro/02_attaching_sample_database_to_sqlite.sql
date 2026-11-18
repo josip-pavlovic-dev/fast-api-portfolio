@@ -1,0 +1,2 @@
+-- Lekcija: ../../../00_intro/02_attaching_sample_database_to_sqlite.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

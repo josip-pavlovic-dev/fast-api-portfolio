@@ -1,0 +1,2 @@
+-- Lekcija: ../../../00_intro/01_what_is_sqlite.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

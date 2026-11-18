@@ -1,0 +1,2 @@
+-- Lekcija: ../../../02_retriving_data_and_manipulating_data/07_identifying_null_values.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

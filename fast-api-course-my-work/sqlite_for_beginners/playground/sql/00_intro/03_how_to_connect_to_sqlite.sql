@@ -1,0 +1,2 @@
+-- Lekcija: ../../../00_intro/03_how_to_connect_to_sqlite.md
+-- Reši SQL zadatke iz odeljka „Vežbe“ ispod.

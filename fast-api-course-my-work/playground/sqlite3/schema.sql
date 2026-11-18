@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS user_account (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    fullname TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS address (
+    id INTEGER PRIMARY KEY,
+    email_address TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES user_account(id)
+);

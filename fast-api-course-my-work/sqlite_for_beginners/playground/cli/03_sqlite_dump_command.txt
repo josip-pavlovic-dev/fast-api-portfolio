@@ -1,0 +1,2 @@
+-- Lekcija: ../../01_some_basic_sql_commands/03_sqlite_dump_command.md
+-- Beleži i pokreći SQLite CLI komande i njihove rezultate ispod.
