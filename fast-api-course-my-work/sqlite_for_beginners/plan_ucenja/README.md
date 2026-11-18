@@ -15,6 +15,8 @@ Koristi [playground](../playground/README.md) za SQL skripte i lokalne baze. Rad
 
 Kada su planirane dve lekcije, podeli teorijski i praktični blok između njih. Ne preskači vežbe da bi završio čitanje ranije; cilj je da samostalno napišeš i proveriš upite.
 
+---
+
 ## Raspored
 
 | Dan i datum                       | Fokus i materijali                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -31,6 +33,8 @@ Kada su planirane dve lekcije, podeli teorijski i praktični blok između njih. 
 | **10 — subota, 28. novembar**     | SQLite tipovi: [SQLite tipovi podataka](../02_retriving_data_and_manipulating_data/08_sqllite_data_types.md). Proveri `typeof()`, afinitet tipova i razliku između običnih i `STRICT` tabela. Ponovi primere bez menjanja Chinook šeme.                                                                                                                                                                                                          |
 | **11 — nedelja, 29. novembar**    | Čitljivi rezultati i reference na tabele: [SQLite aliasi](../02_retriving_data_and_manipulating_data/09_sqlite_aliases.md). Vežbaj alias kolone i tabele, pa ponovi teme koje su ti bile najteže.                                                                                                                                                                                                                                                |
 | **12 — ponedeljak, 30. novembar** | Ponavljanje i završna vežba. U svojim fajlovima u `playground/sql/02_retriving_data_and_manipulating_data/` napiši samostalne upite koji kombinuju izbor kolona, `WHERE`, `DISTINCT`, `IS NULL`, `ORDER BY` i aliase. Koristi tabele `customers`, `tracks` i `albums`; ne koristi još nezavršene teme poput spajanja tabela. Na kraju objasni kako se tabela, kolona i rezultat upita povezuju sa pojmovima koje ćeš koristiti u SQLAlchemy 2.0. |
+
+---
 
 ## Pravila napretka
 
