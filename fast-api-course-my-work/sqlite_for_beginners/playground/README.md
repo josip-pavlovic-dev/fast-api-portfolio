@@ -1,6 +1,6 @@
 # Playground — prostor za vežbanje
 
-Ovde rešavaj praktične zadatke iz lekcija. Teorijski materijali ostaju u svojim oblastima; odgovore i upite čuvaj u odgovarajućim fajlovima ispod `sql/` ili `cli/`.
+Ovde rešavaj praktične zadatke iz lekcija. Teorijski materijali ostaju u svojim oblastima. Odgovore i upite čuvaj u odgovarajućim fajlovima ispod `sql/` ili `cli/`.
 
 ## Struktura
 
@@ -8,22 +8,26 @@ Ovde rešavaj praktične zadatke iz lekcija. Teorijski materijali ostaju u svoji
 playground/
 ├── databases/
 │   ├── README.md
-│   ├── chinook_practice.db   # lokalna kopija Chinook baze
-│   └── sandbox.db            # prazna baza za sopstvene eksperimente
-├── cli/
+│   ├── chinook_practice.db            # lokalna kopija Chinook baze
+│   └── sandbox.db                     # prazna baza za sopstvene eksperimente
+├── cli/                               # beleške i vežbe za SQLite CLI alat
 │   ├── 01_what_is_sqlite3_tool.txt
 │   ├── 02_some_commonly_used_sqlite3_commands.txt
 │   └── 03_sqlite_dump_command.txt
-└── sql/
-    ├── 00_intro/              # SQL delovi uvodnih vežbi
+└── sql/                               # SQL skripte za vežbe iz lekcija
+    ├── 00_intro/
     └── 02_retriving_data_and_manipulating_data/
 ```
 
-Fajlovi `sql/` i `cli/` odgovaraju lekcijama istog naziva. Skripte su početni šabloni; tekstualne i dijagramske zadatke rešavaj u komentarima ili svojim beleškama.
+Fajlovi `sql/` i `cli/` odgovaraju lekcijama istog naziva. Skripte su početni šabloni za rešavanje zadataka.
+
+**Tekstualne i dijagramske zadatke rešavaj u komentarima ili svojim beleškama.**
+
+---
 
 ## Priprema baza
 
-Originalna baza ostaje neizmenjena u `../chinook/chinook.db`. Vežbaj na lokalnoj kopiji. Fajlovi baza i njihovi SQLite journal/WAL prateći fajlovi su isključeni iz Git-a, dok su SQL skripte i README fajlovi verzionisani.
+Originalna baza ostaje ne izmenjena u `../chinook/chinook.db`. Vežbaj na lokalnoj kopiji. Fajlovi baza i njihovi `SQLite journal/WAL` prateći fajlovi su isključeni iz `Git`-a, dok su `SQL skripte` i `README` fajlovi verzionisani što omogućava praćenje promena u vežbama.
 
 Prvi put napravi kopiju i praznu bazu iz root-a repozitorijuma:
 

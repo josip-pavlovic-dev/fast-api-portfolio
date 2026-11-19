@@ -56,13 +56,15 @@ aplikacija → konekcija → zaseban DB server → fajlovi kojima upravlja serve
 
 Konekcija ka serveru najčešće koristi mrežni protokol, čak i kada su aplikacija i server na istom računaru. Moguće su i lokalne konekcije, na primer preko Unix socket-a.
 
-**Važno: izvršavanje naredbe i potvrđivanje transakcije nisu isto.** Kada naredba promeni podatke unutar otvorene transakcije, promene još nisu potvrđene. `COMMIT` potvrđuje transakciju, dok `ROLLBACK` poništava njene nepotvrđene izmene. Ovo važi i za SQLite i za serverske baze; način automatskog započinjanja i potvrđivanja transakcija zavisi od baze, drajvera i podešavanja.
+**Važno: izvršavanje naredbe i potvrđivanje transakcije nisu isto.** Kada naredba promeni podatke unutar otvorene transakcije, promene još nisu potvrđene. `COMMIT` potvrđuje transakciju, dok `ROLLBACK` poništava njene nepotvrđene izmene. Ovo važi i za SQLite i za serverske baze. Način automatskog započinjanja i potvrđivanja transakcija zavisi od baze, drajvera i podešavanja.
 
 Potvrda transakcije ne znači nužno da su svi izmenjeni podaci upravo tada upisani u glavni fajl baze. Na primer, SQLite u **WAL režimu** može da potvrdi promene zapisane u WAL fajl, a da ih kasnije prenese u glavni fajl baze. Serverske baze takođe mogu koristiti dnevnike i naknadne upise. Ne treba pretpostaviti ni da se svi fizički upisi dešavaju tek nakon `COMMIT`-a: baza njima upravlja tako da očuva pravila transakcija.
 
+---
+
 ### Šta je WAL režim?
 
-**WAL** je skraćenica za _Write-Ahead Logging_ — način vođenja dnevnika promena. U tom režimu SQLite zapisuje izmene u poseban WAL fajl, umesto da ih odmah prenese u glavni fajl baze.
+**WAL** je skraćenica za _Write-Ahead Logging_ — način vođenja dnevnika promena. U tom režimu **SQLite zapisuje izmene u poseban WAL fajl**, umesto da ih odmah prenese u glavni fajl baze.
 
 ```text
 Izmena podataka → WAL fajl → COMMIT potvrđuje transakciju
@@ -106,23 +108,23 @@ Svojstva transakcija često se opisuju akronimom **ACID**:
 - **Isolation (izolacija):** istovremene transakcije ne bi trebalo da vide nedovršene promene jedna druge.
 - **Durability (trajnost):** potvrđene izmene treba da opstanu nakon završetka transakcije i uobičajenog ponovnog pokretanja sistema.
 
-ACID je koristan model za razumevanje ponašanja baze, ali nije obećanje da nijedan kvar hardvera, operativnog sistema ili skladišta podataka nikada neće izazvati problem. Pouzdanost zavisi i od ispravnog korišćenja transakcija i okruženja u kome se fajl baze čuva.
+**ACID** je koristan model za razumevanje ponašanja baze, ali nije obećanje da nijedan kvar hardvera, operativnog sistema ili skladišta podataka nikada neće izazvati problem. Pouzdanost zavisi i od ispravnog korišćenja transakcija i okruženja u kome se fajl baze čuva.
 
 ---
 
-## Tipovi podataka u SQLite-u
+## Tipovi podataka u SQLite-u (Data Types)
 
-SQLite koristi **dinamičko tipiziranje**: tip vrednosti čuva se uz samu vrednost, a deklarisani tip kolone uglavnom određuje njenu **tip-affinity** (sklonost ka određenoj vrsti podataka). Zbog toga deklaracija tipa u SQLite-u ne funkcioniše uvek kao stroga zabrana svih drugih tipova. Na primer, kolona deklarisana kao `INTEGER` nije automatski isto što i strogo tipizovana celobrojna promenljiva u Python-u.
+SQLite koristi **dinamičko tipiziranje**: tip vrednosti čuva se uz samu vrednost, a deklarisani tip kolone uglavnom određuje njenu **tip-affinity** (sklonost ka određenoj vrsti podataka). Zbog toga deklaracija tipa u SQLite-u ne funkcioniše uvek kao stroga zabrana svih drugih tipova. Na primer, kolona deklarisana kao `INTEGER` nije automatski isto što i strogo tipizovana celobrojna promenljiva u Python-u i može prihvatiti vrednosti drugih tipova kao što je `REAL` ili `TEXT`.
 
-SQLite vrednosti razvrstava u osnovne klase skladištenja kao što su `NULL`, `INTEGER`, `REAL`, `TEXT` i `BLOB`. Tipovi koje često vidiš u definicijama tabela, poput `VARCHAR`, `NVARCHAR` ili `NUMERIC`, utiču na affinity i konverzije, ali nisu svi nezavisne klase skladištenja.
+**SQLite** vrednosti razvrstava u osnovne klase skladištenja kao što su `NULL`, `INTEGER`, `REAL`, `TEXT` i `BLOB`. Tipovi koje često vidiš u definicijama tabela, poput `VARCHAR`, `NVARCHAR` ili `NUMERIC`, utiču na affinity i konverzije, ali nisu svi nezavisne klase skladištenja.
 
 Za strožu kontrolu, SQLite od verzije 3.37.0 podržava `STRICT` tabele, uz ograničen skup prihvaćenih tipova. I tada je važno razumeti šta baza proverava, a šta treba proveriti u aplikaciji.
 
 Za FastAPI aplikaciju ova razlika je bitna:
 
-- Pydantic šeme proveravaju oblik i validnost ulaza i izlaza API-ja.
-- SQLAlchemy mapira Python objekte i izraze na bazu.
-- Ograničenja baze štite integritet podataka na nivou baze.
+- **Pydantic šeme** proveravaju oblik i validnost ulaza i izlaza API-ja.
+- **SQLAlchemy** mapira Python objekte i izraze na bazu.
+- **Ograničenja baze** (constraints) štite integritet podataka na nivou baze.
 
 Ovi slojevi se dopunjuju, ali jedan ne zamenjuje druge. Ne treba se oslanjati samo na to da će SQLite odbiti svaki podatak pogrešnog Python tipa.
 
@@ -132,7 +134,7 @@ Ovi slojevi se dopunjuju, ali jedan ne zamenjuje druge. Ne treba se oslanjati sa
 
 SQLite je odličan izbor za učenje, lokalni razvoj, testove, desktop aplikacije, prototipe i aplikacije sa umerenim brojem upisa. Može se koristiti i iza FastAPI-ja; činjenica da je aplikacija web API sama po sebi ne isključuje SQLite.
 
-SQLite dozvoljava više čitalaca, ali istovremeno može da ima samo jednog zapisivača koji menja bazu. WAL režim može da poboljša istovremeni rad čitalaca i zapisivača, ali ne omogućava neograničen broj paralelnih upisa.
+**SQLite dozvoljava više čitalaca, ali istovremeno može da ima samo jednog zapisivača koji menja bazu**. WAL režim može da poboljša istovremeni rad čitalaca i zapisivača, ali ne omogućava neograničen broj paralelnih upisa.
 
 Razmotri PostgreSQL ili drugi klijent-server sistem kada aplikacija ima mnogo istovremenih upisa, više aplikacionih instanci na različitim računarima, potrebu za centralizovanom udaljenom bazom ili naprednijim administrativnim i pristupnim pravilima. Izbor baze zavisi od načina korišćenja, a ne samo od toga da li koristiš FastAPI.
 
@@ -146,7 +148,9 @@ Neke važne tabele i veze u Chinook bazi:
 
 - `artists` → `albums` → `tracks`: jedan izvođač može imati više albuma, a album više numera.
 - `customers` → `invoices` → `invoice_items`: kupac može imati više računa, a račun više stavki.
-- `playlists` ↔ `tracks`: plejlista može sadržati više numera, a numera se može nalaziti na više plejlista. Veza više-prema-više realizovana je pomoćnom tabelom `playlist_track`.
+
+- `playlists` ↔ `tracks`: plejlista može sadržati više numera, a numera se može nalaziti na više plejlista. Veza više-prema-više (many-to-many) realizovana je pomoćnom tabelom `playlist_track`.
+
 - `tracks` se povezuje i sa tabelama `genres` i `media_types`.
 - `employees` sadrži i hijerarhijsku vezu preko reference na drugog zaposlenog.
 
@@ -174,9 +178,11 @@ Ovo može biti korisnije od provere CLI verzije, jer u nekim okruženjima verzij
 
 ## SQLite u Python-u i SQLAlchemy-ju
 
-Python standardna biblioteka sadrži modul `sqlite3` koji omogućava povezivanje sa SQLite bazom preko DB-API-ja. `sqlite3` komandni alat je zaseban izvršni program; dostupnost Python modula ne garantuje da je CLI instaliran.
+**Python standardna biblioteka sadrži modul `sqlite3`** koji omogućava **povezivanje sa SQLite bazom** preko DB-API-ja (Python Database API Specification v2.0 standard, skraćeno DB-API 2.0). `sqlite3` komandni alat (CLI, Command Line Interface) je zaseban izvršni program. Dostupnost Python modula ne garantuje da je CLI instaliran.
 
-SQLAlchemy koristi SQLite drajver da izvršava upite i upravlja konekcijama. U SQLAlchemy 2.0 aplikaciji SQLAlchemy modeli i izrazi predstavljaju strukturu i operacije baze, dok Pydantic modeli obično opisuju API ulazne i izlazne podatke. FastAPI povezuje HTTP zahteve sa tim slojevima, ali ne menja način na koji SQLite čuva podatke.
+**DB-API 2.0 standard** definiše kako Python kod treba da komunicira sa bazama podataka preko modula kao što je `sqlite3`. Standard obuhvata pravila za konekcije, kursore, izvršavanje upita, rukovanje transakcijama i obradu grešaka, čime omogućava konzistentan interfejs za rad sa različitim bazama podataka u Python-u.
+
+**SQLAlchemy koristi SQLite drajver** da izvršava upite i upravlja konekcijama. U SQLAlchemy 2.0 aplikaciji SQLAlchemy modeli i izrazi predstavljaju strukturu i operacije baze, dok Pydantic modeli obično opisuju API ulazne i izlazne podatke. FastAPI povezuje HTTP zahteve sa tim slojevima, ali ne menja način na koji SQLite čuva podatke.
 
 Kada budeš proveravao podatke kroz CLI, moraš otvoriti isti fajl koji koristi aplikacija. Dve putanje koje imaju isto ime, na primer `app.db`, mogu pokazivati na dva različita fajla ako ih aplikacija i terminal pokreću iz različitih radnih direktorijuma.
 

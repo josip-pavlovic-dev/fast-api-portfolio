@@ -1,6 +1,6 @@
 # Oblast 00 — Uvod
 
-Uvodne lekcije objašnjavaju šta su SQLite i relaciona baza, kako da koristiš Chinook primer i kako su organizovani osnovni pojmovi baza podataka.
+Uvodne lekcije objašnjavaju šta su **SQLite i relaciona baza podataka**, kako da koristiš **Chinook primer** i kako su organizovani osnovni pojmovi baza podataka.
 
 ## Lekcije
 

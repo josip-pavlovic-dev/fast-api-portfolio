@@ -38,3 +38,27 @@ Zato je preciznije reći:
 > Ukratko, SQLite nije samostalna baza podataka. To je **biblioteka koja omogućava aplikaciji da kreira, čita i menja baze podataka**. Podaci se čuvaju u fajlovima koje biblioteka upravlja, a sama biblioteka **ne sadrži podatke**.
 
 ---
+
+## Pitanje 2
+
+Koja je razlika između `.sql` baze i `.db` baze?
+
+---
+
+## Odgovor 2
+
+**Kratko objašnjenje:**
+
+- `.sql` fajl obično sadrži **tekstualni SQL kod**, kao što su naredbe za kreiranje tabela, ubacivanje podataka i druge SQL operacije. To nije sama baza podataka, već skripta koja može da se izvrši nad bazom. Njen sadržaj se koristi za kreiranje ili modifikovanje stvarne baze podataka, ali sam `.sql` fajl ne sadrži podatke u binarnom obliku kao što to čini `.db` fajl.
+
+- `.db` fajl je **fajl koji sadrži stvarnu SQLite bazu podataka**, uključujući tabele, indekse i podatke. To je binarni fajl koji SQLite biblioteka može da otvori i manipuliše njime.
+
+- Ukratko, `.sql` je **tekstualna skripta** sa SQL naredbama, dok je `.db` **stvarna baza podataka** sa tabelama, indeksima i podacima.
+
+**Napomena:** `.sql` fajl može se koristiti za kreiranje ili popunjavanje `.db` baze tako što se izvrši nad SQLite bibliotekom ili drugim alatima koji podržavaju SQL.
+
+- `.sql` može sadržati naredbe poput `CREATE TABLE`, `INSERT` ili `SELECT`. Izvršavanjem tih naredbi nad bazom možeš napraviti strukturu ili izmeniti podatke. U tvom primeru `01_what_is_sqlite.sql` trenutno je samo šablon sa komentarom.
+
+- `.db` u ovom projektu je SQLite baza — binarna datoteka koju otvara SQLite alat, a ne običan tekstualni editor. `sandbox.db` je predviđena za eksperimente; `README` objašnjava kako se koristi.
+
+Dakle, **`.sql` opisuje šta da se uradi, a `.db` čuva bazu i njene podatke**. Ekstenzija `.db` je čest naziv za SQLite bazu, ali sama po sebi ne garantuje koji je format.

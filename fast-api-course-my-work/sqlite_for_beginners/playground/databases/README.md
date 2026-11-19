@@ -7,4 +7,4 @@ Ovaj folder sadrži lokalne, ignorisane fajlove baza:
 
 Kreiraj baze iz root-a repozitorijuma pomoću komandi iz [README-a za playground](../README.md#priprema-baza). Original `../../chinook/chinook.db` ne menjaj. Ako je radna Chinook baza izmenjena i želiš da je vratiš na početno stanje, ponovo je kopiraj iz originala.
 
-SQLite baze su lokalni binarni fajlovi i ne čuvaju se u Git-u. Zato se ovaj README sačuva u repozitorijumu, a baze možeš u svakom trenutku ponovo da napraviš.
+**SQLite baze su lokalni binarni fajlovi** i ne čuvaju se u Git-u. Zato se ovaj README fajl čuva u repozitorijumu, dok baze možeš u svakom trenutku ponovo da kreiraš prema uputstvima iz [README-a za playground](../README.md#priprema-baza).
