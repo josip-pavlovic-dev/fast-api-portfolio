@@ -2,8 +2,7 @@
 -- Lekcija: ../../../00_intro/01_what_is_sqlite.md
 --
 -- Poveži SQLTools na ChinookPractice. Svaki -- @block označava zaseban
--- upit: klikni Run on active connection iznad željenog bloka, ili označi
--- samo SQL naredbu i izaberi SQLTools Connection: Run Selected Query.
+-- upit: klikni Run on active connection iznad željenog bloka, ili označi samo SQL naredbu i izaberi SQLTools Connection: Run Selected Query.
 -- Upiti služe samo za pregled i ne menjaju podatke.
 --
 -- VEŽBA 1: Pronađi Chinook bazu

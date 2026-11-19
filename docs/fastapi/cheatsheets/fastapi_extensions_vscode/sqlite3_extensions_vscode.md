@@ -115,7 +115,7 @@ Dot-komande počinju tačkom i pripadaju `sqlite3` alatu; nisu standardni SQL i 
 | `.headers on`                          | Uključi nazive kolona u rezultatima.             |
 | `.mode box`                            | Prikaži rezultate u tabelarnom obliku.           |
 | `.read putanja/do/skripte.sql`         | Izvrši SQL skriptu nad trenutno otvorenom bazom. |
-| `.backup putanja/do/kopije.db`         | Napravi SQLite rezervnu kopiju.                  |
+| `.backup putanja/do/kopije.db`         | Napravi SQLite rezervnu kopiju baze.             |
 | `.quit`                                | Zatvori SQLite prompt.                           |
 
 Primer interaktivnog pregleda:
@@ -131,6 +131,8 @@ ORDER BY name;
 ```
 
 Za izlaz iz prompt-a možeš koristiti i `Ctrl+D`.
+
+---
 
 ### Izvršavanje `.sql` fajla
 
