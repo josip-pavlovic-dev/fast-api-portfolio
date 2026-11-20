@@ -1,4 +1,47 @@
 -- Lekcija: ../../01_some_basic_sql_commands/01_what_is_sqlite3_tool.md
--- Beleži i pokreći SQLite CLI komande i njihove rezultate ispod.
+-- Ovaj fajl je skripta za SQLite CLI: sadrži SQL upite i dot-komande.
+-- Pokreni ga iz SQLite prompta, ne direktno iz Bash terminala:
+--
+-- Bash, iz root-a repozitorijuma:
+-- sqlite3 -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+--
+-- Zatim u SQLite promptu:
+-- .read fast-api-course-my-work/sqlite_for_beginners/playground/cli/01_what_is_sqlite3_tool.txt
+--
+-- Dot-komande počinju tačkom i ne završavaju se tačka-zarezom.
+-- SQL naredbe se završavaju tačka-zarezom.
 
--- ON DELETE NO ACTION se koristi da bi se sprečilo brisanje reda u roditeljskoj tabeli ako postoje povezani redovi u child tabeli.
+-- Promeni samo prikaz rezultata u ovoj CLI sesiji.
+.headers on
+.mode column
+
+-- Prikaz baze i putanje otvorene u ovoj konekciji.
+.databases
+
+-- Ove SQL naredbe čitaju podatke i informacije; ne menjaju bazu.
+SELECT sqlite_version() AS sqlite_version;
+
+PRAGMA database_list;
+
+-- Prikaži tabele, pa definiciju jedne od njih.
+.tables
+.schema albums
+
+-- ON DELETE NO ACTION sprečava brisanje roditeljskog reda ako postoje povezani albumi.
+
+-- SQL upit može vratiti rezultat i bez čitanja neke konkretne tabele.
+SELECT 'Zdravo, SQLite!' AS poruka;
+
+-- Primer upita nad postojećim tabelama u Chinook bazi.
+SELECT ArtistId, Name
+FROM artists
+ORDER BY ArtistId
+LIMIT 5;
+
+SELECT AlbumId, Title, ArtistId
+FROM albums
+ORDER BY AlbumId
+LIMIT 5;
+
+-- Proveri podešavanje stranih ključeva u ovoj konekciji (1 = uključeno, 0 = isključeno).
+PRAGMA foreign_keys;

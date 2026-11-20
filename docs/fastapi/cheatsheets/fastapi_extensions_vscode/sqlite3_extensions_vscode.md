@@ -256,6 +256,20 @@ Ovo je jedan objekat unutar `sqltools.connections`, ne sadržaj celog `settings.
 
 U fajlu `01_what_is_sqlite.sql` svaki `-- @block` označava poseban SQLTools blok. Klikni **Run on active connection** iznad željenog bloka, nakon što proveriš da je `ChinookPractice` aktivna. **Select block** samo označava blok. Ako nema `@block` oznaka, SQLTools može tretirati ceo fajl kao jedan blok, a ne svaki upit zasebno.
 
+### SQL Console nije SQLite CLI
+
+**SQL Console** je deo SQLTools panela u VS Code-u. Prikazuje poruke povezane sa trenutno fokusiranim SQLTools results prikazom; SQL upit se pokreće iz editora preko SQLTools komandi, a rezultate vidiš u zasebnom results tabu. Panel **ne** predstavlja SQLite prompt i nije mesto za unos `.tables`, `.schema` ili `.quit`.
+
+Ako SQL Console prikazuje **Not focused to results view**, to znači da nijedan SQLTools results tab trenutno nije fokusiran. Sama poruka nije greška u upitu niti dokaz da konekcija nije uspela. Klikni results tab upita, na primer `ChinookPractice: SELECT ...`, da vidiš tabelu rezultata i poruke vezane za taj rezultat.
+
+Terminal radi drugačije: u Bash prompt-u pokreneš SQLite CLI nad putanjom do `.db` fajla:
+
+```bash
+sqlite3 -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+Tada dobiješ zaseban SQLite prompt i konekciju, u koju možeš unositi SQL i CLI dot-komande kao `.tables`, `.schema` i `.quit`. SQLTools i CLI mogu otvoriti isti `.db` fajl, ali su i dalje zasebne konekcije; stanje i podešavanja jedne se ne prenose automatski u drugu.
+
 Proveri na koji je fajl aktivna SQLTools konekcija otvorena:
 
 ```sql
@@ -263,6 +277,21 @@ PRAGMA database_list;
 ```
 
 U redu `main` putanja treba da završava sa `playground/databases/chinook_practice.db`. `PRAGMA` je SQLite SQL naredba i možeš je izvršiti u SQLTools-u; `.tables`, `.schema` i `.databases` su CLI dot-komande, ne SQLTools komande.
+
+### Otvaranje i čuvanje rezultata kao CSV ili JSON
+
+Za opciju sa slike **nije potreban dodatni CSV ili JSON drajver**. SQLTools već ima komande za formatiranje rezultata. SQLTools SQLite drajver je potreban za povezivanje i izvršavanje upita, a već je instaliran.
+
+1. Pokreni upit preko SQLTools-a i proveri da se njegov rezultat prikazuje u result panelu.
+2. Fokusiraj tab sa željenim rezultatima.
+3. Otvori Command Palette (`Ctrl+Shift+P`) i pokreni **SQLTools: Open Results**.
+4. Izaberi **Open results as CSV** ili **Open results as JSON**.
+
+SQLTools formira privremeni fajl sa rezultatom i traži od sistema da ga otvori. U WSL Remote sesiji ova opcija može da prikaže Windows obaveštenje **“Get an app to open this 'vscode-remote' link”**. To nije nedostajući CSV/JSON drajver, niti znak da SQLite konekcija ne radi; Windows samo ne može da obradi `vscode-remote` link koji je prosleđen kao spoljašnji link. Nemoj zbog toga instalirati aplikaciju iz Microsoft Store-a.
+
+Za pouzdano otvaranje rezultata unutar VS Code-a koristi **SQLTools: Save Results**, izaberi **Save results as CSV** ili **Save results as JSON**, pa odredi ime i lokaciju u dijalogu. SQLTools sačuva fajl i otvara ga u VS Code-u. Ako želiš samo da preuzmeš sadržaj bez fajla, u istom meniju možeš izabrati **Copy results as CSV to clipboard** ili **Copy results as JSON to clipboard**.
+
+CSV i JSON su formati izvoza rezultata, ne tipovi baze niti zamena za SQLite drajver. Za pregled CSV fajla unutar VS Code-a može pomoći već instalirani **Rainbow CSV**; SQLTools-ov izvoz sam po sebi ne zavisi od njega. JSON fajl možeš otvoriti u VS Code-u kao običan tekstualni fajl.
 
 ---
 

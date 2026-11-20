@@ -141,7 +141,9 @@ Za sada bih nastavio sa zvaničnim `sqlite3` zbog vežbi; dopunjavanje možemo n
 
 ## Odgovor 4
 
-**Ukratko:** ove opcije određuju šta SQLite automatski radi sa povezanim redovima kada se obriše roditeljski red ili promeni vrednost roditeljskog ključa. `NO ACTION` znači da SQLite **ne preduzima posebnu automatsku akciju nad povezanim redovima**. To ne znači da će dozvoliti narušavanje stranog ključa: ako je provera stranih ključeva uključena, neispravna promena će biti odbijena prilikom provere ograničenja.
+**Ukratko:** ove opcije određuju šta SQLite automatski radi sa povezanim redovima kada se obriše roditeljski red ili promeni vrednost roditeljskog ključa. **Roditeljski ključ predstavlja vrednost koja se koristi u povezanim redovima. Na primer, `artists.ArtistId` je roditeljski ključ (PK u tabeli `artists`) za `albums.ArtistId`. Jednostavno rečeno, roditelj je "vlasnik" vrednosti na koju se drugi redovi pozivaju. FK ograničenje (foreign key constraint) definiše pravila za te veze i osigurava integritet podataka između povezanih tabela.** Bez FK ograničenja, SQLite ne bi mogao da proverava ove veze i mogao bi da dozvoli narušavanje integriteta podataka.
+
+`NO ACTION` znači da SQLite **ne preduzima posebnu automatsku akciju nad povezanim redovima**. To ne znači da će dozvoliti narušavanje stranog ključa. Ako je provera stranih ključeva uključena, neispravna promena će biti odbijena prilikom provere ograničenja.
 
 U tvojoj bazi, uz uključenu proveru i uobičajenu neposrednu proveru ograničenja:
 
@@ -473,5 +475,470 @@ To je **posebno definisan indeks** na stranom (`FOREIGN KEY`) ključu `albums.Ar
 Indeks nije isto što i `PRIMARY KEY`, `UNIQUE` ili `AUTOINCREMENT`: običan indeks sam po sebi ne zahteva jedinstvene vrednosti niti dodeljuje ID-jeve. Podrška za automatske ključeve i način na koji ih SQLAlchemy generiše razlikuju se između baza, pa proveravaj konkretnu šemu i upotrebljeni dijalekt.
 
 **Za pamćenje:** u `artists` je `AUTOINCREMENT` definisan u šemi. Automatsko dodeljivanje broja već postoji i bez te ključne reči za SQLite `INTEGER PRIMARY KEY`. Dodatne indekse biraš prema stvarnim upitima.
+
+---
+
+## Pitanje 6
+
+Da li je roditeljski ključ u vezi između `artists` i `albums` PK (primarni ključ) u tabeli `artists`?
+
+---
+
+## Odgovor 6
+
+Da. U ovoj vezi, roditeljski ključ u tabeli `artists` je primarni ključ (PK) kolone `ArtistId`.
+
+```text
+albums.ArtistId  ─────►  artists.ArtistId
+   strani ključ (FK)       roditeljski ključ (PK)
+```
+
+- `artists.ArtistId` je **roditeljski ključ**: kolona u roditeljskoj tabeli `artists`, čije se vrednosti referenciraju. U tvojoj bazi je to primarni ključ (PK).
+
+- `albums.ArtistId` je **strani ključ**: kolona u tabeli dete `albums`, koja upućuje na `artists.ArtistId`. To znači da vrednosti u `albums.ArtistId` moraju odgovarati vrednostima u `artists.ArtistId` ili biti `NULL` (ako je dozvoljeno).
+
+Na primer, ako je izvođač upisan kao `artists.ArtistId = 1`, onda vrednost `albums.ArtistId = 1` označava da album pripada tom izvođaču. Broj `1` je **vrednost ključa**. Drugim rečima, to je konkretna vrednost koja povezuje redove. Roditeljski ključ i strani ključ su nazivi uloga koje imaju kolone u vezi.
+
+Roditeljski ključ je često primarni ključ, kao u ovom primeru, ali može biti i druga kolona ili skup kolona na koje se može ispravno referencirati, na primer kolona sa `UNIQUE` ograničenjem. Zato nemoj izjednačavati pojam „roditeljski ključ“ sa „FK“: FK je na strani tabele dete. Roditeljski ključ je cilj na koji FK pokazuje.
+
+---
+
+## Pitanje 7
+
+Kada kažemo da strani ključ „referencira“ roditeljski ključ, šta se tačno dešava? Znam šta znači referencirati ili pokazivati na isti objekat u Python-u, ali nisam siguran kako to funkcioniše u bazi. Ako je veza između `artists` i `albums` 1:N, da li to znači da jedan izvođač može imati više albuma, ali svaki album može pripadati samo jednom izvođaču?
+
+## Odgovor 7
+
+Da — tako je. Veza `artists`–`albums` je **jedan-prema-više (1:N)**:
+
+- jedan izvođač može imati nijedan, jedan ili više albuma;
+- svaki album je povezan sa jednim izvođačem.
+
+U ovoj Chinook šemi `albums.ArtistId` je `NOT NULL`, pa album mora imati povezanog izvođača.
+
+Ovde „referencira“ **ne znači da `albums.ArtistId` čuva Python pokazivač na ceo objekat ili red u tabeli `artists` tj. na izvođača sa svim podacima iz kolona**. Nasuprot tome, baza čuva samo ID vrednost. Zatim proverava da li se ta vrednost poklapa sa ID-jem nekog reda u `artists`.
+
+Na primer, tabele mogu sadržati:
+
+**`artists`**
+
+| ArtistId | Name  |
+| -------: | ----- |
+|        1 | AC/DC |
+
+**`albums`**
+
+| AlbumId | Title                    | ArtistId |
+| ------: | ------------------------ | -------: |
+|       1 | For Those About To Rock… |        1 |
+|       4 | Let There Be Rock        |        1 |
+
+Oba reda albuma čuvaju `ArtistId = 1`. Taj broj znači: „poveži ovaj album sa izvođačem čiji je `ArtistId` jednak 1“. Baza pronalazi red poređenjem vrednosti; nema Python objekta ni memorijske adrese u SQLite fajlu.
+
+Strano-ključno ograničenje definiše pravilo veze: ako je provera stranih ključeva uključena, vrednost `albums.ArtistId` mora odgovarati postojećem `artists.ArtistId`. Na primer, `albums.ArtistId = 999` nije dozvoljen ako ne postoji izvođač sa `ArtistId = 999`. Istovremeno, isti postojeći ID može se pojaviti u više redova `albums` — zato jedan izvođač može imati više albuma.
+
+Kada upit spaja ove tabele, uslov poređenja vrednosti izgleda ovako:
+
+```sql
+SELECT artists.Name, albums.Title
+FROM artists
+JOIN albums ON albums.ArtistId = artists.ArtistId;
+```
+
+Ukratko, FK „pokazuje“ na roditeljski red **posredno, preko jednake vrednosti ključa**. To nije Python referenca ili pokazivač; veza je sačuvana u podacima i proverava se pravilom stranog ključa.
+
+---
+
+## Pitanje 8
+
+Kako tačno funkcionišu `JOIN` i `LEFT JOIN`? Kako se razlikuju i šta se dešava kada red sa leve strane nema odgovarajući red sa desne strane?
+
+---
+
+## Odgovor 8
+
+`JOIN` povezuje redove iz dve tabele prema uslovu koji zadaš u `ON`. Najlakše je razumeti razliku preko Chinook veze `artists`–`albums`:
+
+- `artists` je leva tabela u primerima ispod.
+- `albums` je desna tabela.
+- `albums.ArtistId = artists.ArtistId` je uslov koji kaže koji redovi odgovaraju jedni drugima.
+
+Važno: `JOIN` sam po sebi ne menja podatke. On pravi rezultat upita sastavljen od kolona iz povezanih redova.
+
+### 1. `JOIN` odnosno `INNER JOIN`
+
+Kada napišeš samo `JOIN`, SQLite podrazumeva `INNER JOIN`. Rezultat sadrži **samo parove redova za koje je uslov u `ON` tačan**.
+
+```sql
+SELECT artists.ArtistId, artists.Name, albums.AlbumId, albums.Title
+FROM artists
+JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+WHERE artists.Name = 'AC/DC';
+```
+
+U tvojoj bazi ovaj upit vrati dva reda:
+
+| ArtistId | Name  | AlbumId | Title                                 |
+| -------: | ----- | ------: | ------------------------------------- |
+|        1 | AC/DC |       1 | For Those About To Rock We Salute You |
+|        1 | AC/DC |       4 | Let There Be Rock                     |
+
+SQLite uporedi `albums.ArtistId` sa `artists.ArtistId`. Pošto oba albuma imaju `ArtistId = 1`, oba se uparuju sa redom `AC/DC`. Zbog toga se izvođač ponavlja u rezultatu — dobija se po jedan red za svaki pronađeni par.
+
+Izvođač bez albuma nema nijedan par, pa se njegov red **ne pojavljuje** u običnom `JOIN` rezultatu.
+
+---
+
+### 2. `LEFT JOIN`
+
+`LEFT JOIN` zadržava **sve redove iz leve tabele** (`artists`), bez obzira na to da li imaju odgovarajući album. Kada postoji podudaranje, rezultat izgleda kao kod običnog `JOIN`-a. Kada podudaranja nema, SQLite i dalje vrati red izvođača, a kolone koje dolaze iz `albums` popuni sa `NULL`.
+
+```sql
+SELECT artists.ArtistId, artists.Name, albums.AlbumId, albums.Title
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+WHERE artists.Name = 'AC/DC';
+```
+
+Za AC/DC rezultat je isti kao kod običnog `JOIN`-a, jer AC/DC ima albume. Da vidiš i izvođače bez albuma, ukloni uslov koji bira AC/DC:
+
+```sql
+SELECT artists.ArtistId, artists.Name, albums.AlbumId, albums.Title
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+ORDER BY artists.ArtistId
+LIMIT 10;
+```
+
+Ovaj rezultat sadrži redove izvođača sa njihovim albumima. Za izvođača bez albuma bi, na primer, izgledao ovako:
+
+| ArtistId | Name                       | AlbumId | Title  |
+| -------: | -------------------------- | ------: | ------ |
+|       25 | Milton Nascimento & Bebeto |  `NULL` | `NULL` |
+
+To ne znači da je u tabeli `albums` upisan red čiji je `AlbumId` ili `Title` `NULL`. To je privremeni rezultat `LEFT JOIN`-a koji pokazuje da za tog izvođača nije nađen odgovarajući red sa desne strane.
+
+---
+
+### 3. Kako jedan-prema-više utiče na rezultat?
+
+Kod veze 1:N jedan izvođač može da se upari sa više albuma. `JOIN` zato vraća po jedan red za svaki par izvođač–album:
+
+```text
+artists              albums
+AC/DC (ArtistId=1) ── Album 1 (ArtistId=1)
+                  └─ Album 4 (ArtistId=1)
+```
+
+Isto važi za `LEFT JOIN`. Ako postoje tri albuma, jedan izvođač će se pojaviti u tri rezultujuća reda. Ako nema albuma, `LEFT JOIN` će ga prikazati jednom, uz `NULL` vrednosti za kolone iz `albums`.
+
+---
+
+### 4. Pronađi izvođače bez albuma
+
+Često se `LEFT JOIN` koristi da se pronađu redovi leve tabele bez podudaranja. Proveri nullable kolonu sa desne tabele koja bi u stvarnom albumu morala imati vrednost, kao što je njegov primarni ključ `albums.AlbumId`:
+
+```sql
+SELECT artists.ArtistId, artists.Name
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+WHERE albums.AlbumId IS NULL
+ORDER BY artists.ArtistId;
+```
+
+U Chinook radnoj kopiji ovo pronađe izvođače koji nemaju albume. U proveravanim podacima ima 275 izvođača i 347 albuma; 71 izvođač nema album. Zbog toga običan `JOIN` daje 347 redova, a `LEFT JOIN` bez dodatnog filtriranja daje 418 redova: 347 uparenih redova i po jedan red za svakog od 71 nepovezanog izvođača. To su vrednosti trenutne kopije baze; mogu se promeniti ako promeniš podatke.
+
+Nemoj koristiti `WHERE albums.ArtistId IS NULL` kao opšte pravilo kada postoji pouzdan PK, jer je bolje eksplicitno proveriti da nije pronađen desni red, na primer `albums.AlbumId IS NULL`.
+
+---
+
+### 5. Važna razlika: uslov u `ON` i uslov u `WHERE`
+
+Kod `LEFT JOIN`-a, filter koji određuje **koji redovi smeju da se uparuju** stavi u `ON`, ako i dalje želiš da sačuvaš sve redove sa leve strane. Na primer, prikaži sve izvođače, a pridruži samo albume čiji naziv sadrži „Rock“:
+
+```sql
+SELECT artists.Name, albums.Title
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+ AND albums.Title LIKE '%Rock%';
+```
+
+Izvođači bez odgovarajućeg „Rock“ albuma ostaju u rezultatu, a kolone albuma su `NULL`.
+
+Ako isti filter staviš u `WHERE`:
+
+```sql
+SELECT artists.Name, albums.Title
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+WHERE albums.Title LIKE '%Rock%';
+```
+
+redovi sa `albums.Title IS NULL` ne zadovoljavaju uslov `LIKE` i bivaju uklonjeni. Tako se gubi glavna osobina `LEFT JOIN`-a za taj slučaj, a rezultat se ponaša kao da su traženi samo izvođači sa albumom koji zadovoljava filter.
+
+**Pravilo za pamćenje:** `ON` određuje uparivanje; `WHERE` filtrira rezultat nakon spajanja. Kod `INNER JOIN`-a se mnogi uslovi mogu premeštati između `ON` i `WHERE` bez promene rezultata, ali kod `LEFT JOIN`-a premeštanje može promeniti značenje.
+
+---
+
+### 6. `COUNT(*)` i `COUNT(albums.AlbumId)` uz `LEFT JOIN`
+
+Kod izvođača bez albuma, `LEFT JOIN` ipak stvara jedan rezultatni red sa `NULL` vrednostima sa desne strane. Zbog toga:
+
+- `COUNT(*)` broji i taj rezultatni red, pa bi za izvođača bez albuma dao `1`;
+- `COUNT(albums.AlbumId)` ignoriše `NULL`, pa bi dao `0`.
+
+Za brojanje albuma po izvođaču koristi:
+
+```sql
+SELECT
+    artists.ArtistId,
+    artists.Name,
+    COUNT(albums.AlbumId) AS album_count
+FROM artists
+LEFT JOIN albums
+  ON albums.ArtistId = artists.ArtistId
+GROUP BY artists.ArtistId, artists.Name
+ORDER BY artists.ArtistId
+LIMIT 10;
+```
+
+Ovde `COUNT(albums.AlbumId)` koristi se namerno da bi izvođač bez albuma dobio broj `0`.
+
+---
+
+### Ukratko
+
+| Operacija             | Šta ostaje u rezultatu?                                               |
+| --------------------- | --------------------------------------------------------------------- |
+| `JOIN` / `INNER JOIN` | Samo redovi koji su upareni sa odgovarajućim redovima u obe tabele.   |
+| `LEFT JOIN`           | Svi redovi leve tabele; desne tabele su `NULL` kada nema podudaranja. |
+
+U Chinook primeru izvođač je leva strana, album desna. Koristi `JOIN` kada su ti potrebni samo izvođači koji imaju albume, a `LEFT JOIN` kada želiš da sačuvaš sve izvođače, uključujući one bez albuma.
+
+---
+
+## Pitanje 9
+
+Da li je rečenica „Baza čuva samo ID vrednost. Zatim proverava da li se ta vrednost poklapa sa ID-jem nekog reda u `artists`“ ispravna?
+
+---
+
+## Odgovor 9
+
+Da, **kao pojednostavljeno objašnjenje je ispravna**, ali joj nedostaje važan uslov: SQLite sprovodi proveru stranog ključa samo kada je provera uključena u toj konekciji. Uključivanje provere stranih ključeva obično se vrši naredbom:
+
+```sql
+PRAGMA foreign_keys = ON;
+```
+
+U vezi između Chinook tabela:
+
+- `albums.ArtistId` čuva ID vrednost, na primer `1`. Ne čuva Python objekat, memorijsku adresu ili kopiju celog reda iz `artists`.
+
+- Kada se red albuma upisuje ili se menja njegov `ArtistId`, uz uključenu proveru preko `PRAGMA foreign_keys = ON;`, SQLite proverava da li postoji odgovarajući `artists.ArtistId`. Ako ne postoji, operacija će biti odbijena i biće prijavljena greška.
+
+- Provera važi i pri brisanju izvođača ili izmeni njegovog roditeljskog ključa, prema pravilima `ON DELETE` i `ON UPDATE` definisanim u šemi.
+
+Dakle, preciznija formulacija bi bila:
+
+> Tabela `albums` čuva ID izvođača u koloni `ArtistId`. Kada se upisuje ili menja album, SQLite proverava da li ta vrednost odgovara postojećem `artists.ArtistId` — pod uslovom da je provera stranih ključeva uključena u toj konekciji.
+
+Proveru u trenutnoj SQLite konekciji možeš videti ovako:
+
+```sql
+PRAGMA foreign_keys;
+```
+
+Rezultat `1` znači da je uključena, a `0` da nije. Ovo podešavanje važi po konekciji i obično mora biti uključeno pre početka transakcije. Ako je provera bila isključena, postojeći neispravni podaci neće se automatski popraviti; možeš ih potražiti pomoću `PRAGMA foreign_key_check;`.
+
+---
+
+## Pitanje 10
+
+Za šta je `PRAGMA` tačno skraćenica? Šta znači svako slovo u reči `PRAGMA`?
+
+## Odgovor 10
+
+`PRAGMA` **nije skraćenica** i slova `P`, `R`, `A`, `G`, `M`, `A` ne predstavljaju pojedinačne reči. Zato za njih ne postoji prošireni naziv koji treba naučiti.
+
+`pragma` je obična reč, a ne akronim. Potiče od starogrčkog `πρᾶγμα` (_prâgma_), u značenju „stvar“, „posao“ ili „učinjeno delo“ ([etimologija reči](https://en.wiktionary.org/wiki/pragma)). To poreklo ne treba tumačiti kao naziv šest SQL pojmova.
+
+U SQLite-u, `PRAGMA` označava SQLite-specifične naredbe kojima možeš da **pročitaš ili promeniš određena podešavanja i informacije o radu SQLite biblioteke**. Na primer:
+
+```sql
+PRAGMA foreign_keys;
+```
+
+čita da li je provera stranih ključeva uključena u trenutnoj konekciji, dok:
+
+```sql
+PRAGMA table_info('artists');
+```
+
+prikazuje informacije o kolonama tabele `artists`.
+
+Dakle, zapamti `PRAGMA` kao naziv vrste posebnih SQLite naredbi — ne kao akronim. Sintaksa i podrška za pragma naredbe mogu se razlikovati među bazama; dokumentacija za SQLite nalazi se u [spisku PRAGMA naredbi](https://www.sqlite.org/pragma.html).
+
+---
+
+## Pitanje 11
+
+Pokrenuo sam blok „Vežba 2: Definicije tabela“ u `01_what_is_sqlite.sql` i u rezultatu video tekst `CREATE TABLE`. Zašto sam dobio `CREATE TABLE`?
+
+## Odgovor 11
+
+Zato što upit traži prikaz **definicija tabela**, a ne njihovih redova sa podacima:
+
+```sql
+SELECT name, sql
+FROM sqlite_schema
+WHERE type = 'table'
+  AND name IN ('albums', 'tracks', 'playlist_track')
+ORDER BY name;
+```
+
+`sqlite_schema` je SQLite-ov interni katalog šeme — sistemski prikaz informacija o objektima u bazi, poput tabela, indeksa, pogleda i okidača. U njemu:
+
+- `name` je naziv objekta, na primer `albums`;
+- `type = 'table'` ograničava rezultat na tabele;
+- `sql` sadrži SQL definiciju kojom je tabela napravljena.
+
+Zato rezultat prikazuje imena `albums`, `playlist_track` i `tracks`, a u koloni `sql` tekst koji počinje sa `CREATE TABLE ...`. Taj tekst opisuje strukturu tabele: kolone i tipove, primarne i strane ključeve i druga ograničenja.
+
+**Važno:** upit samo čita taj tekst iz kataloga i prikazuje ga kao rezultat. Ne izvršava tekst iz kolone `sql`, ne pravi ponovo tabele i ne menja bazu.
+
+Razlikuj ova dva pitanja:
+
+```sql
+-- Koje su definicije tabela?
+SELECT name, sql
+FROM sqlite_schema
+WHERE type = 'table'
+  AND name IN ('albums', 'tracks', 'playlist_track')
+ORDER BY name;
+```
+
+```sql
+-- Koji redovi sa podacima postoje u tabeli albums?
+SELECT *
+FROM albums
+LIMIT 5;
+```
+
+Prvi upit prikazuje **šemu** (kako je tabela definisana), a drugi **podatke** (redove sačuvane u tabeli). U prikazu SQLTools-a duga definicija može biti skraćena vizuelno; pomeri horizontalnu traku da pročitaš ostatak. To ne znači da je SQL tekst ili definicija nepotpuni.
+
+---
+
+## Pitanje 12
+
+Kada u SQLTools-u izaberem **Open results as CSV** ili **Open results as JSON**, Windows mi prikaže poruku da nema aplikaciju za otvaranje `vscode-remote` linka. Da li mi nedostaje CSV/JSON drajver?
+
+## Odgovor 12
+
+Ne, ne nedostaje ti CSV/JSON drajver. SQLTools već ume da formatira rezultate u CSV i JSON, a SQLTools SQLite drajver je instaliran.
+
+U WSL Remote sesiji komanda **Open Results** formira privremeni fajl, a zatim pokušava da ga otvori kao spoljašnji link. U ovom slučaju Windows dobija `vscode-remote` link koji ne može da obradi i zato prikazuje obaveštenje. To nije problem sa tvojim SQL upitom, bazom ili CSV/JSON formatom. Ne treba da instaliraš aplikaciju iz Microsoft Store-a zbog te poruke.
+
+Da rezultat otvoriš pouzdano unutar VS Code-a:
+
+1. Pokreni upit i fokusiraj njegov result tab.
+2. Otvori Command Palette pomoću `Ctrl+Shift+P`.
+3. Pokreni **SQLTools: Save Results**.
+4. Izaberi **Save results as CSV** ili **Save results as JSON** i odredi gde da se fajl sačuva. SQLTools će sačuvani fajl otvoriti u VS Code-u.
+
+Ako ne želiš da sačuvaš fajl, u istom meniju možeš izabrati **Copy results as CSV to clipboard** ili **Copy results as JSON to clipboard**, pa sadržaj nalepiti u novi fajl u VS Code-u.
+
+---
+
+## Pitanje 13
+
+Koja je uloga **SQL Console** u VS Code-u i po čemu se razlikuje od SQLite CLI-ja u terminalu? Šta znači poruka **Not focused to results view**?
+
+## Odgovor 13
+
+**SQL Console nije SQLite CLI prompt.** To je panel SQLTools ekstenzije u VS Code-u koji prikazuje poruke vezane za trenutno fokusirani SQLTools prikaz rezultata. SQL upit pokrećeš iz `.sql` editora preko komandi SQLTools-a, a tabelu sa rezultatima gledaš u zasebnom results tabu.
+
+Poruka **Not focused to results view** znači da SQLTools trenutno nema fokusiran tab sa rezultatima. Sama poruka **nije greška** i ne znači nužno da upit ili konekcija nisu uspeli. Klikni tab rezultata upita, na primer `ChinookPractice: SELECT ...`, da vidiš rezultat. SQL Console nije namenjen unosu SQL naredbi ili SQLite dot-komandi.
+
+SQLite CLI radi u terminalu kao poseban program i zasebna konekcija:
+
+```bash
+sqlite3 -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+Posle pokretanja vidiš SQLite prompt i u njega unosiš SQL:
+
+```sql
+SELECT Name FROM artists LIMIT 5;
+```
+
+ili SQLite CLI dot-komande:
+
+```text
+.tables
+.schema albums
+.quit
+```
+
+| SQLTools u VS Code-u | SQLite CLI u terminalu |
+|---|---|
+| Upit pokrećeš iz `.sql` editora, na primer **Run Selected Query** ili **Run on active connection**. | CLI pokrećeš iz Bash-a komandom `sqlite3 putanja/do/baze.db`. |
+| SQLTools drajver koristi sačuvanu i izabranu konekciju. Rezultat se prikazuje u result tabu. | SQLite CLI otvara bazu navedenu u komandi. SQL i dot-komande unosiš u SQLite prompt. |
+| SQL Console prikazuje poruke vezane za rezultat i status njegovog fokusa. | Terminal prikazuje SQLite prompt, SQL rezultate i izlaz dot-komandi. |
+| Zatvaranje results taba ne mora prekinuti sačuvanu ili aktivnu konekciju. | `.quit` zatvara SQLite CLI proces i njegovu konekciju. |
+
+Oba alata mogu pristupiti istom `.db` fajlu, ali svaki uspostavlja **svoju konekciju**. Na primer, `PRAGMA foreign_keys` ili `ATTACH DATABASE` podešeni u jednoj konekciji ne postaju automatski podešavanja druge.
+
+---
+
+## Pitanje 14
+
+Kako da pokrenem `.txt` fajl iz `playground/cli/`? Da li SQL upit treba da ukucam u taj fajl ili u terminal?
+
+## Odgovor 14
+
+Najpre razlikuj Bash terminal od SQLite CLI prompta:
+
+1. U **Bash terminalu**, iz korena repozitorijuma, otvori radnu bazu:
+
+   ```bash
+   sqlite3 -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+   ```
+
+2. Kada vidiš SQLite prompt, kao što je `SQLite>`, možeš direktno ukucati SQL upit:
+
+   ```sql
+   SELECT Name
+   FROM artists
+   LIMIT 5;
+   ```
+
+   Završi naredbu tačka-zarezom `;` i pritisni Enter. Ovo SQL upit izvršava odmah nad bazom otvorenom u toj konekciji.
+
+3. Da učitaš fajl, na **SQLite promptu** unesi `.read` i putanju:
+
+   ```text
+   .read fast-api-course-my-work/sqlite_for_beginners/playground/cli/02_some_commonly_used_sqlite3_commands.txt
+   ```
+
+   Ta putanja je relativna u odnosu na direktorijum u kom je pokrenut SQLite CLI. U primeru ga pokrećeš iz korena repozitorijuma. `.read` nije Bash komanda; radi tek kada je SQLite CLI otvoren.
+
+`.read` učitava fajl red po red kao ulaz u **trenutnu SQLite CLI konekciju**. Fajl može sadržati SQLite CLI dot-komande, SQL naredbe ili komentare. Ekstenzija `.txt` sama po sebi ne izvršava ništa — važno je šta je unutar fajla.
+
+Tvoj trenutni `02_some_commonly_used_sqlite3_commands.txt` sadrži samo komentare koji opisuju lekciju, pa se pri učitavanju ne vidi rezultat. Nema SQL upita koji bi se izvršio. Fajl `01_what_is_sqlite3_tool.txt` sada sadrži primere SQL upita **i** CLI dot-komandi, pa možeš preko `.read` da vidiš obe vrste unosa. Za odgovore na redovne SQL vežbe koristi odgovarajući `.sql` fajl u `playground/sql/`; `.txt` u `playground/cli/` služe za beleške i vežbanje samog komandnog alata. Možeš ih otvoriti u editoru, dopisati sadržaj, sačuvati, pa tek onda pokrenuti `.read`.
+
+Na primer, ako sačuvaš upit u `.sql` fajlu, istu skriptu možeš učitati iz SQLite prompta ovako:
+
+```text
+.read fast-api-course-my-work/sqlite_for_beginners/playground/sql/00_intro/01_what_is_sqlite.sql
+```
+
+Pre `.read` proveri sadržaj skripte i otvorenu bazu. Skripta može sadržati naredbe koje menjaju podatke, a `.read` će ih izvršiti nad tom konekcijom.
 
 ---

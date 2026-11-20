@@ -17,6 +17,8 @@ Ovo uputstvo prati tvoj [plan učenja](../../../../fast-api-course-my-work/sqlit
 
 Radna baza ostaje isti fajl bez obzira na alat. Svaki alat, međutim, otvara **sopstvenu konekciju**: njena podešavanja i `ATTACH` baze nisu automatski preneti u drugi alat ili SQLTools.
 
+---
+
 ## 2. Priprema terminala
 
 U VS Code-u otvori terminal povezan sa WSL-om. Primeri u nastavku podrazumevaju Bash i **koren ovog repozitorijuma** kao trenutni direktorijum:
@@ -51,12 +53,16 @@ Prilikom podešavanja proverene su verzije `sqlite3` 3.54.1, `litecli` 1.17.1 i 
 
 **Važno:** izvršavanjem `SELECT sqlite_version();` meriš verziju SQLite biblioteke koju koristi _trenutni klijent_. Ovde je Pythonova biblioteka koju koristi `litecli` pri proveri bila 3.45.1, dok je zasebni `sqlite3` CLI bio 3.54.1. SQLTools može koristiti treću verziju. To nije dokaz da je instalacija neuspešna, ali novije SQL funkcije možda neće raditi jednako u svim alatima.
 
+---
+
 ## 3. Terminalski prompt i SQLite prompt
 
 - Komande označene kao **Bash** unosiš u terminal pre ulaska u alat ili nakon izlaska iz njega.
 - Komande označene kao **SQLite CLI** unosiš dok je `sqlite3` pokrenut, sa ili bez `rlwrap`-a.
 - SQL unosiš u otvorenom klijentu, ne u Bash promptu. SQL naredbe završavaj sa `;`. SQLite CLI komande poput `.tables` počinju tačkom i ne završavaju se tačka-zarezom.
 - Primeri sa relativnim putanjama polaze od korena repozitorijuma. Ako promeniš direktorijum, promeni i putanju.
+
+---
 
 ## 4. `rlwrap`: Tab dovršavanje u pravom SQLite CLI-ju
 
@@ -75,6 +81,7 @@ Ovo je i dalje zvanični `sqlite3`. `-readonly` je opcija za `sqlite3`, a pretho
 - `-N` pomaže da `rlwrap` ne ometa programe poput pozvanog editora ili pagera.
 - `-c` uključuje dovršavanje putanja i omogućava da tačka bude deo reči za dovršavanje.
 - `-f` učitava našu listu komandi; to **nije** automatski spisak svih SQLite komandi ili naziva tabela.
+- `"$HOME/` predstavlja putanju do korisničkog direktorijuma u kojem se nalazi konfiguracioni fajl sa listom komandi za `rlwrap`. Zamena `$HOME` sa stvarnom putanjom do korisničkog direktorijuma se vrši automatski od strane Bash-a ili drugog kompatibilnog shell-a. Ovo omogućava da konfiguracioni fajl bude prenosiv i da se koristi bez obzira na konkretan korisnički direktorijum.
 
 Isprobaj u otvorenom SQLite CLI-ju:
 
@@ -86,6 +93,8 @@ Isprobaj u otvorenom SQLite CLI-ju:
 Tačan naziv je **`.databases`**, sa završnim `s`. Ako postoji više mogućih dopuna, pritisni Tab ponovo da ih vidiš i dopuni još slova. `rlwrap` koristi i istoriju; strelice gore/dole služe za prolazak kroz prethodne unose.
 
 > **Ispravka ranijeg Odgovora 3:** tvrdnja da standardni SQLite CLI nikada ne podržava Tab dovršavanje bila je previše uopštena: mogućnosti zavise od konkretne gradnje i terminalskog uređivanja linija. Takođe, sama komanda `rlwrap sqlite3 sandbox.db` ne garantuje dopunu `.databases`. Gore navedena komanda sa listom je proverena. Bez Tab-a, `sqlite3` prihvata i dovoljno jednoznačno skraćenu komandu `.databa` uz **Enter**; to nije dopunjavanje.
+
+---
 
 ### Kako isključiti `rlwrap`
 
@@ -99,6 +108,8 @@ Time ne deinstaliraš `rlwrap`; samo ga ne koristiš u toj sesiji. Nije dodat al
 
 **Privatnost istorije:** `rlwrap` i sami klijenti mogu čuvati unesene komande u istoriji. Opcija `-a` može izložiti ili sačuvati i osetljiv unos, uključujući lozinke. Ne unosi lozinke ili tajne u komande i ne pretpostavljaj da je istorija privatna.
 
+---
+
 ## 5. `litecli`: SQL predlozi
 
 Iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
@@ -107,7 +118,7 @@ Iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
 litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
-Pokrenut je poseban klijent i zasebna konekcija, a ne SQLTools konekcija. `litecli` ovim primerom otvara bazu za čitanje **i pisanje**: za bezbedan pregled koristi samo `SELECT` i `PRAGMA` upite prikazane ispod. Pazljivo proveri putanju: pogrešna putanja može dovesti do otvaranja ili stvaranja pogrešne, prazne baze.
+Pokrenut je **poseban klijent i zasebna konekcija, a ne SQLTools konekcija.** `litecli` ovim primerom otvara bazu za **čitanje i pisanje**: za bezbedan pregled koristi samo `SELECT` i `PRAGMA` (PRAGMA znači podešavanje ili proveru SQLite konfiguracije.) upite prikazane ispod. Pazljivo proveri putanju: pogrešna putanja može dovesti do otvaranja ili stvaranja pogrešne, prazne baze.
 
 U `litecli` promptu:
 
@@ -129,6 +140,8 @@ U `litecli` promptu:
 
 Za izlazak upiši `exit` i pritisni Enter ili pritisni **Ctrl+D** na praznom promptu. Izlaskom se zatvara samo ta terminalska konekcija; fajl baze i sačuvana SQLTools konekcija ne brišu se.
 
+---
+
 ### Kako isključiti i ponovo uključiti predloge
 
 `litecli` koristi korisnički konfiguracioni fajl `~/.config/litecli/config`, kreiran pri prvom pokretanju. Otvori ga u editoru, pronađi odeljak `[main]` i promeni postojeću postavku:
@@ -141,6 +154,8 @@ Sačuvaj fajl i ponovo pokreni `litecli`. Automatski prikaz predloga pri kucanju
 
 Za rad bez `litecli` predloga uopšte, jednostavno koristi običan `sqlite3`; ako želiš `rlwrap`, a ne želiš njegove predloge, pokreni `sqlite3` direktno bez omotača.
 
+---
+
 ## 6. Primena na prve lekcije
 
 ### Lekcija 01 — šta je SQLite
@@ -150,18 +165,23 @@ Pročitaj [01_what_is_sqlite.md](../../../../fast-api-course-my-work/sqlite_for_
 1. U Bash-u pokreni `sqlite3 -readonly` nad radnom kopijom ili prethodnu `rlwrap` komandu.
 2. U SQLite CLI-ju isprobaj `.databases`, `.tables` i `.schema albums`.
 3. Pokreni SQL upite `SELECT sqlite_version();` i `PRAGMA foreign_keys;`.
-4. Po želji pokreni istu proveru u `litecli`-ju i SQLTools-u; uporedi rezultate **svake konekcije**.
+4. Po želji pokreni istu proveru u `litecli`-ju i SQLTools-u, pa uporedi rezultate **svake konekcije**.
+
+- Rezultati konekcije su takvi da se razlikuju u zavisnosti od toga da li je automatsko predlaganje uključeno i koji klijent se koristi. U `litecli`-ju može doći do razlike u redosledu izvršavanja upita u odnosu na običan `sqlite3` ili `rlwrap`, što može uticati na prikaz rezultata i ponašanje stranih ključeva. Zbog toga je važno uvek proveriti stanje stranih ključeva i redosled izvršavanja upita pre nego što se oslanjaš na rezultate iz različitih klijenata.
+
 5. Zapiši svoje zaključke u predviđeni SQL fajl kao komentare. `.sql` fajl je tekst sa upitima, dok `.db` čuva bazu.
 
-Za izvršavanje celog sačuvanog fajla iz SQLite CLI-ja, pri pokretanju iz korena repozitorijuma:
+Za izvršavanje celog sačuvanog fajla iz SQLite CLI-ja, posle pokretanju sqlite3 iz korena repozitorijuma koristi u sqlite3 interaktivnom okruženju komandu `.read` sa putanjom do SQL fajla:
 
-```text
+```bash
 .read fast-api-course-my-work/sqlite_for_beginners/playground/sql/00_intro/01_what_is_sqlite.sql
 ```
 
 `.read` izvršava **čitav** sadržaj, ne samo izabrani blok. Prvo proveri sadržaj: ako fajl kasnije sadrži `INSERT`, `UPDATE`, `DELETE` ili druge izmene, i one se mogu izvršiti nad otvorenom bazom. Opcija `-readonly` pomaže da se izbegnu upisi u otvorenu bazu, ali nije zamena za pregled skripte.
 
 SQLTools oznake `-- @block` su SQL komentari i SQLite CLI ih ignoriše. U SQLTools-u je ranije došlo do `SQLITE_MISUSE` zbog obrade komentara posle poslednjeg upita; razdvajanje fajla na `@block` blokove i izvršavanje željenog bloka rešilo je prijavljeni problem. To nije komanda za SQLite CLI.
+
+---
 
 ### Lekcija 02 — otvaranje i `ATTACH`
 

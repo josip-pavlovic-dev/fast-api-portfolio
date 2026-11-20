@@ -60,6 +60,18 @@ Detalji o lokalnim bazama i njihovom ponovnom kreiranju nalaze se u [databases/R
 
 Putanje u primerima su date u odnosu na root repozitorijuma. Ako radiš u GUI ekstenziji, otvori `.sql` fajl i izvrši upit nad povezanom bazom.
 
+Pre `.read` komande, SQLite CLI mora već biti pokrenut nad bazom. Kada vidiš SQLite prompt, na primer `SQLite>`, možeš odmah uneti SQL upit i pritisnuti Enter:
+
+```sql
+SELECT Name
+FROM artists
+LIMIT 5;
+```
+
+SQL naredbu završi tačka-zarezom `;`. `.read` je SQLite CLI komanda koja učitava i izvršava linije iz fajla u toj istoj konekciji; ona nije Bash komanda i ne unosi se pre pokretanja `sqlite3`. Ekstenzija fajla (`.txt` ili `.sql`) sama po sebi ne određuje sadržaj ni ponašanje — važno je da fajl sadrži važeće CLI komande ili SQL naredbe.
+
+---
+
 ## Rad na SQLite CLI vežbama
 
 Fajlovi u `cli/` služe za beleženje komandi koje počinju tačkom, kao što su `.tables`, `.schema`, `.mode` i `.dump`. To su komande SQLite alata, a ne SQL naredbe; pokreći ih u SQLite CLI-ju, ne kao obične SQL upite u editoru. Možeš ih izvršavati pojedinačno ili učitati tekstualni fajl iz CLI-ja pomoću `.read`, na primer:
@@ -67,5 +79,7 @@ Fajlovi u `cli/` služe za beleženje komandi koje počinju tačkom, kao što su
 ```sql
 .read fast-api-course-my-work/sqlite_for_beginners/playground/cli/02_some_commonly_used_sqlite3_commands.txt
 ```
+
+Trenutni `02_some_commonly_used_sqlite3_commands.txt` je samo početni šablon sa komentarima, pa njegovo učitavanje neće prikazati upit ili drugi vidljiv rezultat. Nasuprot tome, `01_what_is_sqlite3_tool.txt` je popunjen primerima SQL upita i SQLite CLI dot-komandi; učitaj ga preko `.read` da vidiš kako obe vrste naredbi rade u istoj sesiji. Beleške u `cli/` služe za vežbe komandnog alata. Rešenja redovnih SQL vežbi čuvaj u odgovarajućim `.sql` fajlovima u `playground/sql/`; možeš ih pokrenuti pojedinačno na promptu ili učitati pomoću `.read`.
 
 Vežbe koje izvoze fajlove (na primer CSV ili SQL dump) pokreći iz root-a repozitorijuma i čuvaj rezultate u `playground/`. Pre nego što ih dodaš u Git, proveri da ne sadrže nepotrebne ili osetljive podatke.
