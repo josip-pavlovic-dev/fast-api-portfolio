@@ -158,7 +158,21 @@ Za ovu lekciju koristi Chinook samo za pregled i upite. Nemoj menjati ili brisat
 ### Vežba 1 — Otvori Chinook
 
 1. Iz VS Code terminala, koristeći putanju iz korena repozitorijuma, otvori `chinook.db` kao glavnu bazu.
+
+```bash
+
+rlwrap -a -N -c -i -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
+sqlite3 fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db
+```
+
 2. U CLI-ju pokreni `.databases`, `.tables` i `.schema albums`.
+
+```sqlite3
+.databases
+.tables
+.schema albums
+```
+
 3. Pronađi u izlazu `albums` strani ključ ka tabeli `artists`.
 4. Izađi iz CLI-ja komandom `.quit` i ponovo otvori istu bazu.
 
@@ -168,6 +182,12 @@ Za ovu lekciju koristi Chinook samo za pregled i upite. Nemoj menjati ili brisat
 
 1. Iz korena repozitorijuma pokreni `sqlite3 :memory:`.
 2. Priključi Chinook bazu pod aliasom `chinook`.
+
+```sqlite3
+ATTACH DATABASE 'fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db' AS chinook;
+.databases
+```
+
 3. Izvrši `.databases` i objasni razliku između `main` i `chinook`.
 
 - Razlika između `main` i `chinook` je u tome što `main` predstavlja trenutnu glavnu bazu u memoriji (`:memory:`), dok `chinook` predstavlja priključenu bazu sa stvarnog fajla. `main` je privremena baza koja postoji samo dok je konekcija aktivna, dok `chinook` pokazuje na postojeći fajl na disku. Nakon `DETACH DATABASE chinook;`, priključena baza se uklanja iz konekcije, ali fajl na disku ostaje netaknut. Ovo ilustruje zašto je važno proveriti `.databases` pre nego što zaključiš da je baza prazna — priključene baze mogu sadržati podatke koji nisu vidljivi u glavnoj bazi.
@@ -186,6 +206,7 @@ Za ovu lekciju koristi Chinook samo za pregled i upite. Nemoj menjati ili brisat
 
 1. Pokreni `sqlite3` iz korena repozitorijuma i priključi Chinook putanjom iz lekcije.
 2. Izađi iz CLI-ja, promeni trenutni direktorijum u folder `chinook` i ponovi postupak sa kraćom putanjom.
+
 3. Objasni zašto ista relativna putanja ne mora da radi iz oba direktorijuma.
 
 - Kada koristiš relativnu putanju za otvaranje baze, SQLite je u obavezi da je razreši u odnosu na trenutni radni direktorijum terminala. Ako se promeni radni direktorijum, ista relativna putanja može pokazivati na potpuno drugačiji fajl ili čak ne postojati. Zato je važno biti svestan trenutnog radnog direktorijuma kada otvaraš ili priključuješ baze koristeći relativne putanje.
@@ -230,7 +251,9 @@ flowchart TD
 **Rešenja**: Nakon što završiš zadatak, uporedi svoja zapažanja sa sledećim:
 
 - U prvom toku, putanja do `chinook.db` se razrešava odmah pri otvaranju CLI-ja, a baza ostaje dostupna dok je CLI aktivan.
+
 - U drugom toku, putanja do `chinook.db` se razrešava prilikom priključivanja baze, a baza ostaje dostupna dok je CLI aktivan.
+
 - Privremena `:memory:` baza postoji samo tokom trajanja CLI sesije i nestaje kada se CLI zatvori.
 
 Ova rešenja ti pomažu da razumeš kada SQLite razrešava relativne putanje i koliko dugo baze ostaju dostupne u različitim scenarijima. Razumevanje ovih detalja je ključno za pravilno upravljanje bazama podataka, posebno kada radiš sa privremenim bazama u memoriji ili kada priključuješ više baza u jednoj CLI sesiji.

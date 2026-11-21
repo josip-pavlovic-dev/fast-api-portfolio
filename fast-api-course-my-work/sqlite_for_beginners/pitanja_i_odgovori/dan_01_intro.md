@@ -35,7 +35,7 @@ Zato je preciznije reći:
 
 > SQLite je softver koji izvršava SQL naredbe i upravlja bazama podataka, najčešće sačuvanim u zasebnim fajlovima. Njegova biblioteka izvršava se unutar aplikacije koja je koristi, bez zasebnog serverskog procesa.
 >
-> Ukratko, SQLite nije samostalna baza podataka. To je **biblioteka koja omogućava aplikaciji da kreira, čita i menja baze podataka**. Podaci se čuvaju u fajlovima koje biblioteka upravlja, a sama biblioteka **ne sadrži podatke**.
+> Ukratko, SQLite nije samostalna baza podataka. To je **biblioteka koja omogućava aplikaciji da kreira, čita i menja baze podataka**. Podaci se čuvaju u fajlovima kojima biblioteka upravlja, a sama biblioteka **ne sadrži podatke**.
 
 ---
 
@@ -55,7 +55,7 @@ Koja je razlika između `.sql` baze i `.db` baze?
 
 - Ukratko, `.sql` je **tekstualna skripta** sa SQL naredbama, dok je `.db` **stvarna baza podataka** sa tabelama, indeksima i podacima.
 
-**Napomena:** `.sql` fajl može se koristiti za kreiranje ili popunjavanje `.db` baze tako što se izvrši nad SQLite bibliotekom ili drugim alatima koji podržavaju SQL.
+**Napomena:** Klijent, na primer `sqlite3` CLI ili SQLite GUI, može pročitati `.sql` fajl i njegove SQL naredbe proslediti SQLite biblioteci na izvršavanje nad otvorenom bazom. Naredbe poput `CREATE TABLE`, `ALTER TABLE`, `INSERT`, `UPDATE` i `DELETE` mogu kreirati ili izmeniti strukturu i podatke baze dok se `SELECT` koristi isključivo za čitanje podataka bez menjanja baze.
 
 - `.sql` može sadržati naredbe poput `CREATE TABLE`, `INSERT` ili `SELECT`. Izvršavanjem tih naredbi nad bazom možeš napraviti strukturu ili izmeniti podatke. U tvom primeru `01_what_is_sqlite.sql` trenutno je samo šablon sa komentarom.
 
@@ -204,7 +204,9 @@ Informaciju možeš pogledati i SQL upitom, pa i iz SQLTools-a:
 PRAGMA foreign_key_list('albums');
 ```
 
-U rezultatu potraži vezu `albums.ArtistId` → `artists.ArtistId` i kolone `on_delete` i `on_update`. `PRAGMA foreign_key_list` pokazuje definiciju, ali sam po sebi **ne govori da li je njena provera trenutno uključena**.
+U rezultatu potraži vezu `albums.ArtistId` → `artists.ArtistId` i kolone `on_delete` i `on_update`.
+
+`PRAGMA foreign_key_list` pokazuje definiciju, ali sam po sebi **ne govori da li je njena provera trenutno uključena**.
 
 ---
 
@@ -1022,6 +1024,8 @@ Dakle, kada želiš da koristiš projektni `litecli` bez aktivacije `.venv`, uve
 
 Pošto ne koristim SQLTools u drugim projektima, da li je bolje da sve SQLite verzije uskladimo na 3.54.1 ili da instaliramo najnoviju verziju za CLI, Python i SQLTools?
 
+---
+
 ## Odgovor 17
 
 Pri proveri zvanične [SQLite stranice za preuzimanje](https://www.sqlite.org/download.html), **3.54.1 je najnovija objavljena SQLite verzija**, pa su trenutno „3.54.1“ i „najnovija SQLite verzija“ isti cilj. To se može promeniti kada izađe novo izdanje.
@@ -1030,11 +1034,11 @@ Za sada preporučujem da **ne menjamo sve biblioteke samo radi jednakog broja ve
 
 Pri proveri ovog okruženja:
 
-| Klijent | SQLite verzija | Napomena |
-| --- | --- | --- |
-| SQLite CLI | 3.54.1 | Samostalno instaliran komandni alat. |
-| Projektni Python i `litecli` | 3.45.1 | Projektni Python koristi sistemsku SQLite biblioteku. |
-| SQLTools SQLite drajver | 3.44.2 | Toliko je prijavio njegov instalirani Node `sqlite3` paket u zasebnoj proveri; proveri i aktivnu SQLTools konekciju. |
+| Klijent                      | SQLite verzija | Napomena                                                                                                             |
+| ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| SQLite CLI                   | 3.54.1         | Samostalno instaliran komandni alat.                                                                                 |
+| Projektni Python i `litecli` | 3.45.1         | Projektni Python koristi sistemsku SQLite biblioteku.                                                                |
+| SQLTools SQLite drajver      | 3.44.2         | Toliko je prijavio njegov instalirani Node `sqlite3` paket u zasebnoj proveri; proveri i aktivnu SQLTools konekciju. |
 
 Verzija SQLite biblioteke **nije isto** što i verzija Python-a, Node.js-a, npm paketa `sqlite3` ili SQLTools ekstenzije. Nadogradnja CLI-ja ne nadograđuje automatski ostale. Isti broj verzije takođe ne garantuje identična podešavanja konekcije ili opcije sa kojima su biblioteke izgrađene.
 
