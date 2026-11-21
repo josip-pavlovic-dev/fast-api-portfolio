@@ -791,6 +791,8 @@ Dakle, zapamti `PRAGMA` kao naziv vrste posebnih SQLite naredbi — ne kao akron
 
 Pokrenuo sam blok „Vežba 2: Definicije tabela“ u `01_what_is_sqlite.sql` i u rezultatu video tekst `CREATE TABLE`. Zašto sam dobio `CREATE TABLE`?
 
+---
+
 ## Odgovor 11
 
 Zato što upit traži prikaz **definicija tabela**, a ne njihovih redova sa podacima:
@@ -839,6 +841,8 @@ Prvi upit prikazuje **šemu** (kako je tabela definisana), a drugi **podatke** (
 
 Kada u SQLTools-u izaberem **Open results as CSV** ili **Open results as JSON**, Windows mi prikaže poruku da nema aplikaciju za otvaranje `vscode-remote` linka. Da li mi nedostaje CSV/JSON drajver?
 
+---
+
 ## Odgovor 12
 
 Ne, ne nedostaje ti CSV/JSON drajver. SQLTools već ume da formatira rezultate u CSV i JSON, a SQLTools SQLite drajver je instaliran.
@@ -852,13 +856,25 @@ Da rezultat otvoriš pouzdano unutar VS Code-a:
 3. Pokreni **SQLTools: Save Results**.
 4. Izaberi **Save results as CSV** ili **Save results as JSON** i odredi gde da se fajl sačuva. SQLTools će sačuvani fajl otvoriti u VS Code-u.
 
-Ako ne želiš da sačuvaš fajl, u istom meniju možeš izabrati **Copy results as CSV to clipboard** ili **Copy results as JSON to clipboard**, pa sadržaj nalepiti u novi fajl u VS Code-u.
+**Napomena:** ovo je specifično za WSL Remote sesiju u VS Code-u. U običnom Windows terminalu ili Linux terminalu bez VS Code Remote ekstenzije, otvaranje CSV/JSON fajlova obično funkcioniše direktno sa podrazumevanim aplikacijama. U WSL Remote sesiji, VS Code pokušava da otvori fajl koristeći `vscode-remote` protokol, koji Windows ne prepoznaje kao standardnu aplikaciju, pa se pojavljuje poruka o nedostatku aplikacije. Zato je preporučeno koristiti opciju **Save Results** unutar VS Code-a ili kopirati rezultate u clipboard i ručno ih sačuvati. Ovo važi za sve spoljašnje linkove koje VS Code pokušava da otvori iz WSL Remote sesije, ne samo za CSV/JSON fajlove.
+
+**Saveti za praktičnu upotrebu:**
+
+- Ako često radiš sa CSV/JSON rezultatima u WSL Remote sesiji, navikni se na opciju **Save Results** i odabir lokacije unutar VS Code-a.
+
+- Za brzi pregled možeš koristiti **Copy results as CSV/JSON to clipboard** i nalepiti u novi fajl u VS Code-u.
+
+- Razumevanje razlike između SQLTools rezultata i SQLite CLI-ja u terminalu pomaže da izbegneš konfuziju oko otvaranja fajlova i fokusiranja na rezultate.
+
+- Ako ne želiš da sačuvaš fajl, u istom meniju možeš izabrati **Copy results as CSV to clipboard** ili **Copy results as JSON to clipboard**, pa sadržaj nalepiti u novi fajl u VS Code-u.
 
 ---
 
 ## Pitanje 13
 
 Koja je uloga **SQL Console** u VS Code-u i po čemu se razlikuje od SQLite CLI-ja u terminalu? Šta znači poruka **Not focused to results view**?
+
+---
 
 ## Odgovor 13
 
@@ -886,12 +902,12 @@ ili SQLite CLI dot-komande:
 .quit
 ```
 
-| SQLTools u VS Code-u | SQLite CLI u terminalu |
-|---|---|
-| Upit pokrećeš iz `.sql` editora, na primer **Run Selected Query** ili **Run on active connection**. | CLI pokrećeš iz Bash-a komandom `sqlite3 putanja/do/baze.db`. |
-| SQLTools drajver koristi sačuvanu i izabranu konekciju. Rezultat se prikazuje u result tabu. | SQLite CLI otvara bazu navedenu u komandi. SQL i dot-komande unosiš u SQLite prompt. |
-| SQL Console prikazuje poruke vezane za rezultat i status njegovog fokusa. | Terminal prikazuje SQLite prompt, SQL rezultate i izlaz dot-komandi. |
-| Zatvaranje results taba ne mora prekinuti sačuvanu ili aktivnu konekciju. | `.quit` zatvara SQLite CLI proces i njegovu konekciju. |
+| SQLTools u VS Code-u                                                                                | SQLite CLI u terminalu                                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Upit pokrećeš iz `.sql` editora, na primer **Run Selected Query** ili **Run on active connection**. | CLI pokrećeš iz Bash-a komandom `sqlite3 putanja/do/baze.db`.                        |
+| SQLTools drajver koristi sačuvanu i izabranu konekciju. Rezultat se prikazuje u result tabu.        | SQLite CLI otvara bazu navedenu u komandi. SQL i dot-komande unosiš u SQLite prompt. |
+| SQL Console prikazuje poruke vezane za rezultat i status njegovog fokusa.                           | Terminal prikazuje SQLite prompt, SQL rezultate i izlaz dot-komandi.                 |
+| Zatvaranje results taba ne mora prekinuti sačuvanu ili aktivnu konekciju.                           | `.quit` zatvara SQLite CLI proces i njegovu konekciju.                               |
 
 Oba alata mogu pristupiti istom `.db` fajlu, ali svaki uspostavlja **svoju konekciju**. Na primer, `PRAGMA foreign_keys` ili `ATTACH DATABASE` podešeni u jednoj konekciji ne postaju automatski podešavanja druge.
 
@@ -900,6 +916,8 @@ Oba alata mogu pristupiti istom `.db` fajlu, ali svaki uspostavlja **svoju konek
 ## Pitanje 14
 
 Kako da pokrenem `.txt` fajl iz `playground/cli/`? Da li SQL upit treba da ukucam u taj fajl ili u terminal?
+
+---
 
 ## Odgovor 14
 
@@ -931,7 +949,7 @@ Najpre razlikuj Bash terminal od SQLite CLI prompta:
 
 `.read` učitava fajl red po red kao ulaz u **trenutnu SQLite CLI konekciju**. Fajl može sadržati SQLite CLI dot-komande, SQL naredbe ili komentare. Ekstenzija `.txt` sama po sebi ne izvršava ništa — važno je šta je unutar fajla.
 
-Tvoj trenutni `02_some_commonly_used_sqlite3_commands.txt` sadrži samo komentare koji opisuju lekciju, pa se pri učitavanju ne vidi rezultat. Nema SQL upita koji bi se izvršio. Fajl `01_what_is_sqlite3_tool.txt` sada sadrži primere SQL upita **i** CLI dot-komandi, pa možeš preko `.read` da vidiš obe vrste unosa. Za odgovore na redovne SQL vežbe koristi odgovarajući `.sql` fajl u `playground/sql/`; `.txt` u `playground/cli/` služe za beleške i vežbanje samog komandnog alata. Možeš ih otvoriti u editoru, dopisati sadržaj, sačuvati, pa tek onda pokrenuti `.read`.
+Tvoj trenutni `02_some_commonly_used_sqlite3_commands.txt` sadrži samo komentare koji opisuju lekciju, pa se pri učitavanju ne vidi rezultat. Nema SQL upita koji bi se izvršio. Fajl `01_what_is_sqlite3_tool.txt` sada sadrži **primere SQL upita i CLI dot-komandi**, pa možeš preko `.read` da vidiš obe vrste unosa. Za odgovore na redovne SQL vežbe koristi odgovarajući `.sql` fajl u `playground/sql/`; `.txt` u `playground/cli/` služe za beleške i vežbanje samog komandnog alata. Možeš ih otvoriti u editoru, dopisati sadržaj, sačuvati, pa tek onda pokrenuti `.read`.
 
 Na primer, ako sačuvaš upit u `.sql` fajlu, istu skriptu možeš učitati iz SQLite prompta ovako:
 
@@ -940,5 +958,94 @@ Na primer, ako sačuvaš upit u `.sql` fajlu, istu skriptu možeš učitati iz S
 ```
 
 Pre `.read` proveri sadržaj skripte i otvorenu bazu. Skripta može sadržati naredbe koje menjaju podatke, a `.read` će ih izvršiti nad tom konekcijom.
+
+---
+
+## Pitanje 15
+
+Da li je ispravna tvrdnja da mogu da koristim `litecli` bez aktiviranja `.venv` u svakom terminalu, ako ga pokrenem preko `.venv/bin/litecli`?
+
+---
+
+## Odgovor 15
+
+Da. Iz **korena repozitorijuma**, u Bash terminalu, možeš pokrenuti:
+
+```bash
+.venv/bin/litecli --version
+```
+
+Ta komanda poziva `litecli` direktno preko putanje do izvršnog fajla. U ovom projektu taj fajl je podešen da koristi Python iz projektnog `.venv`, pa aktivacija nije preduslov da bi se koristili paketi instalirani u tom okruženju.
+
+Aktivacija pomoću `source .venv/bin/activate` prvenstveno menja podešavanja **trenutnog terminala**, naročito `PATH`, tako da možeš napisati kraće `litecli` umesto putanje. Direktno pokretanje ne aktivira `.venv` za ostale komande u terminalu: na primer, sledeća komanda `python` ne mora koristiti projektni interpreter.
+
+Putanja `.venv/bin/litecli` je **relativna**: radi iz korena projekta, ali ne nužno iz drugog direktorijuma. Tamo možeš navesti odgovarajuću relativnu ili apsolutnu putanju do istog izvršnog fajla. `.venv` i `litecli` moraju postojati u okruženju u kojem komandu pokrećeš; ova WSL putanja nije automatski dostupna u Windows PowerShell-u.
+
+---
+
+## Pitanje 16
+
+Zar nije svaki terminal zaseban? Kako `litecli` može da radi u novom terminalu bez aktiviranja `.venv`?
+
+---
+
+## Odgovor 16
+
+Da, svaki terminal ima **svoje shell okruženje**. Ako u jednom terminalu aktiviraš `.venv`, time ga ne aktiviraš automatski u drugom. Novi terminal ipak može naslediti neka početna podešavanja od procesa koji ga pokreće.
+
+Trik je u razlici između dva načina pokretanja:
+
+1. **`litecli`** — shell traži program kroz svoj `PATH`. Aktivacija `.venv` dodaje njegov `bin` direktorijum u `PATH` tog terminala, pa tako pronalazi projektni `litecli`. U novom terminalu bez aktivacije ova kratka komanda ne mora raditi, osim ako je `litecli` dostupan u `PATH`-u na neki drugi način.
+2. **`.venv/bin/litecli`** — shell dobija direktnu putanju do programa, pa ne mora da ga traži u `PATH`-u. Instalirani launcher zatim koristi Python iz projektnog `.venv`, iako okruženje nije aktivirano u shell-u.
+
+Dakle, u novom WSL Bash terminalu iz korena projekta možeš pokrenuti `.venv/bin/litecli` bez aktivacije, ali to **ne aktivira `.venv` u tom terminalu** niti menja komandu `python` za naredne pozive. Fajl `.venv/bin/litecli` mora postojati, a iz drugog radnog direktorijuma potrebna je odgovarajuća putanja.
+
+Ranija rečenica važi za poziv **sa putanjom**, ne kao obećanje da će sama komanda `litecli` raditi u svakom novom terminalu.
+
+Primer i razlika između pokretanja `litecli` sa direktnom putanjom do izvršnog fajla i pokretanja samo `litecli` u terminalu bez aktivacije `.venv` može se ilustrovati ovako:
+
+```bash
+# Direktno preko putanje do izvršnog fajla u projektnom .venv
+.venv/bin/litecli --version
+
+# Samo komanda litecli, bez aktivacije .venv
+litecli --version
+```
+
+U ovom primeru, prva komanda koristi direktnu putanju do `litecli` u projektnom `.venv` i uspešno prikazuje verziju, dok druga komanda pokušava da pozove `litecli` iz `PATH`-a bez aktivacije `.venv`. Ako `litecli` nije globalno instaliran ili nije u `PATH`-u, druga komanda će prijaviti grešku da komanda nije pronađena. Ovo jasno ilustruje razliku između pozivanja izvršnog fajla sa apsolutnom ili relativnom putanjom i oslanjanja na `PATH` promenljivu u shell-u.
+
+Dakle, kada želiš da koristiš projektni `litecli` bez aktivacije `.venv`, uvek je sigurnije pozvati ga preko direktne putanje do izvršnog fajla (`.venv/bin/litecli`).
+
+---
+
+## Pitanje 17
+
+Pošto ne koristim SQLTools u drugim projektima, da li je bolje da sve SQLite verzije uskladimo na 3.54.1 ili da instaliramo najnoviju verziju za CLI, Python i SQLTools?
+
+## Odgovor 17
+
+Pri proveri zvanične [SQLite stranice za preuzimanje](https://www.sqlite.org/download.html), **3.54.1 je najnovija objavljena SQLite verzija**, pa su trenutno „3.54.1“ i „najnovija SQLite verzija“ isti cilj. To se može promeniti kada izađe novo izdanje.
+
+Za sada preporučujem da **ne menjamo sve biblioteke samo radi jednakog broja verzije**. Za uvodne vežbe možemo koristiti postojeće alate i proveravati verziju klijenta sa `SELECT sqlite_version();`. Ako kasnije bude potrebna određena novija SQL funkcija ili postoji važna bezbednosna ispravka, tada ćemo planirati ažuriranje i testiranje.
+
+Pri proveri ovog okruženja:
+
+| Klijent | SQLite verzija | Napomena |
+| --- | --- | --- |
+| SQLite CLI | 3.54.1 | Samostalno instaliran komandni alat. |
+| Projektni Python i `litecli` | 3.45.1 | Projektni Python koristi sistemsku SQLite biblioteku. |
+| SQLTools SQLite drajver | 3.44.2 | Toliko je prijavio njegov instalirani Node `sqlite3` paket u zasebnoj proveri; proveri i aktivnu SQLTools konekciju. |
+
+Verzija SQLite biblioteke **nije isto** što i verzija Python-a, Node.js-a, npm paketa `sqlite3` ili SQLTools ekstenzije. Nadogradnja CLI-ja ne nadograđuje automatski ostale. Isti broj verzije takođe ne garantuje identična podešavanja konekcije ili opcije sa kojima su biblioteke izgrađene.
+
+Činjenica da nema drugih projekata koji koriste SQLTools smanjuje opseg moguće štete, ali projektni Python trenutno koristi **sistemsku** biblioteku koja može služiti i drugim programima. Zamena sistemske biblioteke nije isto što i nadogradnja jednog projektnog paketa. SQLTools drajver trenutno zahteva Node paket `sqlite3` verzije `5.1.7`, pa ni instaliranje proizvoljno novijeg Node paketa nije automatski kompatibilno. Usklađivanje bi zahtevalo pažljiv izbor načina instalacije i proveru nakon promene.
+
+Za uporednu proveru pokreni `SELECT sqlite_version();` posebno u CLI-ju, `litecli`-ju i SQLTools-u. Za projektnu Python biblioteku možeš, uz aktiviran `.venv`, pokrenuti:
+
+```bash
+python -c "import sqlite3; print(sqlite3.sqlite_version)"
+```
+
+Ostavljanje različitih verzija nije razlog da zanemariš ažuriranja: sistemske pakete održavaj kroz podržane Ubuntu nadogradnje, a ostale alate prema njihovom načinu instalacije. Kada neki zadatak zavisi od nove funkcije, proveri da je podržava **svaki klijent** u kojem želiš da ga izvršiš.
 
 ---

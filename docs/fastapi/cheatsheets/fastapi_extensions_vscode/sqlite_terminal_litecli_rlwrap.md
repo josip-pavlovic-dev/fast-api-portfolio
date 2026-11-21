@@ -6,12 +6,12 @@ Ovo uputstvo prati tvoj [plan učenja](../../../../fast-api-course-my-work/sqlit
 
 ## 1. Šta je instalirano i koji alat kada koristiš
 
-| Alat                     | Šta je                                                                                                                    | Kada ga koristiš                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `sqlite3`                | Zvanični SQLite komandni alat; na ovom računaru instaliran u `~/.local/bin`.                                              | Kada pratiš lekcije o SQLite CLI-ju, njegovim komandama sa tačkom, `.read`, `.dump` i izvozu. |
-| `rlwrap`                 | Omotač koji pokreće postojeći `sqlite3` i dodaje uređivanje ulaza, istoriju i dovršavanje iz zadate liste.                | Kada želiš da radiš u istom `sqlite3`, ali sa dopunjavanjem odabranih komandi pomoću Tab-a.   |
-| `litecli`                | Zaseban terminalski SQLite klijent sa SQL predlozima i isticanjem sintakse. Instaliran je u projektnom `.venv` okruženju. | Kada pišeš i istražuješ SQL upite i želiš predloge naziva tabela, kolona i SQL reči.          |
-| SQLTools i SQLite Viewer | VS Code ekstenzije, nisu terminalski alati.                                                                               | SQLTools za upite iz editora, Viewer za vizuelni pregled baze.                                |
+| Alat                     | Šta je                                                                                                                    | Kada ga koristiš                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `sqlite3`                | Zvanični SQLite komandni alat; na ovom računaru instaliran u `~/.local/bin`.                                              | Kada pratiš lekcije o SQLite CLI-ju, njegovim komandama sa tačkom, `.read`, `.dump` i prilikom izvoza baze. |
+| `rlwrap`                 | Omotač koji pokreće postojeći `sqlite3` i dodaje uređivanje ulaza, istoriju i dovršavanje iz zadate liste.                | Kada želiš da radiš u istom `sqlite3`, ali sa dopunjavanjem odabranih komandi pomoću Tab-a.                 |
+| `litecli`                | Zaseban terminalski SQLite klijent sa SQL predlozima i isticanjem sintakse. Instaliran je u projektnom `.venv` okruženju. | Kada pišeš i istražuješ SQL upite i želiš predloge naziva tabela, kolona i SQL reči.                        |
+| SQLTools i SQLite Viewer | VS Code ekstenzije, nisu terminalski alati.                                                                               | SQLTools za upite iz editora, Viewer za vizuelni pregled baze.                                              |
 
 `litecli` i `rlwrap` **nisu VS Code ekstenzije** i ne zamenjuju `sqlite3`. SQL jezik je zajednički, ali komande koje počinju tačkom pripadaju konkretnom klijentu: nemoj pretpostaviti da `litecli` podržava svaku `sqlite3` komandu. Na primer, `.databases` radi u instaliranom `litecli`-ju, ali `.help` u proveri nije bio implementiran. Za lekcije o CLI komandama koristi `sqlite3`, sa ili bez `rlwrap`-a.
 
@@ -51,7 +51,7 @@ rlwrap --version
 
 Prilikom podešavanja proverene su verzije `sqlite3` 3.54.1, `litecli` 1.17.1 i `rlwrap` 0.46.1. Verzije se kasnije mogu promeniti.
 
-**Važno:** izvršavanjem `SELECT sqlite_version();` meriš verziju SQLite biblioteke koju koristi _trenutni klijent_. Ovde je Pythonova biblioteka koju koristi `litecli` pri proveri bila 3.45.1, dok je zasebni `sqlite3` CLI bio 3.54.1. SQLTools može koristiti treću verziju. To nije dokaz da je instalacija neuspešna, ali novije SQL funkcije možda neće raditi jednako u svim alatima.
+**Važno:** `SELECT sqlite_version();` prikazuje verziju SQLite biblioteke koju koristi klijent koji izvršava upit; to nije uvek Pythonova biblioteka. Pri proveri, projektni Python i `litecli` koristili su 3.45.1, a zasebni `sqlite3` CLI 3.54.1. Instalirani Node `sqlite3` paket koji koristi SQLTools drajver prijavio je 3.44.2 u zasebnoj proveri; proveri i u aktivnoj SQLTools konekciji istim SQL upitom. Različite verzije ne znače da je instalacija neuspešna, ali novije SQL funkcije možda neće raditi jednako u svim alatima.
 
 ---
 
@@ -112,13 +112,25 @@ Time ne deinstaliraš `rlwrap`; samo ga ne koristiš u toj sesiji. Nije dodat al
 
 ## 5. `litecli`: SQL predlozi
 
-Iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
+Prvi način pokretanja `litecli` je `.venv/bin/litecli`, što osigurava da se koristi verzija instalirana u projektnom virtuelnom okruženju. Ovo je posebno važno kada želiš da budeš siguran da koristiš tačno onu verziju `litecli` koja je kompatibilna sa projektom i njegovim zavisnostima, bez oslanjanja na globalno instalirane verzije koje mogu biti različite. Primer:
+
+```bash
+.venv/bin/litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+Drugi način je pokretanje `litecli` direktno iz aktiviranog `.venv` koristeći samo komandu `litecli`. Ovaj pristup je praktičan kada već radiš u aktiviranom virtuelnom okruženju i želiš da izbegneš navođenje pune putanje do izvršnog fajla. Važno je napomenuti da oba načina pokreću isti klijent, ali prvi način eksplicitno koristi izvršni fajl iz projektnog `.venv`, dok drugi zavisi od aktivnog okruženja. Primer je dat u nastavku.
+
+Prilikom pokretanja iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
 
 ```bash
 litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
-Pokrenut je **poseban klijent i zasebna konekcija, a ne SQLTools konekcija.** `litecli` ovim primerom otvara bazu za **čitanje i pisanje**: za bezbedan pregled koristi samo `SELECT` i `PRAGMA` (PRAGMA znači podešavanje ili proveru SQLite konfiguracije.) upite prikazane ispod. Pazljivo proveri putanju: pogrešna putanja može dovesti do otvaranja ili stvaranja pogrešne, prazne baze.
+Pokrenut je **poseban klijent i zasebna konekcija, a ne SQLTools konekcija.**
+
+`litecli` u ovom primeru otvara bazu za **čitanje i pisanje** (read-write): za bezbedan pregled koristi samo `SELECT` i `PRAGMA` (PRAGMA znači podešavanje ili proveru SQLite konfiguracije.) upite prikazane ispod.
+
+**Napomena:** Pažljivo proveri putanju: pogrešna putanja može dovesti do otvaranja ili stvaranja pogrešne, prazne baze.
 
 U `litecli` promptu:
 
