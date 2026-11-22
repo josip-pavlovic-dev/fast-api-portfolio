@@ -13,6 +13,8 @@ Na tvojoj slici postoje **dva različita znaka**:
 1. Narandžasti trougao sa uzvičnikom pored imena terminala je **VS Code indikator statusa terminala**.
 2. `!2` u tekstu prompta, pored imena Git grane, dolazi iz podešavanja **Starship Git prompta**, ne iz VS Code upozorenja.
 
+---
+
 ### Trougao pored naziva terminala
 
 VS Code prikazuje indikatore kada se status terminala promeni. Sama slika nije pokazivala tekst upozorenja; naknadno si ga poslao i konkretan uzrok je objašnjen u **Odgovoru 3**.
@@ -20,8 +22,11 @@ VS Code prikazuje indikatore kada se status terminala promeni. Sama slika nije p
 Postavi pokazivač miša **preko trougla** i sačekaj poruku. Jedan mogući razlog je da ekstenzija želi da promeni promenljive okruženja i predlaže ponovno pokretanje terminala, ali to je samo mogućnost dok ne pročitamo poruku.
 
 - Ako poruka traži **Relaunch Terminal**, ponovno pokretanje može biti korisno da se primene navedene promene. Pročitaj poruku pre izbora.
+
 - Ako sve što ti je trenutno potrebno radi, **ne moraš automatski gasiti terminal samo zato što vidiš uzvičnik**.
+
 - Pre zatvaranja sačuvaj rad i završi ili bezbedno prekini aktivne procese. Zatvaranje terminala prekida njegovu sesiju, uključujući otvoreni `litecli`; može prekinuti i druge programe koji u njemu rade.
+
 - Ako ponovo otvoriš terminal i trougao nestane, to samo po sebi ne dokazuje šta je bio uzrok. Pošalji tekst poruke ili sliku sa otvorenim opisom ako želiš da utvrdimo baš taj slučaj.
 
 Više o indikatorima: [VS Code Terminal Basics](https://code.visualstudio.com/docs/terminal/basics#_managing-terminals).
@@ -44,13 +49,19 @@ Komanda prikazuje i druge vrste promena, na primer nove nepraćene fajlove; `!2`
 
 ## Pitanje 2
 
-Ako iz korena projekta pokrenem `.venv/bin/litecli` i dobijem `(none)>`, da li je klijent pokrenut bez baze? Mogu li naknadno da otvorim bazu bez izlaska?
+Ako iz korena projekta pokrenem `.venv/bin/litecli` i dobijem `(none)>`, da li je klijent pokrenut bez baze? Mogu li naknadno da otvorim bazu bez izlaska iz `litecli`-ja?
 
 ---
 
 ## Odgovor 2
 
 Da. U tvojoj instalaciji `litecli` 1.17.1, pokretanje bez argumenta za bazu otvara klijent **bez aktivne konekcije ka bazi**. Prompt `(none)>` ukazuje da nije izabrana baza. To nije isto što i automatski otvorena `:memory:` baza.
+
+```bash
+# Pokretanje litecli bez argumenta za bazu
+
+litecli
+```
 
 Proverio sam: kada se u tom stanju pokuša `SELECT 1;`, `litecli` prijavi `Not connected to database.`. Prompt je prilagodljiv, ali u tvojoj prikazanoj konfiguraciji `(none)` označava da nije zadata baza.
 

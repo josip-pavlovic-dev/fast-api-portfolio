@@ -59,14 +59,24 @@ Prilikom podešavanja proverene su verzije `sqlite3` 3.54.1, `litecli` 1.17.1 i 
 
 - Komande označene kao **Bash** unosiš u terminal pre ulaska u alat ili nakon izlaska iz njega.
 - Komande označene kao **SQLite CLI** unosiš dok je `sqlite3` pokrenut, sa ili bez `rlwrap`-a.
+
 - SQL unosiš u otvorenom klijentu, ne u Bash promptu. SQL naredbe završavaj sa `;`. SQLite CLI komande poput `.tables` počinju tačkom i ne završavaju se tačka-zarezom.
+
 - Primeri sa relativnim putanjama polaze od korena repozitorijuma. Ako promeniš direktorijum, promeni i putanju.
 
 ---
 
 ## 4. `rlwrap`: Tab dovršavanje u pravom SQLite CLI-ju
 
-Za ovaj računar je napravljena lista CLI komandi i čestih SQL reči u `~/.config/sqlite-cli/sqlite3-completions`. Ona sadrži, između ostalog, `.databases`, `.tables`, `.schema`, `SELECT`, `INSERT`, `INTO`, `VALUES` i `WHERE`. Lista je običan tekstualni fajl: po potrebi dodaj novu reč u zaseban red. Posle izmene izađi iz SQLite CLI-ja sa `.quit` i ponovo pokreni `rlwrap`. Pristup listi iz bash-a je moguć preko promenljive `$HOME`, koja predstavlja korisnički direktorijum.
+Za ovaj računar je napravljena lista CLI komandi, čestih SQL reči i PRAGMA naziva u `~/.config/sqlite-cli/sqlite3-completions`. Ona sadrži, između ostalog, `.databases`, `.tables`, `SELECT`, `PRAGMA`, `table_info` i `foreign_key_list`.
+
+Lista (`~/.config/sqlite-cli/sqlite3-completions`) je običan tekstualni fajl: Po potrebi dodaj novu reč u zaseban red. Posle izmene izađi iz SQLite CLI-ja sa `.quit` i ponovo pokreni `rlwrap`.
+
+---
+
+### Pristup i izmena liste dopuna u `rlwrap`-u
+
+Pristup listi iz bash-a je moguć preko promenljive `$HOME`, koja predstavlja korisnički direktorijum.
 
 ```bash
 echo "$HOME/.config/sqlite-cli/sqlite3-completions"
@@ -80,11 +90,18 @@ nano "$HOME/.config/sqlite-cli/sqlite3-completions"
 
 Dodaj nove reči u zaseban red, sačuvaj fajl i izađi iz editora. Nakon toga, ponovo pokreni `rlwrap` da bi izmene bile primenjene.
 
+> **Važno:** Dodavanje celog reda, na primer `PRAGMA foreign_keys = ON;`, neće omogućiti dovršavanje cele naredbe jednim pritiskom na Tab. `rlwrap` sadržaj liste učitava kao pojedinačne reči, a ne kao gotove naredbe. Detaljno objašnjenje i uputstvo za rad u `nano` nalaze se u [odgovoru 5 u dan_03_intro.md](../../../../fast-api-course-my-work/sqlite_for_beginners/pitanja_i_odgovori/dan_03_intro/dan_03_intro.md#odgovor-5).
+
+---
+
+### Pokretanje SQLite CLI-ja sa `rlwrap`-om i prilagođenim dopunama
+
 Za pregled radne kopije bez upisa pokreni u Bash-u:
 
 ```bash
-rlwrap -a -N -c -i -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
-  sqlite3 -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
+  rlwrap -a -N -c -i -A -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
+  sqlite3 -cmdline-edit off -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
 Ovo je i dalje zvanični `sqlite3`. `-readonly` je opcija za `sqlite3`, a prethodne opcije pripadaju `rlwrap`-u:
@@ -92,8 +109,15 @@ Ovo je i dalje zvanični `sqlite3`. `-readonly` je opcija za `sqlite3`, a pretho
 - `-a` omogućava `rlwrap`-ovo uređivanje ulaza i kada pokrenuti program sam uređuje linije.
 - `-N` pomaže da `rlwrap` ne ometa programe poput pozvanog editora ili pagera.
 - `-c` uključuje dovršavanje putanja i omogućava da tačka bude deo reči za dovršavanje.
+
 - `-i` omogućava dovršavanje bez razlikovanja velikih i malih slova; mora da stoji pre `-f`. Ne preoblikuje nužno već uneta slova.
+
+- `-A` je opcija za `rlwrap`: pomaže mu da pravilno računa širinu obojenog prompta koji sadrži ANSI sekvence.
 - `-f` učitava našu listu reči; to **nije** automatski spisak svih SQLite komandi ili naziva tabela.
+
+- `-cmdline-edit off` je opcija za **SQLite CLI 3.54.1**, ne za `rlwrap`: isključuje SQLite-ov interni editor linije, dok uređivanje i Tab dovršavanje preuzima `rlwrap`. U izolovanom terminalskom testu to sprečava stepenasto ispisivanje liste predloga. Proveri `sqlite3 --help` ako koristiš drugu verziju, jer možda nema ovu opciju.
+
+- `INPUTRC` bira posebna Readline podešavanja samo za ovu komandu. Fajl `sqlite3-inputrc` uključuje postojeći `~/.inputrc` i dodaje `completion-ignore-case on`, kako bi zajednički početak predloga mogao da se dopuni i kada su predlozi različite veličine slova. Ne menja globalni `~/.inputrc`.
 
 - `"$HOME/` predstavlja putanju do korisničkog direktorijuma u kojem se nalazi konfiguracioni fajl sa listom komandi za `rlwrap`. Zamena `$HOME` sa stvarnom putanjom do korisničkog direktorijuma se vrši automatski od strane Bash-a ili drugog kompatibilnog shell-a. Ovo omogućava da konfiguracioni fajl bude prenosiv i da se koristi bez obzira na konkretan korisnički direktorijum.
 
@@ -105,9 +129,12 @@ Isprobaj u otvorenom SQLite CLI-ju:
 
 4. Za SQL, ukucaj `SEL` i pritisni **Tab** da dobiješ `SELECT`. Probaj i `SELECT * FRO` pa **Tab** za `FROM`; izbriši taj nezavršeni upit pre sledećeg koraka.
 
-5. Pokreni `.schema albums`, a zatim `.quit`.
+5. Ukucaj `PRAGMA table_inf`, pa **Tab** za `table_info`. Dodaj `('albums');` i pritisni **Enter**.
+6. Pokreni `.schema albums`, a zatim `.quit`.
 
-Tačan naziv je **`.databases`**, sa završnim `s`. `rlwrap` dovršava pojedinačne reči: `INSERT` i `INTO` unose se odvojeno, a ne kao jedna fraza. Ako postoji više mogućih dopuna, pritisni Tab ponovo da ih vidiš i dopuni još slova. `rlwrap` koristi i istoriju; strelice gore/dole služe za prolazak kroz prethodne unose.
+Tačan naziv je **`.databases`**, sa završnim `s`. `rlwrap` dovršava pojedinačne reči: `INSERT` i `INTO`, kao i `PRAGMA` i `table_info`, unose se odvojeno. Lista uključuje PRAGMA nazive prijavljene u SQLite CLI verziji proveravanoj pri ažuriranju; dostupnost u drugim klijentima može biti drugačija. Neki PRAGMA-i menjaju bazu ili podešavanja: predlog nije potvrda da je naredba bezbedna. Ako postoji više mogućih dopuna, pritisni Tab ponovo da ih vidiš i dopuni još slova. `rlwrap` koristi i istoriju; strelice gore/dole služe za prolazak kroz prethodne unose.
+
+Na primer, `PRA` + Tab daje `PRAGMA`, a `PRAGMA fore` + Tab daje `PRAGMA foreign`. Kako postoji više mogućih nastavaka, nije automatski izabrana jedna naredba niti je dodat razmak posle `PRAGMA`: unesi ga ručno, a dodatnim pritiscima na Tab prikaži moguće nastavke. Kada prvi Tab proširi reč, u ovom podešavanju mogu biti potrebna još dva pritiska za prikaz liste.
 
 > **Ispravka ranijeg Odgovora 3:** tvrdnja da standardni SQLite CLI nikada ne podržava Tab dovršavanje bila je previše uopštena: mogućnosti zavise od konkretne gradnje i terminalskog uređivanja linija. Takođe, sama komanda `rlwrap sqlite3 sandbox.db` ne garantuje dopunu `.databases`. Gore navedena komanda sa listom je proverena. Bez Tab-a, `sqlite3` prihvata i dovoljno jednoznačno skraćenu komandu `.databa` uz **Enter**; to nije dopunjavanje.
 
@@ -194,8 +221,9 @@ Pročitaj [01_what_is_sqlite.md](../../../../fast-api-course-my-work/sqlite_for_
 1. U Bash-u pokreni `sqlite3 -readonly` nad radnom kopijom baze ili prethodnu `rlwrap` komandu.
 
 ```bash
-rlwrap -a -N -c -i -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
-sqlite3 fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
+  rlwrap -a -N -c -i -A -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
+  sqlite3 -cmdline-edit off -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
 2. U SQLite CLI-ju isprobaj `.databases`, `.tables` i `.schema albums`.
@@ -254,7 +282,8 @@ sqlite3 :memory:
 Umesto toga možeš pokrenuti i:
 
 ```bash
-rlwrap -a -N -c -i -f "$HOME/.config/sqlite-cli/sqlite3-completions" sqlite3 :memory:
+INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
+  rlwrap -a -N -c -i -A -f "$HOME/.config/sqlite-cli/sqlite3-completions" sqlite3 -cmdline-edit off :memory:
 ```
 
 U SQLite CLI-ju izvrši:
@@ -306,7 +335,8 @@ Za izvoz i `.dump` prati konkretnu lekciju i koristi posebna nova imena fajlova.
 
 - **`litecli: command not found`:** iz korena projekta aktiviraj `source .venv/bin/activate`, pa proveri `command -v litecli`. Instalacija je u ovom `.venv`-u, ne u svakom terminalu ili Python okruženju.
 
-- **Tab ne dovršava `.databases` u `rlwrap`-u:** proveri da si pokrenuo celu komandu sa `-a -N -c -f` i da fajl liste postoji: `ls -l ~/.config/sqlite-cli/sqlite3-completions`. Proveri da sadrži `.databases`, izađi i ponovo pokreni komandu. Sam `rlwrap sqlite3 ...` nije dovoljan da garantuje ovaj rezultat.
+- **Tab ne dovršava `.databases` u `rlwrap`-u:** proveri da si pokrenuo komandu iz odeljka 4 i da fajl liste postoji: `ls -l ~/.config/sqlite-cli/sqlite3-completions`. Proveri da sadrži `.databases`, izađi i ponovo pokreni komandu. Sam `rlwrap sqlite3 ...` nije dovoljan da garantuje ovaj rezultat.
+- **Predlozi se ispisuju stepenasto:** u SQLite CLI 3.54.1 probaj komandu iz odeljka 4, sa `-cmdline-edit off` iza `sqlite3` i `-A` među opcijama `rlwrap`-a. Kombinacija je proverena u izdvojenom testu i korisnik je potvrdio poravnanje u svom VS Code terminalu. Ako problem ostane, zabeleži šta se dogodilo umesto da menjaš globalna terminalska podešavanja.
 
 - **Prazna baza ili nema tabela:** proveri `pwd` u Bash-u i `.databases` u SQLite CLI-ju. Pogrešna putanja može napraviti novu praznu bazu; za pregled koristi `-readonly`. Nemoj automatski brisati niti prepisivati fajlove.
 
