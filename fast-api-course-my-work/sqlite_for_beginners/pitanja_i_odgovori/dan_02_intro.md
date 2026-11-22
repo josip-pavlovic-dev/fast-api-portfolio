@@ -237,6 +237,8 @@ Na primer, zamislimo da je žanr sa ID-jem 1 rok:
 
 `NULL` ne mora da znači da pesma u stvarnosti nema žanr: može značiti i da žanr nije poznat ili nije unet. Šema dozvoljava oba tumačenja, ali sama ne objašnjava zašto je kolona projektovana kao opciona.
 
+---
+
 ### Razlika između `FOREIGN KEY` i `NOT NULL`
 
 - `FOREIGN KEY` određuje na koju tabelu i kolonu upućuje vrednost; kada je njegova provera uključena, sprečava vezu sa nepostojećim žanrom. Sam po sebi **ne zabranjuje `NULL`**.
@@ -250,6 +252,8 @@ PRAGMA foreign_keys;
 ```
 
 Rezultat `1` znači da je provera uključena, a `0` da nije. Bez nje, baza može sadržati i `GenreId` koji ne postoji u `genres`.
+
+---
 
 ### Šta je u tvojoj radnoj bazi?
 
@@ -729,5 +733,322 @@ U SQLite CLI-ju komanda `.read putanja/do/skripte.sql` učitava fajl. **Samo je 
 Ako je otvorena baza na disku i promene su uspešno **potvrđene** (`COMMIT`, ili automatska potvrda kada nema otvorene eksplicitne transakcije), one ostaju i nakon zatvaranja konekcije. U aktivnoj transakciji `ROLLBACK` može poništiti nepotvrđene izmene. Otvaranje baze samo za čitanje sprečava upis u nju, a baza `:memory:` je privremena.
 
 Ako je dodatna baza priključena sa `ATTACH`, naredba može ciljati i nju, na primer pomoću prefiksa `chinook.`. Zato pre izvršavanja proveri `.databases`, sadržaj skripte i bazu na koju se svaka naredba odnosi. Za vežbanje koristi privremenu bazu ili radnu kopiju i napravi rezervnu kopiju pre potencijalno destruktivnih izmena.
+
+---
+
+## Pitanje 17
+
+Kako rešiti Vežbu 5 „Poveži lekciju sa aplikacijom“ iz lekcije o povezivanju sa SQLite bazom?
+
+---
+
+## Odgovor 17
+
+U [konfiguraciji TodoApp aplikacije](../../TodoApp/db/database.py) SQLAlchemy koristi:
+
+```python
+SQLALCHEMY_DATABASE_URL = "sqlite:///./TodoApp/data/todosapp.db"
+```
+
+`sqlite:///` označava SQLite URL, a `./TodoApp/data/todosapp.db` je **relativna putanja**. Ona se računa od trenutnog radnog direktorijuma **procesa aplikacije**, ne automatski od direktorijuma u kojem se nalazi `database.py`.
+
+Postojeći fajl sam proverio bez menjanja, iz korena repozitorijuma:
+
+```bash
+sqlite3 -readonly fast-api-course-my-work/TodoApp/data/todosapp.db
+```
+
+U SQLite CLI-ju:
+
+```text
+.databases
+```
+
+Rezultat za `main` je:
+
+```text
+/home/jole-pavlovic-dev/code/python-automation-lab/fast-api-portfolio/fast-api-course-my-work/TodoApp/data/todosapp.db
+```
+
+`r/o` znači da je ta **CLI konekcija** otvorena samo za čitanje; ne znači da je i konekcija aplikacije samo za čitanje. Izađi sa `.quit`.
+
+### Da li su to isti fajl?
+
+Zavisi od radnog direktorijuma procesa koji pokreće aplikaciju:
+
+| Radni direktorijum aplikacije                        | URL se razrešava u                                                            | Poklapanje sa proverenim CLI fajlom |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
+| `fast-api-portfolio/fast-api-course-my-work`         | `fast-api-portfolio/fast-api-course-my-work/TodoApp/data/todosapp.db`         | Da                                  |
+| `fast-api-portfolio`                                 | `fast-api-portfolio/TodoApp/data/todosapp.db`                                 | Ne                                  |
+| `fast-api-portfolio/fast-api-course-my-work/TodoApp` | `fast-api-portfolio/fast-api-course-my-work/TodoApp/TodoApp/data/todosapp.db` | Ne                                  |
+
+Ovo su poređenja putanja: **nisam utvrdio stvarni radni direktorijum pokrenute aplikacije**, pa ne mogu potvrditi koju bazu ona trenutno koristi. `pwd` u terminalu prikazuje direktorijum tog shell-a; za aplikaciju pokrenutu iz drugog terminala ili VS Code debug konfiguracije treba proveriti direktorijum njenog procesa. U prethodnom primeru sa `sandbox.db` i priključenom Chinook bazom, `.databases` je prikazivao druge fajlove, ne ovaj TodoApp fajl.
+
+Ako je putanja pogrešna, SQLite može napraviti novi prazni fajl kada direktorijum postoji i upis je dozvoljen, ili prijaviti grešku ako putanja nije dostupna. Zato nemoj pokretati aplikaciju samo radi probe nad neproverenom putanjom.
+
+---
+
+## Pitanje 18
+
+Da li je zapisano rešenje Vežbe 5 u lekciji „How to connect to SQLite“ dobro?
+
+---
+
+## Odgovor 18
+
+Tvoje novo rešenje je znatno potpunije od prethodnog šablona: koristi stvarne putanje, odvaja Bash i SQLite CLI komande i objašnjava zavisnost od radnog direktorijuma. Ispravio sam i dopunio sledeće:
+
+1. Projektno okruženje je `.venv`, pa je komanda iz korena repozitorijuma `source .venv/bin/activate`, ne `source venv/bin/activate`. Za `cat` i `sqlite3` aktivacija nije obavezna.
+
+2. Za bezbedniji pregled postojeće baze upotrebio sam `sqlite3 -readonly`, dodao `pwd` i prikazao provereni rezultat `.databases`.
+
+3. Zaključak je uslovan: putanje vode do istog fajla **ako** je radni direktorijum procesa aplikacije `fast-api-course-my-work`. Promena direktorijuma u terminalu za CLI sama ne dokazuje radni direktorijum aplikacije pokrenute u drugom procesu.
+
+4. `.tables` dodatno pokazuje sadržaj, ali ne dokazuje sama po sebi identitet fajla. `r/o` u izlazu odnosi se na CLI konekciju, ne nužno na aplikaciju.
+
+---
+
+## Pitanje 19
+
+Koji je radni direktorijum procesa TodoApp aplikacije i da li ona koristi isti fajl kao SQLite CLI?
+
+---
+
+## Odgovor 19
+
+Pri proveri nisam pronašao pokrenut proces TodoApp aplikacije niti FastAPI servera, pa **nije bilo procesa aplikacije čiji radni direktorijum mogu da proverim**. Nisam pokretao aplikaciju ni menjao bazu.
+
+Pronašao sam pokrenut `sqlite3` CLI proces. Njegov radni direktorijum je:
+
+```text
+/home/jole-pavlovic-dev/code/python-automation-lab/fast-api-portfolio/fast-api-course-my-work
+```
+
+Proverom otvorenih fajlova tog procesa utvrdio sam da njegov CLI koristi:
+
+```text
+/home/jole-pavlovic-dev/code/python-automation-lab/fast-api-portfolio/fast-api-course-my-work/TodoApp/data/todosapp.db
+```
+
+To je **proces SQLite CLI-ja, ne proces aplikacije**. Ako se aplikacija pokrene sa istim radnim direktorijumom i koristi trenutno zapisani URL `sqlite:///./TodoApp/data/todosapp.db`, njena relativna putanja vodi do istog fajla. Dok ne proverimo stvarni proces aplikacije, to je uslovni zaključak, a ne potvrda njene aktivne konekcije.
+
+U Linux/WSL okruženju se radni direktorijum već pokrenutog procesa može proveriti komandom u Bash-u:
+
+```bash
+readlink /proc/PID/cwd
+```
+
+Zameni `PID` stvarnim brojem **procesa aplikacije**, ne brojem SQLite CLI-ja. Ako proces nije pokrenut ili nemaš pravo pristupa, provera neće dati traženi rezultat.
+
+---
+
+## Pitanje 20
+
+Kako da pokrenem TodoApp radi provere — preko Uvicorn-a?
+
+---
+
+## Odgovor 20
+
+Da. Uvicorn je server koji pokreće FastAPI aplikaciju. U ovom projektu objekat `app` nalazi se u `TodoApp/main.py`, pa je oznaka aplikacije `TodoApp.main:app`.
+
+**Važno pre pokretanja:** `main.py` pri učitavanju poziva `Base.metadata.create_all(bind=engine)`. To može napraviti nedostajuće tabele u bazi, pa pokretanje nije nužno samo za čitanje. Proveri putanju i, ako ne želiš moguće izmene postojeće baze, nemoj pokretati aplikaciju nad njom. Za samo rešavanje vežbe dovoljno je uslovno poređenje URL-a i radnog direktorijuma; pokretanje nije obavezno.
+
+Ako želiš da pokreneš aplikaciju koristeći postojeću TodoApp bazu, otvori **novi Bash terminal**. Iz korena repozitorijuma:
+
+```bash
+source .venv/bin/activate
+cd fast-api-course-my-work
+pwd
+python -m uvicorn TodoApp.main:app
+```
+
+Prvi red aktivira projektni `.venv`; `cd` određuje radni direktorijum iz kojeg će proces naslediti relativnu putanju baze. `python -m uvicorn` koristi Uvicorn iz aktivnog Python okruženja. Ne dodajemo `--reload` u ovaj primer, kako bismo jednostavnije identifikovali proces servera.
+
+Ako pokretanje uspe, Uvicorn ispisuje `Started server process [broj]` i adresu, obično `http://127.0.0.1:8000`. Dokumentacija API-ja je na `http://127.0.0.1:8000/docs`. Ako prijavi da adresa već postoji ili da nedostaje podešavanje, pročitaj poruku o grešci; aplikacija zahteva `JWT_SECRET_KEY` u okruženju ili `.env` fajlu. Ne ispisuj niti deli vrednost ključa.
+
+Dok server radi, u **drugom** Bash terminalu proveri njegov direktorijum pomoću broja iz `Started server process`:
+
+```bash
+readlink /proc/PID/cwd
+```
+
+Zameni `PID` stvarnim brojem, bez uglastih zagrada. Ako ispiše direktorijum `fast-api-course-my-work`, sadašnja relativna putanja iz `database.py` vodi do `fast-api-course-my-work/TodoApp/data/todosapp.db`. Za kraj vrati se u terminal servera i pritisni `Ctrl+C`.
+
+Ovo su uputstva, ne potvrda da sam pokrenuo server ili proverio njegov proces. Ako želiš da ja proverim pokrenutu aplikaciju, prvo je pokreni na opisani način, ako prihvataš moguću promenu šeme, i javi rezultat.
+
+---
+
+## Pitanje 21
+
+Pokrenuo sam FastAPI u drugom terminalu. Da li aplikacija i SQLite CLI koriste isti fajl?
+
+---
+
+## Odgovor 21
+
+Da. Nakon što si pokrenuo aplikaciju, proverio sam njen proces i otvorene fajlove. U trenutku provere:
+
+- Radni direktorijum procesa aplikacije bio je `fast-api-portfolio/fast-api-course-my-work`.
+- I aplikacija i ranije pokrenuti SQLite CLI imali su otvoren isti fajl: `fast-api-portfolio/fast-api-course-my-work/TodoApp/data/todosapp.db`.
+- Aplikacija je odgovarala: zahtev za `/openapi.json` vratio je HTTP `200`.
+
+To su **odvojene konekcije prema istom fajlu**. Prethodna napomena da proces aplikacije nije pronađen odnosila se na raniji trenutak, pre nego što si je pokrenuo.
+
+Koristio si `--reload`, pa postoje odvojeni nadzorni i serverski proces; proverio sam radni direktorijum i otvorenu bazu serverskog procesa. Brojevi procesa mogu se promeniti pri ponovnom pokretanju ili reload-u.
+
+Server je pokrenut sa `--host 0.0.0.0`, što ga sluša na svim dostupnim mrežnim interfejsima, a ne samo na `127.0.0.1`. Za lokalno vežbanje možeš sledeći put koristiti `--host 127.0.0.1` ili izostaviti tu opciju. Nisam menjao ni zaustavljao tvoj server; kada završiš, možeš ga zaustaviti sa `Ctrl+C` u njegovom terminalu.
+
+---
+
+## Pitanje 22
+
+Kako da Vežba 5 uključi pokretanje FastAPI aplikacije i proveru baze?
+
+---
+
+## Odgovor 22
+
+Dopunio sam [Vežbu 5](../00_intro/03_how_to_connect_to_sqlite.md) koracima za pokretanje Uvicorn-a, proveru radnog direktorijuma server procesa i poređenje sa `.databases` u drugom terminalu. Uputstvo upozorava da pokretanje aplikacije može napraviti nedostajuće tabele; SQLite CLI se otvara samo za čitanje.
+
+---
+
+## Pitanje 23
+
+Kako se kreira Mermaid ER dijagram i šta znači sintaksa `colors ||--o{ fruits : has`?
+
+---
+
+## Odgovor 23
+
+Mermaid je način da **tekstom opišeš dijagram**, a alat ga zatim prikaže kao sliku. To nije SQL: pisanje Mermaid dijagrama ne kreira tabele i ne menja bazu.
+
+U Markdown fajl upiši blok koda označen sa `mermaid`:
+
+````text
+```mermaid
+erDiagram
+    colors ||--o{ fruits : has
+    colors ||--o{ vegetables : has
+```
+````
+
+`erDiagram` kaže Mermaid-u da crta **ER dijagram** — dijagram entiteta i njihovih veza. Sačuvaj fajl i u VS Code-u otvori Markdown pregled pomoću `Ctrl+Shift+V`. Ako se vidi samo tekst koda, za prikaz je potrebna podrška za Mermaid u Markdown pregledu.
+
+### Kako se čita jedan red?
+
+```text
+colors ||--o{ fruits : has
+```
+
+| Deo      | Značenje                                                                             |
+| -------- | ------------------------------------------------------------------------------------ |
+| `colors` | Prvi entitet; ovde predstavlja tabelu boja.                                          |
+| `\|\|`   | Na strani `colors`: za jedan red u `fruits` predviđena je **tačno jedna boja**.      |
+| `--`     | Puna linija; u Mermaid ER notaciji označava identifikujuću vezu.                     |
+| `o{`     | Na strani `fruits`: jedna boja može biti povezana sa **nula, jednim ili više voća**. |
+| `fruits` | Drugi entitet; ovde predstavlja tabelu voća.                                         |
+| `: has`  | Tekstualni opis veze: boja „ima“ voće. Ne nameće pravilo bazi.                       |
+
+Oznaku uz `colors` čitaj kao broj boja za **jedno voće**, a oznaku uz `fruits` kao broj voća za **jednu boju**. Drugi red se čita analogno za `vegetables`.
+
+### Važna razlika u tvojoj vežbi
+
+Tvoj SQL u Vežbi 2 definiše `fruits.ColorId INTEGER` i `vegetables.ColorId INTEGER` **bez `NOT NULL`**. Prema tome, jedno voće ili povrće može imati **nula ili jednu** zabeleženu boju, dok jedna boja može biti povezana sa nula ili više njih. Oznaka `||` u postojećem dijagramu kaže „tačno jedna“ i zato ne odgovara opcionalnom FK-u u SQL primeru.
+
+Da dijagram prikaže taj SQL model, relacije mogu izgledati ovako:
+
+```mermaid
+erDiagram
+    colors |o..o{ fruits : has
+    colors |o..o{ vegetables : has
+```
+
+Ovde `|o` sa leve strane znači **nula ili jedna** boja za jedan red voća ili povrća. `..` crta isprekidanu, neidentifikujuću vezu: `ColorId` nije deo primarnog ključa tabela `fruits` ili `vegetables`. Isprekidana linija sama ne znači da je FK opcionalan; to pokazuje `|o`. Ako bi SQL kolone `ColorId` imale `NOT NULL`, oznaka za boju bila bi `||` umesto `|o`.
+
+---
+
+### Česte oznake kardinalnosti
+
+| Levo od linije | Desno od linije | Značenje       |
+| -------------- | --------------- | -------------- |
+| `\|\|`         | `\|\|`          | Tačno jedan    |
+| `\|o`          | `o\|`           | Nula ili jedan |
+| `}o`           | `o{`            | Nula ili više  |
+| `}\|`          | `\|{`           | Jedan ili više |
+
+Oznake su ogledalne jer stoje na različitim krajevima linije. Brojevi u dijagramu opisuju **pravila modela**, a ne koliko redova trenutno postoji u bazi. SQLite sprovodi strani ključ samo kada je njegova provera uključena za konekciju.
+
+---
+
+### Kako prikazati kolone?
+
+Možeš dodati blokove sa tipom i imenom atributa, kao i oznake `PK` i `FK`:
+
+```mermaid
+erDiagram
+    colors |o..o{ fruits : has
+    colors {
+        INTEGER ColorId PK
+        TEXT Color
+    }
+    fruits {
+        INTEGER FruitId PK
+        TEXT Name
+        INTEGER ColorId FK
+    }
+```
+
+`PK` i `FK` su ovde oznake u dijagramu, ne naredbe koje menjaju bazu. Da bi dijagram ostao tačan, treba ga uskladiti sa stvarnom SQL šemom.
+
+Izvor: [Mermaid — Entity Relationship Diagrams](https://mermaid.js.org/syntax/entityRelationshipDiagram.html).
+
+---
+
+## Pitanje 24
+
+Kako je moguće da veza `albums`–`tracks` dopušta album sa nula pesama?
+
+---
+
+## Odgovor 24
+
+`0..1 : 0..N` znači da numera može imati **nula ili jedan zabeležen album**, a album **nula ili više povezanih numera**. Nula numera ne znači `NULL` pesmu, već da trenutno nema reda u `tracks` koji upućuje na album.
+
+Šema baze dopušta album bez numera; to nije isto što i tvrdnja da je takav album smislen prema svakom poslovnom pravilu. Album može, na primer, biti unet pre numera. Pravilo „album mora imati barem jednu numeru“ zahteva dodatno sprovođenje; sam strani ključ ga ne obezbeđuje.
+
+U proveri radne Chinook baze nijedan od 347 albuma nije bio bez numera, a nijedna od 3.503 numere nije imala `NULL` kao `AlbumId`. To je trenutno stanje, iako šema dozvoljava oba slučaja. Objašnjenje, ispravljeni dijagram i upiti nalaze se u [Vežbi 3](../00_intro/04_database_concepts.md).
+
+---
+
+## Pitanje 25
+
+Kako prepoznati ključeve u `albums` i `tracks` i zašto postoji `playlist_track`?
+
+---
+
+## Odgovor 25
+
+`albums.AlbumId` i `tracks.TrackId` su primarni ključevi svojih tabela. Strani ključevi upućuju na povezane tabele: na primer, `tracks.AlbumId` upućuje na `albums.AlbumId`.
+
+`playlist_track` je međutabela za vezu **više-prema-više**: jedna plejlista može sadržati više numera, a ista numera može biti u više plejlista. Svaki red predstavlja jedan par plejliste i numere; složeni primarni ključ sprečava ponavljanje istog para.
+
+Detaljno rešenje sa SQL definicijama, primerom parova, dijagramom i proverenim `JOIN` upitima nalazi se u [Vežbi 3](../00_intro/04_database_concepts.md).
+
+---
+
+## Pitanje 26
+
+Kako povezati tabelu `albums` sa SQLAlchemy i Pydantic pojmovima i prikazati tok HTTP zahteva? Da li su ostale vežbe ispravne?
+
+---
+
+## Odgovor 26
+
+Detaljna rešenja nalaze se u [Vežbama 4 i 5](../00_intro/04_database_concepts.md): `Album` je ilustrativni ORM model, `AlbumResponse` je zasebna API šema, a dijagram opisuje zamišljeni POST zahtev od validacije do potvrđenog upisa i odgovora. To nije postojeći TodoApp endpoint.
+
+Pregledao sam i vežbe 1–3. U Vežbi 1 ispravio sam primer reda i uklonio `ALTER TABLE ... ADD PRIMARY KEY`, koji SQLite ne podržava. U Vežbi 2 uskladio sam dijagram sa FK kolonama koje dozvoljavaju `NULL` i dopunio objašnjenje promene naziva boje. Vežba 3 već je dopunjena opisima ključeva i međutabele.
+
+Ilustrativni ORM model i Pydantic pretvaranje provereni su nad Chinook bazom u režimu samo za čitanje; vežba 5 opisuje tok, a ne pokretanje novog endpoint-a.
 
 ---

@@ -167,7 +167,7 @@ sqlite3 fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db
 
 2. U CLI-ju pokreni `.databases`, `.tables` i `.schema albums`.
 
-```sqlite3
+```sql
 .databases
 .tables
 .schema albums
@@ -183,7 +183,7 @@ sqlite3 fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db
 1. Iz korena repozitorijuma pokreni `sqlite3 :memory:`.
 2. Priključi Chinook bazu pod aliasom `chinook`.
 
-```sqlite3
+```sql
 ATTACH DATABASE 'fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db' AS chinook;
 .databases
 ```

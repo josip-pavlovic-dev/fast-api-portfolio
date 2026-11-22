@@ -200,7 +200,7 @@ sqlite3 fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinoo
 
 2. U SQLite CLI-ju isprobaj `.databases`, `.tables` i `.schema albums`.
 
-```sqlite3
+```sql
 .databases
 .tables
 .schema albums
@@ -208,7 +208,7 @@ sqlite3 fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinoo
 
 3. Pokreni SQL upite `SELECT sqlite_version();` i `PRAGMA foreign_keys;`.
 
-```sqlite3
+```sql
 SELECT sqlite_version();
 PRAGMA foreign_keys;
 ```
