@@ -1,0 +1,28 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="todoapp-erd" name="TodoApp ERD">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="TodoApp — ERD postojeće šeme" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=22;fontStyle=1;fontColor=#243746;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1000" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="users" value="&lt;b&gt;users&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : INTEGER [PK]&lt;br&gt;email : VARCHAR [UNIQUE, NULL]&lt;br&gt;username : VARCHAR [UNIQUE, NULL]&lt;br&gt;first_name : VARCHAR [NULL]&lt;br&gt;last_name : VARCHAR [NULL]&lt;br&gt;hashed_password : VARCHAR [NULL]&lt;br&gt;is_active : BOOLEAN [NULL]&lt;br&gt;role : VARCHAR [NULL]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#e8f1f8;strokeColor=#5b7f99;fontColor=#243746;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="130" width="320" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="todos" value="&lt;b&gt;todos&lt;/b&gt;&lt;br&gt;&lt;hr&gt;id : INTEGER [PK]&lt;br&gt;title : VARCHAR [NULL]&lt;br&gt;description : VARCHAR [NULL]&lt;br&gt;priority : INTEGER [NULL]&lt;br&gt;complete : BOOLEAN [NULL]&lt;br&gt;owner_id : INTEGER [FK, NULL]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#edf5e8;strokeColor=#76945f;fontColor=#243746;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="680" y="130" width="320" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="fk" value="todos.owner_id → users.id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=none;startArrow=none;strokeColor=#526575;fontSize=13;" edge="1" parent="1" source="users" target="todos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cardinality" value="Za jedan zadatak: 0 ili 1 korisnik&lt;br&gt;Za jednog korisnika: 0 ili više zadataka" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontColor=#243746;" vertex="1" parent="1">
+          <mxGeometry x="390" y="270" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="&lt;b&gt;Oznake i ograničenja&lt;/b&gt;&lt;br&gt;PK = primarni ključ; FK = strani ključ; NULL = kolona dozvoljava NULL.&lt;br&gt;Isprekidana veza: owner_id nije deo primarnog ključa todos.&lt;br&gt;Postojanje korisnika za nenull vrednost zavisi od uključene FK provere i ispravnosti podataka." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff8e8;strokeColor=#c8a557;fontColor=#4c432d;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="60" y="430" width="940" height="125" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

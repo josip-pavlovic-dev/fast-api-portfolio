@@ -49,7 +49,7 @@
         <mxCell id="rel_albums_tracks" value="0..1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.8;entryX=0;entryY=0.1;" edge="1" parent="1" source="albums" target="tracks">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="rel_genres_tracks" value="1 : 0..N (GenreId NULL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;entryX=0;entryY=0.45;" edge="1" parent="1" source="genres" target="tracks">
+        <mxCell id="rel_genres_tracks" value="0..1 : 0..N (GenreId NULL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;entryX=0;entryY=0.45;" edge="1" parent="1" source="genres" target="tracks">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="rel_media_tracks" value="1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;entryX=0;entryY=0.8;" edge="1" parent="1" source="media_types" target="tracks">
@@ -64,7 +64,7 @@
         <mxCell id="rel_customers_invoices" value="1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="customers" target="invoices">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="rel_employees_customers" value="1 : 0..N (SupportRepId NULL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.45;entryX=1;entryY=0.8;" edge="1" parent="1" source="employees" target="customers">
+        <mxCell id="rel_employees_customers" value="0..1 : 0..N (SupportRepId NULL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.45;entryX=1;entryY=0.8;" edge="1" parent="1" source="employees" target="customers">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="rel_employees_reports" value="0..1 manager : 0..N reports" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C65D36;strokeWidth=1.5;endArrow=none;startArrow=none;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.3;entryX=1;entryY=0.75;" edge="1" parent="1" source="employees" target="employees">

@@ -4,6 +4,8 @@
 
 U ovoj lekciji upoznaćeš pojmove baza podataka, tabele, reda, kolone, relacionog modela i sistema za upravljanje bazom podataka. Kroz primere ćeš naučiti kako se podaci predstavljaju u tabelama i zašto ponovljena vrednost u dve tabele sama po sebi još ne uspostavlja relaciju.
 
+> **Napomena o ispravkama:** Vežba 1 koristi pojednostavljen model sa jednom glavnom bojom, a Vežba 2 zaseban model sa više boja. U Vežbi 2 uklonjeni su duplirani indeksi i objašnjena su ograničenja ključeva, naziva i obavezne boje. Ova dva modela nisu ista šema.
+
 ---
 
 ## Baza podataka i sistem koji njome upravlja
@@ -50,6 +52,8 @@ U transkriptu se prikazuju tabele `fruits` i `vegetables`, obe sa kolonom `Color
 
 SQL upit može da poredi dve tekstualne kolone i pronađe podudarne vrednosti, ali takvo poređenje samo po sebi ne garantuje integritet niti kaže da baza te vrednosti smatra zvaničnom relacijom.
 
+---
+
 ### Primer: iste vrednosti, ali bez deklarisane relacije
 
 | `fruits` |       |       | `vegetables` |          |       |
@@ -62,9 +66,11 @@ Kolona `Color` se ponavlja u obe tabele, ali nema stranog ključa koji bi poveza
 
 ---
 
-## Eksplicitna relacija preko ključeva
+## Eksplicitna relacija preko ključeva: jedna glavna boja
 
 Ako boja predstavlja podatak koji se deli između voća i povrća, možeš je predstaviti posebnom tabelom `colors`. U tabelama `fruits` i `vegetables` čuva se `ColorId`, koji referencira primarni ključ tabele `colors`.
+
+Ovo je **pojednostavljen primer jedne obavezne glavne boje**, a ne tvrdnja da svako voće ili povrće u stvarnosti ima samo jednu boju. Ako želiš da beležiš više boja istog zapisa, potreban je drugačiji model, prikazan u Vežbi 2.
 
 Tabela `colors` čuva po jedan zapis za svaku boju:
 
@@ -117,7 +123,7 @@ U ovom modelu jedan zapis u `colors` može biti povezan sa više zapisa u `fruit
 
 ## Primarni i strani ključevi
 
-**Primarni ključ** (Primary Key, PK) jednoznačno identifikuje svaki red u tabeli. **Strani ključ** (Foreign Key, FK) upućuje na primarni ili jedinstveni ključ druge tabele.
+**Primarni ključ** (Primary Key, PK) služi za jednoznačnu identifikaciju reda. **Strani ključ** (Foreign Key, FK) upućuje na primarni ili odgovarajući jedinstveni ključ druge ili iste tabele. SQLite ima posebne slučajeve u kojima neke deklaracije PK-a dozvoljavaju `NULL`; za konkretan primer vidi Vežbu 2.
 
 | Ključ          | Uloga                                                   | Primer                                          |
 | -------------- | ------------------------------------------------------- | ----------------------------------------------- |
@@ -165,7 +171,7 @@ Pogledaj i [ERD.drawio](../chinook/ERD.drawio), koji prikazuje svih 11 tabela i 
 
 ## Relacioni DBMS i primeri
 
-SQLite, PostgreSQL, MySQL/MariaDB, Microsoft SQL Server i Oracle Database su primeri relacionih sistema za upravljanje bazama. Razlikuju se po arhitekturi, funkcijama i načinu administracije, ali svi podržavaju relacionu organizaciju podataka i SQL.
+`SQLite`, `PostgreSQL`, `MySQL/MariaDB`, `Microsoft SQL Server` i `Oracle Database` su primeri relacionih sistema za upravljanje bazama. **Razlikuju se po arhitekturi, funkcijama i načinu administracije**, ali svi podržavaju **relacionu** organizaciju podataka i SQL.
 
 | DBMS                 | Uobičajen način korišćenja                            |
 | -------------------- | ----------------------------------------------------- |
@@ -175,21 +181,50 @@ SQLite, PostgreSQL, MySQL/MariaDB, Microsoft SQL Server i Oracle Database su pri
 | Microsoft SQL Server | Klijent-server sistem u Microsoft ekosistemu          |
 | Oracle Database      | Klijent-server sistem za različite poslovne scenarije |
 
-Relaciona baza ne mora da ima najmanje dve tabele. Može početi od jedne tabele; relacije se pojavljuju kada model podataka sadrži veze između zapisa, najčešće izražene primarnim i stranim ključevima.
+Relaciona baza ne mora da ima najmanje dve tabele. U relacionom modelu izraz **relacija** označava strukturu koja se u praksi predstavlja tabelom, dok **veza između zapisa** označava njihov odnos. Veza se može definisati i unutar iste tabele, pomoću stranog ključa koji upućuje na nju samu.
+
+Primer relacione baze sa jednom tabelom:
+
+```sql
+CREATE TABLE artists (
+    ArtistId INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL
+);
+```
+
+Primer pokazuje jednostavnu tabelu `artists` sa primarnim ključem `ArtistId` i obaveznim poljem `Name`. Ova tabela može postojati samostalno, bez drugih tabela, što je validna relacija u bazi podataka. Kada se kasnije doda tabela `albums` sa stranim ključem `ArtistId`, uspostavlja se veza između albuma i umetnika, čime se demonstrira koncept relacija između tabela.
+
+Primer relacione baze sa dve tabele i vezom između njih:
+
+```sql
+CREATE TABLE artists (
+    ArtistId INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL
+);
+
+CREATE TABLE albums (
+    AlbumId INTEGER PRIMARY KEY,
+    Title TEXT NOT NULL,
+    ArtistId INTEGER NOT NULL,
+    FOREIGN KEY (ArtistId) REFERENCES artists(ArtistId)
+);
+```
+
+Primer pokazuje kako se uspostavlja veza između tabela `artists` i `albums` preko stranog ključa `ArtistId`. `NOT NULL` zahteva upisan ID, a uključen FK sprečava da taj ID upućuje na nepostojećeg umetnika. U SQLite-u proveru uključi sa `PRAGMA foreign_keys = ON;` za svaku konekciju, pre početka transakcije. Sama veza ne garantuje efikasnost svih upita niti celokupnu konzistentnost podataka.
 
 ---
 
 ## Kako se pojmovi preslikavaju na FastAPI i SQLAlchemy
 
-Tabela, SQLAlchemy model, Pydantic šema i API odgovor su povezani, ali nisu isti objekat. Na primer, SQLAlchemy model opisuje rad sa bazom, dok Pydantic šema opisuje strukturu podataka koju endpoint prima ili vraća.
+Tabela, `SQLAlchemy model`, `Pydantic šema` i `API odgovor` su povezani, ali **nisu isti objekat**. Na primer, `SQLAlchemy model` opisuje rad sa bazom, dok `Pydantic šema` opisuje strukturu podataka koju `endpoint` prima ili vraća.
 
-| Koncept baze | Uobičajen pojam u SQLAlchemy-ju | Značenje u FastAPI aplikaciji                      |
-| ------------ | ------------------------------- | -------------------------------------------------- |
-| Tabela       | ORM model ili `Table` objekat   | Trajno skladištenje tipa podataka                  |
-| Red          | ORM instanca                    | Jedan konkretan zapis, npr. jedan album            |
-| Kolona       | Mapirani atribut                | Jedno polje zapisa                                 |
-| Strani ključ | FK kolona i ORM relacija        | Veza između povezanih zapisa                       |
-| API šema     | Nema nužno direktnu DB tabelu   | Validacija request/response podataka kroz Pydantic |
+| Koncept baze | Uobičajen pojam u SQLAlchemy-ju | Značenje u FastAPI aplikaciji                            |
+| ------------ | ------------------------------- | -------------------------------------------------------- |
+| Tabela       | `ORM model` ili `Table` objekat | Trajno **skladištenje** tipova podataka                  |
+| Red          | `ORM instanca`                  | Jedan **konkretan zapis**, npr. jedan album              |
+| Kolona       | Mapirani atribut                | Jedno polje (**atribut**) zapisa                         |
+| Strani ključ | `FK kolona` i `ORM relacija`    | **Veza** između povezanih **zapisa**                     |
+| API šema     | Nema nužno direktnu DB tabelu   | Validacija `request`/`response` podataka kroz `Pydantic` |
 
 Tipičan tok jednog zahteva izgleda ovako:
 
@@ -204,55 +239,128 @@ flowchart LR
     result --> response["Pydantic response"]
 ```
 
-Ovaj prikaz je konceptualan: stvarni endpoint može imati dodatne slojeve, a ne mora svaki Pydantic model da odgovara jednoj tabeli. Važno je da validacija API podataka, pristup bazi i pravila integriteta imaju jasno razdvojene odgovornosti.
+Ovaj prikaz je konceptualan: stvarni `endpoint` može imati dodatne slojeve, a ne mora svaki Pydantic model da odgovara jednoj tabeli. Važno je da validacija API podataka, pristup bazi i pravila integriteta imaju jasno razdvojene odgovornosti.
 
 ---
 
 ## Provera razumevanja
 
-1. Koja je razlika između baze podataka i sistema koji njome upravlja?
+1. Koja je razlika između **baze podataka** i **sistema koji njome upravlja**?
 
-- Baza podataka je skup organizovanih podataka, dok DBMS (Database Management System) je softver koji omogućava kreiranje, čuvanje, pristup i upravljanje tim podacima.
+- **Baza podataka** je skup organizovanih podataka, dok **DBMS** (Database Management System) je **softver** koji omogućava **upravljanje podacima** kroz `CRUD` operacije: `Create`, `Read`, `Update`, `Delete` i obezbeđuje integritet, sigurnost i efikasnost pristupa tim podacima kroz definisane strukture:
+  1. Tipovi podataka (**tabele i kolone**)
+  2. Relacije (**veze između tabela preko primarnih i stranih ključeva**)
+  3. Pravila integriteta(**constraints**, pravila koja osiguravaju konzistentnost i validnost podataka).
 
-2. Kako razlikuješ red od kolone u tabeli?
+2. Kako razlikuješ **red** od **kolone** u tabeli?
 
-- Red predstavlja jedan zapis u tabeli, dok kolona predstavlja jedno polje tog zapisa. Na primer, u tabeli `albums`, red bi mogao biti konkretan album, dok kolone mogu biti `Title`, `ArtistId` itd. Svaka kolona ima svoj tip podataka i može imati dodatna ograničenja, kao što su primarni ključ, strani ključ ili jedinstvenost.
+- **Red** predstavlja jedan zapis u tabeli (jedan konkretan podatak ili entitet), dok **kolona** predstavlja jedno polje tog zapisa.
 
-3. Zašto podudaranje teksta `Green` u dve tabele samo po sebi ne uspostavlja relaciju?
+- Na primer, u tabeli `albums`, red bi mogao biti konkretan album, dok kolone mogu biti `Title`, `ArtistId` itd. Svaka kolona ima svoj `tip podataka` i može imati `dodatna ograničenja`, kao što su primarni ključ (`PK`), strani ključ (`FK`) ili jedinstvenost (`UNIQUE`).
 
-- Podudaranje teksta `Green` u dve tabele samo po sebi ne uspostavlja relaciju jer relacija u bazi podataka zavisi od primarnih i stranih ključeva, a ne od vrednosti teksta. Tekstualne vrednosti mogu biti iste, ali to ne garantuje da su zapisi povezani na način koji baza može da razume i održava integritet podataka.
+3. Zašto podudaranje teksta `Green` u dve tabele (`fruits` i `vegetables`) samo po sebi ne uspostavlja **relaciju**?
 
-4. Koja je razlika između primarnog i stranog ključa?
+- Podudaranje teksta `Green` u dve tabele samo po sebi **ne definiše strani ključ niti garantuje referencijalni integritet**. Upit može povezati redove poređenjem teksta i bez FK-a, ali baza tada ne proverava tu vezu kao FK. I tekstualna kolona može biti ključ ako zadovoljava potrebne uslove.
 
-- Primarni ključ je kolona ili skup kolona koje jedinstveno identifikuju svaki red u tabeli. Strani ključ je kolona ili skup kolona koje referenciraju primarni ključ druge tabele, uspostavljajući relaciju između zapisa u različitim tabelama. Primarni ključ garantuje jedinstvenost unutar svoje tabele, dok strani ključ omogućava povezivanje i održavanje referencijalnog integriteta između tabela.
+4. Koja je razlika između **primarnog** (`PK`) i **stranog** (`FK`) ključa?
 
-5. Kako se N:M relacija između plejlista i numera ostvaruje u Chinook bazi?
+- **Primarni ključ** (`PK`) je kolona ili skup kolona koje identifikuju red u tabeli. **Strani ključ** (`FK`) je kolona ili skup kolona koje referenciraju primarni ili odgovarajući jedinstveni ključ druge tabele — ili iste tabele.
 
-- N:M relacija između plejlista i numera u Chinook bazi ostvaruje se pomoću pomoćne tabele `playlist_track`, koja sadrži strane ključeve `PlaylistId` i `TrackId`. Ova tabela omogućava da jedna plejlista sadrži više numera, a jedna numera može biti u više plejlista, čime se uspostavlja mnogostruka veza između `playlists` i `tracks`.
+- **Primarni ključ** obezbeđuje jedinstvenost, a FK proverava vezu kada je njegova provera uključena. U SQLite-u za neke oblike PK-a u običnim tabelama postoji izuzetak koji dozvoljava `NULL`; zato se u složenom PK-u iz Vežbe 2 kolone izričito označavaju sa `NOT NULL`.
 
-6. Zašto SQLAlchemy model i Pydantic šema nisu isto?
+5. Kako se **N:M relacija** između plejlista i numera ostvaruje u Chinook bazi?
 
-- SQLAlchemy model predstavlja strukturu tabele u bazi podataka i koristi se za interakciju sa bazom, dok Pydantic šema definiše validaciju i serijalizaciju podataka koji ulaze i izlaze iz API-ja. Model je vezan za bazu i njene relacije, dok šema služi za osiguranje da podaci imaju ispravan oblik i tip pre nego što se obrade ili pošalju klijentu. Drugim rečima, model je za perzistenciju podataka, a šema za validaciju i transformaciju podataka.
+- **N:M relacija** između plejlista (`playlists`) i numera (`tracks`) u Chinook bazi ostvaruje se pomoću **pomoćne tabele** `playlist_track`, koja sadrži strane ključeve `PlaylistId` i `TrackId`.
 
-7. Da li relaciona baza može da ima samo jednu tabelu?
+- **Pomoćna tabela** omogućava da jedna plejlista sadrži više numera, a jedna numera može biti u više plejlista, čime se uspostavlja mnogostruka veza između `playlists` i `tracks`.
 
-- Tehnički, relaciona baza može imati samo jednu tabelu, ali u praksi se to retko dešava jer relacije između tabela predstavljaju osnovnu snagu relacionih baza. Sa samo jednom tabelom, ne postoji potreba za stranim ključevima i relacijama, što ograničava mogućnosti normalizacije i održavanja integriteta podataka. U takvom slučaju, baza gubi prednosti koje pruža relaciona struktura, kao što su eliminacija redundancije i jednostavnije održavanje konzistentnosti podataka.
+```sql
+
+-- Pojednostavljen primer za zasebnu bazu, nije doslovna Chinook šema.
+-- Kreiranje tabele `playlists`
+CREATE TABLE playlists (
+    PlaylistId INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL
+);
+
+-- Kreiranje tabele `tracks` (primer)
+CREATE TABLE tracks (
+    TrackId INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL
+);
+
+-- Tabela `playlist_track` povezuje plejliste i numere u N:M relaciji
+
+CREATE TABLE playlist_track (
+    PlaylistId INTEGER NOT NULL,
+    TrackId INTEGER NOT NULL,
+    PRIMARY KEY (PlaylistId, TrackId),
+    FOREIGN KEY (PlaylistId) REFERENCES playlists(PlaylistId),
+    FOREIGN KEY (TrackId) REFERENCES tracks(TrackId)
+);
+```
+
+6. Zašto **SQLAlchemy model** i **Pydantic šema** nisu isto?
+
+- **SQLAlchemy model** predstavlja **strukturu tabele u bazi podataka i koristi se za interakciju sa bazom**.
+- **Pydantic šema** definiše **validaciju i serijalizaciju podataka koji ulaze i izlaze iz API-ja**.
+
+- **Model** je vezan za bazu i njene relacije, dok **šema** služi za osiguranje da podaci imaju ispravan oblik i tip pre nego što se obrade ili pošalju klijentu. Drugim rečima, model je za perzistenciju podataka, a šema za validaciju i transformaciju podataka.
+
+7. Da li **`relaciona` baza** može da ima samo jednu tabelu?
+
+- Da. Čak i jedna tabela može biti odgovarajuće normalizovana i imati PK, `UNIQUE`, `NOT NULL` ili druga ograničenja.
+
+- Strani ključ nije obavezan, ali može upućivati i na **istu tabelu**: primer je `employees.ReportsTo` u Chinook bazi. Dodatne tabele su korisne kada model zahteva zasebne entitete i veze, ali njihovo postojanje samo po sebi ne garantuje odsustvo redundantnosti.
 
 ---
 
 ## Vežbe
 
+Sledeće tabele su ilustracija **pojednostavljenog modela jedne glavne boje** za Vežbu 1. Vežba 2 koristi drugačiju šemu sa povezničkim tabelama i više boja; njene tabele `fruits` i `vegetables` nemaju kolonu `ColorId`.
+
+Tabela `colors` čuva po jedan zapis za svaku boju:
+
+| ColorId (PK) | Name   |
+| -----------: | ------ |
+|            1 | Green  |
+|            2 | Brown  |
+|            3 | Red    |
+|            4 | Yellow |
+
+Tabela `fruits` čuva ključ boje umesto ponavljanja naziva boje:
+
+| FruitId (PK) | Name   | ColorId (FK) |
+| -----------: | ------ | -----------: |
+|            1 | Apple  |            1 |
+|            2 | Kiwi   |            2 |
+|            3 | Banana |            4 |
+
+Isto važi i za tabelu `vegetables`:
+
+| VegetableId (PK) | Name     | ColorId (FK) |
+| ---------------: | -------- | -----------: |
+|                1 | Cucumber |            1 |
+|                2 | Potato   |            2 |
+|                3 | Tomato   |            3 |
+
+Tabela `vegetables` takođe koristi `ColorId` kao strani ključ koji upućuje na tabelu `colors`, čime se izbegava ponavljanje naziva boja i omogućava održavanje referencijalnog integriteta. Na ovaj način, svaka boja se definiše samo jednom u tabeli `colors`, a sve povezane tabele (`fruits` i `vegetables`) referenciraju tu boju preko njenog jedinstvenog identifikatora (`ColorId`).
+
+---
+
 ### Vežba 1 — Prepoznaj delove tabele
 
-Koristeći normalizovani primer tabele `fruits` iz odeljka „Eksplicitna relacija preko ključeva“:
+> U ovoj vežbi ćemo se fokusirati na prepoznavanje delova tabele i razumevanje uloge primarnih i stranih ključeva u modelu podataka. Vežba je osmišljena tako da se upoznate sa osnovnim konceptima relacionih baza podataka kroz praktične primere. Cilj je da shvatite kako se podaci organizuju u tabele, kako se povezuju preko ključeva i zašto je važno koristiti primarne i strane ključeve za održavanje integriteta podataka.
+
+Koristeći pojednostavljeni primer tabele `fruits` iz odeljka „Eksplicitna relacija preko ključeva: jedna glavna boja“ (gde se boje voća čuvaju u posebnoj tabeli `colors` i povezuju preko `ColorId`):
 
 1. Navedi njene kolone.
 
-| Kolona  | Tip podatka |
-| ------- | ----------- |
-| FruitId | INTEGER     |
-| Name    | TEXT        |
-| ColorId | INTEGER     |
+| Kolona  | Tip podatka | Opis                                          |
+| ------- | ----------- | --------------------------------------------- |
+| FruitId | INTEGER     | Primarni ključ, jedinstveno identifikuje voće |
+| Name    | TEXT        | Naziv voća                                    |
+| ColorId | INTEGER     | Strani ključ koji upućuje na tabelu `colors`  |
 
 2. Prepiši jedan red kao celovit zapis i objasni šta svaka vrednost znači.
 
@@ -260,64 +368,145 @@ Koristeći normalizovani primer tabele `fruits` iz odeljka „Eksplicitna relaci
 FruitId = 1, Name = 'Apple', ColorId = 1
 ```
 
-`FruitId = 1` identifikuje zapis; `Name = 'Apple'` je naziv voća; `ColorId = 1` upućuje na boju `Green` u primeru tabele `colors`. Ovo je **prikaz reda**, ne naredba koja ga upisuje. U prethodnom tekstualnom primeru bez tabele boja kolone su `FruitId`, `Name` i `Color`, umesto `ColorId`.
+`FruitId = 1` identifikuje zapis; `Name = 'Apple'` je naziv voća; `ColorId = 1` upućuje na boju `Green` u primeru tabele `colors`. Ovo je **prikaz reda**, ne naredba koja ga upisuje. U prethodnom tekstualnom primeru bez tabele boja kolone su `FruitId`, `Name` i `Color`, umesto `ColorId`. Sam broj ne garantuje integritet: potrebni su deklarisan FK i uključena FK provera. Ključ može biti i tekstualan.
 
-3. Predloži kolonu koja bi mogla da bude primarni ključ i objasni zašto.
+Primer unosa za **pojednostavljeni model**, ako su tabele već napravljene, boja sa ID-jem 1 postoji i `FruitId = 1` još nije zauzet:
 
-`FruitId` je dobar kandidat za primarni ključ: identifikuje pojedinačan zapis i ne bi smeo da se ponovi. Naziv voća nije dobar izbor ako više zapisa može imati isti naziv.
+```sql
+INSERT INTO fruits (FruitId, Name, ColorId) VALUES (1, 'Apple', 1);
+```
 
-Pri pravljenju nove SQLite tabele može se definisati kao `FruitId INTEGER PRIMARY KEY`, kao u Vežbi 2. SQLite ne podržava `ALTER TABLE fruits ADD PRIMARY KEY (FruitId)` za naknadno dodavanje PK-a postojećoj tabeli; promena postojeće šeme obično zahteva ponovno pravljenje tabele i pažljivo prebacivanje podataka.
+Ovaj `INSERT` **ne radi u šemi Vežbe 2**, jer ona nema `fruits.ColorId`; ne izvršavaj ga ponovo nad prikazanom tabelom ako red već postoji.
+
+3. Predloži kolonu koja bi mogla da bude primarni ključ (`PK`) i objasni zašto.
+
+`FruitId` je dobar kandidat za primarni ključ. **Identifikuje pojedinačan zapis i ne ponavlja se unutar tabele (UNIQUE), čime obezbeđuje jedinstvenost svakog reda i pravilnu identifikaciju svakog voća.** Ovo je posebno važno kada se koristi u kombinaciji sa stranim ključevima u drugim tabelama, jer omogućava pouzdano povezivanje podataka.
+
+- Naziv voća (`Name`) nije dobar izbor u slučaju kada **više zapisa može imati isti naziv**. Na primer u tabeli `fruits` može postojati više zapisa kod kojih je vrednost kolone `Name = 'Apple'`, ali sa **različitim vrednostima drugih kolona** (npr. različite sorte jabuka mogu imati isti naziv, ali različite `ColorId` vrednosti), pa naziv sam po sebi ne garantuje jedinstvenost. Na primer:
+
+Sledeći primer zamišlja dodatnu kolonu `Sort`; ona **ne postoji** u prikazanoj šemi:
+
+```text
+FruitId = 1, Name = 'Apple', ColorId = 1, Sort = 'Granny Smith'
+FruitId = 2, Name = 'Apple', ColorId = 3, Sort = 'Red Delicious'
+```
+
+- Pri pravljenju nove SQLite tabele može se definisati kao `FruitId INTEGER PRIMARY KEY`, kao u Vežbi 2.
+
+- **NAPOMENA:** SQLite ne podržava `ALTER TABLE fruits ADD PRIMARY KEY (FruitId)` za naknadno dodavanje PK-a postojećoj tabeli. **Promena postojeće šeme** obično zahteva **ponovno pravljenje tabele** i pažljivo prebacivanje podataka. `Vežba 2` proširuje model za više boja, pa se tamo `ColorId` više ne čuva direktno u `fruits`.
 
 ---
 
 ### Vežba 2 — Ispravi model voća i povrća
 
-1. Objasni zašto iste tekstualne vrednosti u kolonama `Color` ne garantuju referencijalni integritet.
+1. Objasni zašto iste tekstualne vrednosti u kolonama `Color` **same po sebi ne garantuju** referencijalni integritet.
 
-- Tekstualne vrednosti same po sebi ne garantuju jedinstvenost i mogu se razlikovati u pisanju (npr. "Red" vs "red"), što može dovesti do nekonzistentnosti i problema sa referencijalnim integritetom.
+- Bez odgovarajućih ograničenja ponovljene tekstualne vrednosti ne garantuju referencijalni integritet. Različito pisanje (npr. `Red` i `red`) dodatno može dovesti do nekonzistentnosti. Tekstualni ključ uz odgovarajuća ograničenja takođe može obezbediti integritet.
 
-- Korišćenjem primarnog ključa (`ColorId`) u tabeli `colors` i stranih ključeva u tabelama `fruits` i `vegetables`, uz uključenu proveru stranih ključeva, svaka upisana neprazna vrednost mora odgovarati postojećoj boji. Ključ može biti i tekstualan ako ispunjava potrebne uslove; nije nužno numerički.
+- Korišćenjem primarnog ključa (`ColorId`) u tabeli `colors` i stranih ključeva u povezničkim tabelama, uz **uključenu proveru stranih ključeva** (`PRAGMA foreign_keys = ON;`), svaki zapis veze (`connection`) **mora** upućivati na postojeću boju i postojeće voće ili povrće. Ovo se ostvaruje kroz definisanje **stranih ključeva** u povezničkim (`junction`) tabelama koji **referenciraju primarni ključ** u tabeli `colors` koji je **jedinstven i obavezno prisutan**. Ključ (`ColorId`) može biti i tekstualan ako ispunjava potrebne uslove. **Nije nužno numerički!**
 
-- Kada promenimo naziv boje u tabeli `colors`, upit koji povezuje tabele prikazuje novi naziv za sve odgovarajuće zapise; vrednosti `ColorId` u njima se ne menjaju.
+- Kada promenimo naziv boje u tabeli `colors`, upit koji povezuje tabele prikazuje novi naziv za sve odgovarajuće zapise. **Međutim,** vrednosti `ColorId` u njima se ne menjaju.
 
-- U modelu gde je tekst ponovljen u svakom redu, promena naziva boje zahtevala bi ažuriranje svakog reda pojedinačno, što povećava rizik od grešaka i nekonzistentnosti.
+- U modelu gde je tekst (npr. `'Red'`) ponovljen u svakom redu, **promena naziva boje** zahteva ažuriranje svih odgovarajućih redova u svim tabelama. Jedan `UPDATE` može promeniti više redova iste tabele; propušteni redovi ostaju nekonzistentni.
 
-- Strani ključevi štite vezu, ali sami ne sprečavaju dva različita ID-ja boje sa istim nazivom; za to je potrebno dodatno ograničenje poput `UNIQUE` nad nazivom.
+- **Strani ključevi štite vezu**, ali sami **ne** sprečavaju dva različita ID-ja boje sa istim nazivom (npr. dva različita `ColorId` sa nazivom `'Red'`). Za to je potrebno dodatno ograničenje poput `UNIQUE` nad nazivom.
 
-2. Dopuni model tako da `colors.ColorId` bude primarni ključ, a `fruits.ColorId` i `vegetables.ColorId` strani ključevi.
+2. Dopuni model tako da voće i povrće mogu imati više boja.
+
+- Umesto jednog `ColorId` u svakoj tabeli, koristimo dve **povezničke tabele**: `fruit_colors` i `vegetable_colors`. Tako svaki zapis može biti povezan sa više boja, a jedna boja sa više zapisa. U ovom modelu cilj je da svaki zapis ima bar jednu zabeleženu boju; ispod objašnjavamo šta SQL šema garantuje, a šta mora dodatno da se obezbedi.
+
+Pokreni sledeći primer u **novoj, zasebnoj bazi**, a ne nad Chinook bazom ili postojećim tabelama iz Vežbe 1. Nazivi `fruits` i `vegetables` se ponavljaju, ali njihove strukture nisu iste.
 
 ```sql
-CREATE TABLE colors (
-    ColorId INTEGER PRIMARY KEY,
-    Color TEXT NOT NULL
-);
+PRAGMA foreign_keys = ON;
 
 CREATE TABLE fruits (
     FruitId INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
-    ColorId INTEGER,
-    FOREIGN KEY (ColorId) REFERENCES colors(ColorId)
+    Name TEXT NOT NULL
 );
 
 CREATE TABLE vegetables (
     VegetableId INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
-    ColorId INTEGER,
+    Name TEXT NOT NULL
+);
+
+CREATE TABLE colors (
+    ColorId INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE fruit_colors (
+    FruitId INTEGER NOT NULL,
+    ColorId INTEGER NOT NULL,
+    PRIMARY KEY (FruitId, ColorId),
+    FOREIGN KEY (FruitId) REFERENCES fruits(FruitId),
+    FOREIGN KEY (ColorId) REFERENCES colors(ColorId)
+);
+
+CREATE TABLE vegetable_colors (
+    VegetableId INTEGER NOT NULL,
+    ColorId INTEGER NOT NULL,
+    PRIMARY KEY (VegetableId, ColorId),
+    FOREIGN KEY (VegetableId) REFERENCES vegetables(VegetableId),
     FOREIGN KEY (ColorId) REFERENCES colors(ColorId)
 );
 ```
 
-Ovo je primer za novu, odvojenu bazu, ne za izvršavanje nad Chinook tabelama. Kolona sa nazivom boje ovde se zove `Color`, dok se u ranijem ilustrativnom prikazu zvala `Name`. Pošto obe kolone `ColorId` u tabelama voća i povrća dozvoljavaju `NULL`, boja nije obavezna. U SQLite-u uključi proveru FK-ova pomoću `PRAGMA foreign_keys = ON;` van aktivne transakcije ako želiš da se ograničenja proveravaju.
+**Šta znači svako ograničenje i zašto je tu:**
+
+1. `INTEGER PRIMARY KEY` identifikuje red u tabelama `fruits`, `vegetables` i `colors`. U SQLite-u je takva kolona posebni alias za `rowid`: kada se ID izostavi ili navede `NULL`, SQLite dodeljuje ID.
+2. `Name TEXT NOT NULL` zahteva naziv: `NULL` nije dozvoljen. Ne sprečava prazan tekst `''`; za to bi bilo potrebno dodatno pravilo.
+3. `UNIQUE` na `colors.Name` sprečava ponavljanje istog naziva boje. Uz podrazumevano poređenje `Red` i `red` su različiti; ako treba da budu isti, potrebno je dodatno pravilo poređenja. `NOT NULL` je zasebno važan jer SQLite `UNIQUE` sam dozvoljava više `NULL` vrednosti.
+4. `fruits.Name` i `vegetables.Name` **nisu `UNIQUE`**: više zapisa može imati isti naziv, recimo različite sorte jabuka. Njihovi ID-jevi ih razlikuju; trenutna šema nema kolonu za sortu.
+5. U povezničkim tabelama `NOT NULL` na oba ID-ja zahteva da par bude potpun. To je naročito važno jer SQLite u običnim tabelama može dozvoliti `NULL` u nekim složenim primarnim ključevima ako `NOT NULL` nije izričito naveden.
+6. Složeni `PRIMARY KEY (FruitId, ColorId)` sprečava ponavljanje **istog para**, ali dozvoljava da se isti `FruitId` pojavi uz drugu boju i isti `ColorId` uz drugo voće. Isto važi za povrće.
+7. `FOREIGN KEY` određuje na koje roditeljske ključeve ID-jevi upućuju. `PRAGMA foreign_keys = ON;` uključuje proveru za **tu konekciju**, pre transakcije; proveri je pomoću `PRAGMA foreign_keys;` — očekuje se `1`.
+
+**Šta je sa indeksima?** `INDEX` pomaže pri traženju redova, a `UNIQUE INDEX` dodatno zabranjuje duplikate indeksiranih vrednosti. SQLite ovde automatski pravi indekse za `UNIQUE` na nazivu boje i složene primarne ključeve. Uklonjeni eksplicitni `CREATE UNIQUE INDEX` za iste kolone bili su duplikati: troše prostor i povećavaju rad pri upisu, bez dodatne zaštite. `INTEGER PRIMARY KEY` je poseban slučaj vezan za `rowid`, ne zahteva takav dodatni indeks. Indeks različitog rasporeda ili kolona može biti koristan za konkretne upite, ali to je zasebna odluka.
+
+Na primer, jabuka može biti i crvena i zelena. Ovaj primer pokreni **posle prethodnog SQL bloka**, u istoj novoj bazi i konekciji:
+
+```sql
+BEGIN;
+INSERT INTO colors (ColorId, Name) VALUES (1, 'Green'), (2, 'Red');
+INSERT INTO fruits (FruitId, Name) VALUES (1, 'Apple');
+INSERT INTO fruit_colors (FruitId, ColorId) VALUES (1, 1), (1, 2);
+COMMIT;
+
+SELECT fruits.Name AS Fruit, colors.Name AS Color
+FROM fruits
+JOIN fruit_colors ON fruit_colors.FruitId = fruits.FruitId
+JOIN colors ON colors.ColorId = fruit_colors.ColorId
+ORDER BY colors.Name;
+```
+
+Upit vraća dva reda: `Apple | Green` i `Apple | Red`. To je **jedan zapis jabuke** povezan sa dve boje, a ne dve različite jabuke.
+
+**Važno — poslovno pravilo i ograničenja šeme nisu isto:** želimo da svaki zapis voća i povrća ima **najmanje jednu** boju. Ipak, gornji strani ključevi proveravaju postojeće redove povezničkih tabela; sami **ne zahtevaju** da za svaki red u `fruits` ili `vegetables` postoji bar jedna veza. Šema zato tehnički dopušta zapis bez boje i brisanje njegove poslednje veze. To ne znači da je stvarno voće „bez boje“: može značiti da podaci nisu uneti.
+
+Ako je pravilo **„najmanje jedna boja“ obavezno**, aplikacija **mora** u transakciji:
+
+- **Upisati zapis i bar jednu vezu pre potvrde**
+
+- **Sprečiti uklanjanje poslednje veze**
+
+- **Sprečiti ili kontrolisati upise mimo provera aplikacije.** Za garanciju pri svim direktnim SQL upisima potreban je pažljivo osmišljen drugačiji dizajn i odgovarajuća ograničenja, eventualno sa triggerima. Sam `CHECK` u SQLite-u ne može proveriti postojanje reda u drugoj tabeli pomoću podupita; jednostavan trigger pri unosu roditelja takođe nije dovoljan jer se roditelj u ovom primeru upisuje pre veze.
+
+- **NAPOMENA:** Primer iznad sam po sebi **nije** takva garancija i nema ugrađenu zaštitu od kršenja pravila o najmanje jednoj boji ili drugih poslovnih pravila koja se očekuju za voće i povrće.
 
 3. Nacrtaj relacije u Mermaid `erDiagram` formatu ili na papiru.
 
 ```mermaid
 erDiagram
-    colors |o..o{ fruits : has
-    colors |o..o{ vegetables : has
+    fruits ||--o{ fruit_colors : ima
+    colors ||--o{ fruit_colors : "označava"
+    vegetables ||--o{ vegetable_colors : ima
+    colors ||--o{ vegetable_colors : "označava"
 ```
 
-`|o` označava nula ili jednu boju za jedan zapis, a `o{` nula ili više zapisa za jednu boju. Isprekidana veza `..` označava da strani ključ nije deo primarnog ključa deteta.
+Svaki red u povezničkoj tabeli `fruit_colors` upućuje na **tačno jedno** voće i **tačno jednu** boju (`||`). Jedna boja i jedno voće mogu se pojaviti u **nula ili više** redova te povezničke tabele `fruit_colors` (`o{`). Isto važi za povrće. Tako nastaju dve N:M relacije: `fruits`–`colors` i `vegetables`–`colors`. Puna linija `--` označava identifikujuću vezu: strani ključevi su deo složenog primarnog ključa povezničke tabele.
+
+`o{` ovde namerno prikazuje šta gornji SQL **zaista dopušta**, uključujući nula veza. Poslovno pravilo da voće i povrće imaju najmanje jednu boju zahteva dodatnu proveru opisanu iznad. Jedna boja i dalje može biti u tabeli `colors` bez ijednog povezanog voća ili povrća. Dijagram pretpostavlja uključenu FK proveru; on sam ne sprovodi ograničenja baze.
 
 4. Opiši šta bi se dogodilo kada bi naziv boje trebalo promeniti u modelu sa jednom tabelom boja, a šta u modelu gde je tekst ponovljen u svakom redu.
 

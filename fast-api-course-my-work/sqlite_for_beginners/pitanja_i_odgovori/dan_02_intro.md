@@ -934,48 +934,54 @@ Kako se kreira Mermaid ER dijagram i šta znači sintaksa `colors ||--o{ fruits 
 
 Mermaid je način da **tekstom opišeš dijagram**, a alat ga zatim prikaže kao sliku. To nije SQL: pisanje Mermaid dijagrama ne kreira tabele i ne menja bazu.
 
-U Markdown fajl upiši blok koda označen sa `mermaid`:
+Za učenje sintakse prvo koristi pojednostavljen primer u kojem za svaki zapis beležimo **jednu glavnu boju**. To nije tvrdnja da voće ili povrće u stvarnosti može imati samo jednu boju. U Markdown fajl upiši blok koda označen sa `mermaid`:
 
-````text
 ```mermaid
 erDiagram
-    colors ||--o{ fruits : has
-    colors ||--o{ vegetables : has
+    colors ||..o{ fruits : has
+    colors ||..o{ vegetables : has
 ```
-````
 
 `erDiagram` kaže Mermaid-u da crta **ER dijagram** — dijagram entiteta i njihovih veza. Sačuvaj fajl i u VS Code-u otvori Markdown pregled pomoću `Ctrl+Shift+V`. Ako se vidi samo tekst koda, za prikaz je potrebna podrška za Mermaid u Markdown pregledu.
+
+---
 
 ### Kako se čita jedan red?
 
 ```text
-colors ||--o{ fruits : has
+colors ||..o{ fruits : has
 ```
 
 | Deo      | Značenje                                                                             |
 | -------- | ------------------------------------------------------------------------------------ |
 | `colors` | Prvi entitet; ovde predstavlja tabelu boja.                                          |
 | `\|\|`   | Na strani `colors`: za jedan red u `fruits` predviđena je **tačno jedna boja**.      |
-| `--`     | Puna linija; u Mermaid ER notaciji označava identifikujuću vezu.                     |
+| `..`     | Isprekidana linija; označava neidentifikujuću vezu.                                  |
 | `o{`     | Na strani `fruits`: jedna boja može biti povezana sa **nula, jednim ili više voća**. |
 | `fruits` | Drugi entitet; ovde predstavlja tabelu voća.                                         |
 | `: has`  | Tekstualni opis veze: boja „ima“ voće. Ne nameće pravilo bazi.                       |
 
-Oznaku uz `colors` čitaj kao broj boja za **jedno voće**, a oznaku uz `fruits` kao broj voća za **jednu boju**. Drugi red se čita analogno za `vegetables`.
+Oznaku uz `colors` čitaj kao broj boja za jedan red tabele `fruits`, tj. za **jedno voće**, a oznaku uz `fruits` čitaj kao broj voća za jedan red tabele `colors`, tj. za **jednu boju**. Drugi red se čita analogno za `vegetables`.
+
+U izvornoj sintaksi iz pitanja, `--` označava **identifikujuću** vezu, kada je strani ključ deo primarnog ključa deteta. U ovom pojednostavljenom primeru `ColorId` nije deo primarnog ključa tabele `fruits`, pa je ispravno `..`. Oblik linije opisuje vrstu veze, dok kardinalnost određuju oznake na njenim krajevima.
+
+---
 
 ### Važna razlika u tvojoj vežbi
 
-Tvoj SQL u Vežbi 2 definiše `fruits.ColorId INTEGER` i `vegetables.ColorId INTEGER` **bez `NOT NULL`**. Prema tome, jedno voće ili povrće može imati **nula ili jednu** zabeleženu boju, dok jedna boja može biti povezana sa nula ili više njih. Oznaka `||` u postojećem dijagramu kaže „tačno jedna“ i zato ne odgovara opcionalnom FK-u u SQL primeru.
-
-Da dijagram prikaže taj SQL model, relacije mogu izgledati ovako:
+Ranija verzija Vežbe 2 imala je po jedan `ColorId` koji je dozvoljavao `NULL`. Ta šema je tehnički dopuštala nula ili jednu **zabeleženu** boju; to nije tvrdnja da stvarno voće nema boju. Takođe nije mogla da zabeleži više boja za isti zapis. Zato je Vežba 2 sada promenjena: koristi povezničke tabele za više boja.
 
 ```mermaid
 erDiagram
-    colors |o..o{ fruits : has
-    colors |o..o{ vegetables : has
+    fruits ||--o{ fruit_colors : ima
+    colors ||--o{ fruit_colors : označava
+    vegetables ||--o{ vegetable_colors : ima
+    colors ||--o{ vegetable_colors : označava
 ```
 
-Ovde `|o` sa leve strane znači **nula ili jedna** boja za jedan red voća ili povrća. `..` crta isprekidanu, neidentifikujuću vezu: `ColorId` nije deo primarnog ključa tabela `fruits` ili `vegetables`. Isprekidana linija sama ne znači da je FK opcionalan; to pokazuje `|o`. Ako bi SQL kolone `ColorId` imale `NOT NULL`, oznaka za boju bila bi `||` umesto `|o`.
+Na primer, svaki **red** tabele `fruit_colors` povezuje tačno jedan red `fruits` i tačno jedan red `colors`: to pokazuju oznake `||`. Jedno voće može imati više redova u `fruit_colors`, a svaka boja može se koristiti u više tih redova. To je veza **više-prema-više (N:M)** između voća i boja; ista logika važi za povrće. `--` je puna, identifikujuća veza jer su strani ključevi deo složenog primarnog ključa povezničke tabele.
+
+Željeno pravilo je **najmanje jedna zabeležena boja** za svaki zapis voća ili povrća. Međutim, sama SQL šema Vežbe 2 ne garantuje postojanje poveznog reda, pa je u dijagramu `o{` — **nula ili više redova**, a ne kolona. To opisuje stvarne mogućnosti šeme, ne idealno poslovno pravilo. Aplikacija treba dodatno da proveri da svako voće i povrće ima bar jednu vezu i da ne ukloni poslednju. Detalji, SQL i primer jabuke sa dve boje nalaze se u [Vežbi 2](../00_intro/04_database_concepts.md#vežba-2--ispravi-model-voća-i-povrća).
 
 ---
 
@@ -998,19 +1004,24 @@ Možeš dodati blokove sa tipom i imenom atributa, kao i oznake `PK` i `FK`:
 
 ```mermaid
 erDiagram
-    colors |o..o{ fruits : has
+    colors ||..o{ fruits : has
     colors {
         INTEGER ColorId PK
-        TEXT Color
+        TEXT Name
     }
     fruits {
         INTEGER FruitId PK
         TEXT Name
         INTEGER ColorId FK
     }
+    vegetables {
+        INTEGER VegetableId PK
+        TEXT Name
+        INTEGER ColorId FK
+    }
 ```
 
-`PK` i `FK` su ovde oznake u dijagramu, ne naredbe koje menjaju bazu. Da bi dijagram ostao tačan, treba ga uskladiti sa stvarnom SQL šemom.
+Ovo je ponovo **pojednostavljeni model jedne glavne boje**, a ne model sa više boja iz Vežbe 2. `PK` i `FK` su ovde oznake u dijagramu, ne naredbe koje menjaju bazu. Da bi dijagram ostao tačan, treba ga uskladiti sa stvarnom SQL šemom.
 
 Izvor: [Mermaid — Entity Relationship Diagrams](https://mermaid.js.org/syntax/entityRelationshipDiagram.html).
 
@@ -1058,7 +1069,7 @@ Kako povezati tabelu `albums` sa SQLAlchemy i Pydantic pojmovima i prikazati tok
 
 Detaljna rešenja nalaze se u [Vežbama 4 i 5](../00_intro/04_database_concepts.md): `Album` je ilustrativni ORM model, `AlbumResponse` je zasebna API šema, a dijagram opisuje zamišljeni POST zahtev od validacije do potvrđenog upisa i odgovora. To nije postojeći TodoApp endpoint.
 
-Pregledao sam i vežbe 1–3. U Vežbi 1 ispravio sam primer reda i uklonio `ALTER TABLE ... ADD PRIMARY KEY`, koji SQLite ne podržava. U Vežbi 2 uskladio sam dijagram sa FK kolonama koje dozvoljavaju `NULL` i dopunio objašnjenje promene naziva boje. Vežba 3 već je dopunjena opisima ključeva i međutabele.
+Pregledao sam i vežbe 1–3. U Vežbi 1 ispravio sam primer reda i uklonio `ALTER TABLE ... ADD PRIMARY KEY`, koji SQLite ne podržava. Vežba 2 je kasnije prepravljena za više boja po zapisu; vidi [Vežbu 2](../00_intro/04_database_concepts.md#vežba-2--ispravi-model-voća-i-povrća). Vežba 3 dopunjena je opisima ključeva i međutabele.
 
 Ilustrativni ORM model i Pydantic pretvaranje provereni su nad Chinook bazom u režimu samo za čitanje; vežba 5 opisuje tok, a ne pokretanje novog endpoint-a.
 
