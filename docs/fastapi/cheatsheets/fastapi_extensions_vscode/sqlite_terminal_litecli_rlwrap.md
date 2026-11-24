@@ -107,12 +107,14 @@ INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
 Ovo je i dalje zvanični `sqlite3`. `-readonly` je opcija za `sqlite3`, a prethodne opcije pripadaju `rlwrap`-u:
 
 - `-a` omogućava `rlwrap`-ovo uređivanje ulaza i kada pokrenuti program sam uređuje linije.
+
 - `-N` pomaže da `rlwrap` ne ometa programe poput pozvanog editora ili pagera.
 - `-c` uključuje dovršavanje putanja i omogućava da tačka bude deo reči za dovršavanje.
 
 - `-i` omogućava dovršavanje bez razlikovanja velikih i malih slova; mora da stoji pre `-f`. Ne preoblikuje nužno već uneta slova.
 
 - `-A` je opcija za `rlwrap`: pomaže mu da pravilno računa širinu obojenog prompta koji sadrži ANSI sekvence.
+
 - `-f` učitava našu listu reči; to **nije** automatski spisak svih SQLite komandi ili naziva tabela.
 
 - `-cmdline-edit off` je opcija za **SQLite CLI 3.54.1**, ne za `rlwrap`: isključuje SQLite-ov interni editor linije, dok uređivanje i Tab dovršavanje preuzima `rlwrap`. U izolovanom terminalskom testu to sprečava stepenasto ispisivanje liste predloga. Proveri `sqlite3 --help` ako koristiš drugu verziju, jer možda nema ovu opciju.
@@ -336,6 +338,7 @@ Za izvoz i `.dump` prati konkretnu lekciju i koristi posebna nova imena fajlova.
 - **`litecli: command not found`:** iz korena projekta aktiviraj `source .venv/bin/activate`, pa proveri `command -v litecli`. Instalacija je u ovom `.venv`-u, ne u svakom terminalu ili Python okruženju.
 
 - **Tab ne dovršava `.databases` u `rlwrap`-u:** proveri da si pokrenuo komandu iz odeljka 4 i da fajl liste postoji: `ls -l ~/.config/sqlite-cli/sqlite3-completions`. Proveri da sadrži `.databases`, izađi i ponovo pokreni komandu. Sam `rlwrap sqlite3 ...` nije dovoljan da garantuje ovaj rezultat.
+
 - **Predlozi se ispisuju stepenasto:** u SQLite CLI 3.54.1 probaj komandu iz odeljka 4, sa `-cmdline-edit off` iza `sqlite3` i `-A` među opcijama `rlwrap`-a. Kombinacija je proverena u izdvojenom testu i korisnik je potvrdio poravnanje u svom VS Code terminalu. Ako problem ostane, zabeleži šta se dogodilo umesto da menjaš globalna terminalska podešavanja.
 
 - **Prazna baza ili nema tabela:** proveri `pwd` u Bash-u i `.databases` u SQLite CLI-ju. Pogrešna putanja može napraviti novu praznu bazu; za pregled koristi `-readonly`. Nemoj automatski brisati niti prepisivati fajlove.
