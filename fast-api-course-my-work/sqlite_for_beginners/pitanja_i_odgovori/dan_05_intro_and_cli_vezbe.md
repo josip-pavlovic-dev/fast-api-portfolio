@@ -18,8 +18,8 @@ Radni fajlovi **ne zamenjuju** `litecli`, `rlwrap` ili SQLite CLI. Oni zamenjuju
 
 Fajlovi `.txt` u ovom folderu služe za **SQLite CLI komande**, uputstva i beleške. Mogu sadržati:
 
-- dot-komande koje počinju tačkom, npr. `.databases`, `.tables`, `.schema`;
-- SQL naredbe koje se unose u SQLite CLI i završavaju sa `;`;
+- dot-komande koje počinju tačkom, npr. `.databases`, `.tables`, `.schema`
+- SQL naredbe koje se unose u SQLite CLI i završavaju sa `;`
 - komentare koji opisuju očekivani rezultat ili upozorenje.
 
 Dot-komande nisu SQL, pa ovaj fajl pokreći u **SQLite CLI-ju**, ne kao SQL upit. Na primer, iz korena repozitorijuma:
@@ -28,7 +28,9 @@ Dot-komande nisu SQL, pa ovaj fajl pokreći u **SQLite CLI-ju**, ne kao SQL upit
 .read fast-api-course-my-work/sqlite_for_beginners/playground/cli/01_what_is_sqlite3_tool.txt
 ```
 
-`.read` je dot-komanda: unosi se nakon što si već pokrenuo `sqlite3` i vidiš SQLite prompt. Ona učitava fajl red po red u **trenutnoj konekciji**. Pročitaj sadržaj pre pokretanja, jer `.read` izvršava sve komande u njemu. Ako fajl sadrži samo komentare, neće biti vidljivog izlaza.
+`.read` je dot-komanda: **unosi se nakon što si već pokrenuo `sqlite3` i vidiš SQLite prompt**. Ova komanda učitava fajl red po red u **trenutnoj konekciji nad bazom (npr. `:memory:` ili fajl-bazom) sa kojom je konekcija preko SQLite CLI-ja uspostavljena**. Pročitaj sadržaj pre pokretanja, jer `.read` izvršava sve komande u njemu. Ako fajl sadrži samo komentare, neće biti vidljivog izlaza.
+
+---
 
 ### `playground/sql/00_intro/` — SQL rešenja za uvodne lekcije
 
@@ -40,9 +42,11 @@ Fajlovi `.sql` odgovaraju lekcijama u `00_intro/`. U njih upisuješ SQL upite i 
    .read fast-api-course-my-work/sqlite_for_beginners/playground/sql/00_intro/01_what_is_sqlite.sql
    ```
 
-2. **SQLTools:** poveži ekstenziju sa odgovarajućom bazom, otvori `.sql` fajl i pokreni označeni `-- @block` ili selektovani SQL upit. Ovo je pogodno za samostalne upite za čitanje. Skripte koje zavise od redosleda stanja konekcije, kao što su `ATTACH`/`DETACH` u fajlu 02, pokreni kao celinu iz SQLite CLI-ja. Fajl 04 sadrži `CREATE TABLE` i `INSERT`, zato ga nemoj pokretati kroz SQLTools konekciju ka Chinook-u.
+2. **SQLTools:** poveži ekstenziju sa odgovarajućom bazom, otvori `.sql` fajl i pokreni označeni `-- @block` ili selektovani SQL upit. Ovo je pogodno za samostalne upite za čitanje. Skripte koje zavise od redosleda stanja konekcije, kao što su `ATTACH`/`DETACH` u fajlu 02, **pokreni kao celinu** iz SQLite CLI-ja. Fajl 04 sadrži `CREATE TABLE` i `INSERT`, zato ga nemoj pokretati kroz SQLTools konekciju ka Chinook-u.
 
 Sam nastavak `.sql` **ne** pokreće fajl i ne čini ga automatski bezbednim. Pročitaj komande pre izvršavanja. `SELECT` i `PRAGMA` provere iz prvih lekcija su namenjene pregledu; `CREATE`, `INSERT`, `UPDATE` i `DELETE` menjaju bazu.
+
+---
 
 ### SQLTools konekcija i vizuelni pregled baze
 
@@ -60,11 +64,16 @@ U [02_attaching_sample_database_to_sqlite.sql](../playground/sql/00_intro/02_att
 Možeš i da koristiš ekstenziju koja prikazuje tabele i redove vizuelno:
 
 1. Otvori bazu u njenom Explorer/Viewer panelu.
+
 2. Proveri **ime i punu putanju fajla** pre nego što tumačiš prikazane tabele.
+
 3. Proširi tabelu, na primer `albums`, i pregledaj kolone i redove. Koristi ovo kao vizuelnu proveru; za zadatke i ponovljive rezultate i dalje sačuvaj SQL upit u `.sql` fajlu.
+
 4. Nemoj menjati ćelije ili šemu tokom ovog ponavljanja; ostani na pregledu.
 
-Na tvojim slikama SQLTools konektor je nazvan `ChinookPractice`, dok je otvoreni Viewer tab nazvan `chinook_restore.db`. Imena su različita, zato nemoj pretpostaviti da prikazuju isti fajl: uporedi punu putanju svakog konektora. Viewer prikazuje **13** tabela, među kojima su `sqlite_sequence` i `sqlite_stat1`; to su SQLite pomoćne/system tabele. Ostalih **11** su Chinook tabele koje se broje u vežbi. Zato broj u Viewer-u može biti veći od broja korisničkih tabela prikazanog u CLI-ju.
+Na tvojim slikama SQLTools konektor je nazvan `ChinookPractice`, dok je otvoreni Viewer tab nazvan `chinook_restore.db`. Imena su različita, zato nemoj pretpostaviti da prikazuju isti fajl: uporedi punu putanju svakog konektora. Viewer prikazuje **13** tabela, među kojima su `sqlite_sequence` i `sqlite_stat1`; to su SQLite pomoćne/system tabele koje služe internim mehanizmima SQLite-a i ne računaju se kao korisničke tabele. Ostalih **11** su Chinook tabele koje se broje u vežbi i predstavljaju stvarni sadržaj baze. One se vide u CLI-ju bez pomoćnih tabela. Zato broj u Viewer-u može biti veći od broja korisničkih tabela prikazanog u CLI-ju.
+
+---
 
 ### Da li da koristim `litecli` ili `rlwrap`?
 
@@ -117,9 +126,12 @@ Napomena o imenima: `playground/cli/01_what_is_sqlite3_tool.txt` odgovara lekcij
 
 1. Iz korena repozitorijuma otvori radnu kopiju `chinook_practice.db` sa `-readonly` za vežbe čitanja.
 2. Proveri `.databases`, a zatim `.tables`; nemoj pretpostaviti da je baza ispravna samo zato što je prompt otvoren.
+
 3. SQL upite i rešenja sačuvaj u odgovarajućem `.sql` fajlu. Dot-komande i terminalska zapažanja stavi u `.txt` fajl ili dnevnik.
+
 4. Pre `.read`, otvori fajl i pregledaj sve njegove naredbe. `.read` može izvršiti i naredbe koje menjaju bazu.
 5. Vežbu koja pravi tabele, kao što je model voća i boja, izvršavaj u novoj `:memory:` konekciji ili pažljivo izabranom novom sandbox fajlu — nikada u Chinook bazi.
+
 6. Ne pokreći TodoApp samo radi provere putanje bez provere radnog direktorijuma i baze: inicijalizacija aplikacije poziva `create_all()` i može napraviti nedostajuće tabele.
 
 ---
@@ -127,6 +139,8 @@ Napomena o imenima: `playground/cli/01_what_is_sqlite3_tool.txt` odgovara lekcij
 ## 3. Rešenja vežbi — `00_intro/01_what_is_sqlite.md`
 
 Radni fajl: [01_what_is_sqlite.sql](../playground/sql/00_intro/01_what_is_sqlite.sql). U njemu su već pripremljeni bezbedni SQL upiti i objašnjenja; CLI dot-komande iz vežbe pokreću se u SQLite promptu.
+
+---
 
 ### Vežba 1 — Pronađi Chinook bazu
 
@@ -145,6 +159,8 @@ Ako želiš uređivanje i Tab dovršavanje, koristi komandu `rlwrap` iz odeljka 
 ```
 
 `main` treba da pokazuje na `playground/databases/chinook_practice.db` i `r/o`. `.tables` treba da prikaže Chinook tabele kao što su `artists`, `albums`, `tracks`, `customers` i `invoices`. U ovoj vežbi koristi se kopija, a ne originalni `chinook/chinook.db`.
+
+---
 
 ### Vežba 2 — Istraži šemu
 
@@ -166,6 +182,8 @@ Pročitaj ključne delove:
 
 ERD daje pregled odnosa i kardinalnosti. SQL šema definiše konkretne kolone, ključeve, `NOT NULL` i ponašanje poput `ON DELETE NO ACTION`. Zbog toga ERD i šemu treba čitati zajedno; dijagram može izostaviti detalje ograničenja.
 
+---
+
 ### Vežba 3 — Verzija i strani ključevi
 
 U konekciji čiji rezultat želiš da proveriš:
@@ -175,13 +193,19 @@ SELECT sqlite_version();
 PRAGMA foreign_keys;
 ```
 
-Zabeleži prikazanu verziju; ona zavisi od SQLite biblioteke koju koristi taj klijent. `PRAGMA foreign_keys` vraća `1` ako su provere uključene u toj konekciji i `0` ako nisu. Nemoj unapred upisivati očekivanu vrednost: CLI, SQLTools i aplikacija mogu koristiti različite konekcije/podešavanja. To je per-connection postavka.
+Zabeleži prikazanu verziju; ona zavisi od SQLite biblioteke koju koristi taj klijent. `PRAGMA foreign_keys` vraća `1` ako su provere uključene u toj konekciji i `0` ako nisu. Nemoj unapred upisivati očekivanu vrednost: `CLI`, `SQLTools` i aplikacija mogu koristiti različite konekcije/podešavanja. To je per-connection postavka i važi samo za trenutnu konekciju.
+
+---
 
 ### Vežba 4 — Izaberi bazu za scenario
 
-1. **Lična kolekcija muzike na jednom računaru:** SQLite je razuman, jednostavan izbor za lokalni fajl i mali broj upisa.
-2. **Lokalni FastAPI testovi na jednom računaru:** SQLite je često praktičan za brze, izolovane testne baze. Ako produkcija koristi drugu bazu, deo testova treba pokretati i na toj bazi radi provere kompatibilnosti.
-3. **Mnogo istovremenih izmena iz više instanci API-ja:** razmotri klijent-server bazu, npr. PostgreSQL. SQLite može opslužiti više čitalaca, ali pisanja se serijalizuju tako da u jednom trenutku piše jedna konekcija; veća konkurentnost može čekati ili izazvati `database is locked`.
+1. **Lična kolekcija muzike na jednom računaru:** `SQLite` je razuman, jednostavan izbor za lokalni fajl i mali broj upisa.
+
+2. **Lokalni FastAPI testovi na jednom računaru:** `SQLite` je često praktičan za brze, izolovane testne baze. Ako produkcija koristi drugu bazu, deo testova treba pokretati i na toj bazi radi provere kompatibilnosti.
+
+3. **Mnogo istovremenih izmena iz više instanci API-ja:** razmotri klijent-server bazu, npr. `PostgreSQL`. `SQLite` može opslužiti više čitalaca, ali pisanja se serijalizuju tako da u jednom trenutku piše jedna konekcija; veća konkurentnost može čekati ili izazvati `database is locked`.
+
+---
 
 ### Vežba 5 — Putanja podatka kroz FastAPI
 
@@ -203,10 +227,11 @@ flowchart TD
 
 - **FastAPI** prima HTTP zahtev i poziva endpoint.
 - **Pydantic** proverava oblik i tipove ulaznih/izlaznih podataka; sam po sebi ne proverava da li FK vrednost postoji u bazi.
+
 - **SQLAlchemy** upravlja ORM objektima, SQL upitima i transakcijom (`commit`/`rollback`).
 - **SQLite drajver** prenosi naredbe između Python koda i SQLite biblioteke.
 - **SQLite baza** izvršava SQL i čuva potvrđene promene u fajlu.
-- **FastAPI** vrši serijalizaciju odgovora i šalje ga klijentu.
+- **FastAPI** vrši serijalizaciju odgovora i šalje ga klijentu. Pod **serijalizacijom** podrazumeva pretvaranje `Python` objekata u `JSON` format koji se može poslati preko HTTP protokola. **Pydantic** se koristi za validaciju i serijalizaciju podataka, ali ne upravlja direktno bazom. To radi **SQLAlchemy** i drajver baze. Uloga `Pydantic`-a je da osigura da podaci koji **ulaze i izlaze iz FastAPI endpointa** imaju očekivani oblik i tipove.
 
 ---
 
@@ -232,6 +257,8 @@ Zatim u CLI-ju:
 ```
 
 `chinook_practice.db` je glavna baza i u toj konekciji se zove `main`. `.schema albums` treba da prikaže `AlbumId` kao PK i `ArtistId` kao FK ka `artists.ArtistId`. `-readonly` štiti ovu konekciju od pisanja u radnu kopiju.
+
+---
 
 ### Vežba 2 — `ATTACH` kao dodatna baza
 
@@ -270,6 +297,8 @@ DETACH DATABASE chinook;
 
 `DETACH` uklanja bazu iz te konekcije, ali ne briše fajl. `.databases` nakon toga više ne treba da prikazuje `chinook`. Izađi sa `.quit`.
 
+---
+
 ### Vežba 3 — Relativne putanje i direktorijum
 
 Iz korena repozitorijuma:
@@ -288,6 +317,8 @@ sqlite3 -readonly chinook.db
 ```
 
 Relativna putanja se računa prema trenutnom radnom direktorijumu procesa, a ne prema `.md` ili `.sql` fajlu. Promena direktorijuma zato može da učini da ista relativna putanja pokazuje na drugo mesto ili ne postoji. Ako je direktorijum dostupan i upisiv, pogrešna putanja uz običan read-write CLI može napraviti praznu bazu; ako direktorijuma nema ili nema dozvole, otvaranje može pasti. `-readonly` sprečava da se nepostojeći fajl tiho napravi kao baza za pisanje.
+
+---
 
 ### Vežba 4 — Dva toka otvaranja
 
@@ -338,6 +369,8 @@ U CLI-ju:
 
 Očekivano: `main` pokazuje na `chinook_practice.db` i `r/o`; `.tables` prikazuje 11 korisničkih tabela u datoj Chinook kopiji; `.schema albums` prikazuje definiciju albuma. Ako ne odgovara putanja, izađi i ispravi je pre bilo kakvog upisa.
 
+---
+
 ### Vežba 2 — Tri konekcije ka istom fajlu
 
 Ispravan crtež ima **jedan fajl** i **tri odvojene konekcije**:
@@ -354,6 +387,8 @@ flowchart LR
 
 Svaki program zasebno otvara fajl. Tri konekcije nisu jedan zajednički kanal, a fajl ostaje na disku kada se zatvore. Ista imena fajlova nisu dovoljna: putanje moraju voditi do istog fajla. GUI profil je podešavanje, ne aktivna konekcija. SQLAlchemy može uzimati konekcije iz pool-a po potrebi; ne treba crtati da jedna konekcija obavezno traje koliko i cela aplikacija.
 
+---
+
 ### Vežba 3 — Pogrešna putanja
 
 U Bash-u proveri direktorijum sa `pwd`. Ako otvoriš `chinook.db` pogrešnom relativnom putanjom, SQLite može da napravi **novu praznu bazu** ako odredišni direktorijum postoji i ima dozvole za pisanje. Ako direktorijum ne postoji, nema dozvole ili sesija je read-only, otvaranje može dati grešku umesto da napravi fajl.
@@ -367,6 +402,8 @@ U CLI-ju proveri:
 
 `.databases` prikazuje putanju otvorene baze. `.tables` daje dodatni trag: prazna lista može značiti novu praznu bazu, ali sama po sebi ne dokazuje zašto nema tabela.
 
+---
+
 ### Vežba 4 — CLI i GUI
 
 | Pitanje              | CLI                                            | GUI alat                                                |
@@ -375,6 +412,8 @@ U CLI-ju proveri:
 | Pregled tabela       | `.tables`                                      | Lista tabela u panelu alata                             |
 | Zatvaranje konekcije | `.quit` ili `.exit`                            | Disconnect ili zatvaranje konekcije/profila prema alatu |
 | Da li se fajl briše? | Ne; zatvara se CLI konekcija, fajl ostaje      | Ne; zatvara se GUI konekcija, fajl ostaje               |
+
+---
 
 ### Vežba 5 — FastAPI TodoApp
 
@@ -439,6 +478,8 @@ Za primer voća sa jednom glavnom bojom:
 
 Celovit red: `FruitId = 1, Name = 'Apple', ColorId = 1`. PK nije nužno naziv: `FruitId` je stabilan identifikator. `Name` možda nije jedinstven, na primer ako se više sorti čuva kao zasebni redovi. Broj `ColorId` je veza samo ako je FK definisan i provera stranih ključeva uključena; ID sam po sebi ne proverava da roditeljski red postoji.
 
+---
+
 ### Vežba 2 — Voće i povrće sa više boja
 
 Ponovljeni tekstovi poput `Red` u kolonama ne stvaraju sami po sebi vezu niti sprečavaju typo-e (`Red`, `Redd`). Tabela `colors` i FK ograničenja daju jedan autoritativan zapis boje, a povezničke tabele omogućavaju više boja po voću/povrću.
@@ -470,6 +511,8 @@ erDiagram
 ```
 
 `o{` označava da je dozvoljeno nula ili više veza sa roditeljske strane; zato dijagram prikazuje šta šema stvarno dopušta, ne poslovnu želju da svako voće ima boju.
+
+---
 
 ### Vežba 3 — Relacije u Chinook-u
 
@@ -519,6 +562,8 @@ LIMIT 3;
 
 Prvi upit nalazi albume bez povezanih numera; drugi numere bez zabeleženog albuma; treći prikazuje tri numere iz plejliste 1. Poslednji `ORDER BY TrackId` daje stabilan prikaz, ne tvrdi da model čuva redosled numera.
 
+---
+
 ### Vežba 4 — Poveži Chinook sa ORM pojmovima
 
 | Pojam              | Primer                                                                                                                     |
@@ -561,6 +606,8 @@ class AlbumResponse(BaseModel):
 
 Klasa mapira tabelu; instanca predstavlja jedan zapis. Samo pravljenje Python objekta ne upisuje ga u bazu. `ForeignKey` opisuje baznu vezu; ORM `relationship()` je drugi, opciono dodati mehanizam za navigaciju između objekata. Ovaj skraćeni primer pretpostavlja da je tabela `artists` takođe definisana ili reflektovana kada se kompletna šema pravi.
 
+---
+
 ### Vežba 5 — Putanja podatka
 
 ```mermaid
@@ -592,3 +639,264 @@ Pre nego što završiš, probaj bez gledanja u rešenja da odgovoriš:
 4. Da li `.tables` SQL naredba? **Ne**, to je SQLite CLI dot-komanda.
 5. Da li dve konekcije sa istim nazivom `chinook.db` sigurno vide isti fajl? **Ne** — moraju imati istu putanju.
 6. Da li treba praviti tabele iz Vežbe 2 u Chinook-u? **Ne** — koristi novu `:memory:` sesiju.
+
+---
+
+## Pitanje — Zašto Viewer prikazuje SQLite interne tabele, a `.tables` ne?
+
+To ne mora značiti da Viewer i SQLite CLI gledaju različite šeme. Uobičajena SQLite CLI komanda `.tables` po podrazumevanom prikazu izostavlja interne tabele čija imena počinju sa `sqlite_`. Mnogi Viewer-i, nasuprot tome, prikazuju sve objekte koje pronađu u SQLite katalogu `sqlite_schema`, uključujući i interne. Zato se `sqlite_sequence` i `sqlite_stat1` mogu videti u Viewer-у, a ne pojaviti u običnom `.tables` izlistavanju.
+
+- **`sqlite_sequence`** SQLite interno održava za tabele koje koriste `INTEGER PRIMARY KEY AUTOINCREMENT`. U njoj se čuva poslednja dodeljena sekvencijalna vrednost.
+
+- **`sqlite_stat1`** čuva statistiku koju SQLite optimizer može koristiti pri izboru plana upita; obično nastaje kada se nad bazom izvrši `ANALYZE`.
+
+Možeš ih eksplicitno proveriti iz SQLite CLI-ja:
+
+```sql
+SELECT name, type
+FROM sqlite_schema
+WHERE name GLOB 'sqlite_*'
+ORDER BY name;
+```
+
+Ili pregledati sve tabele, uključujući SQLite interne, pomoću:
+
+```sql
+PRAGMA table_list;
+```
+
+Za prikaz definicije pojedinačne interne tabele, `.schema` može dobiti njeno ime:
+
+```text
+.schema sqlite_sequence
+.schema sqlite_stat1
+```
+
+U `Viewer`-u sa tvoje slike videlo se ukupno 13 tabela: 11 Chinook tabela i dve interne. Broj „11 tabela“ u vežbi odnosi se na korisničke Chinook tabele, ne na svaki objekat koji SQLite čuva u katalogu. Napomena: da li se interni objekti prikazuju u GUI-ju zavisi od načina na koji je konkretna ekstenzija napravljena; `.tables` podrazumevano skriva ih iz svog uobičajenog prikaza.
+
+---
+
+## Pitanje — Šta predstavlja `sqlite_schema`, šta znači `GLOB` i koji su SQLite tipovi podataka?
+
+### 1. Šta je `sqlite_schema`?
+
+`sqlite_schema` je SQLite-ov **katalog šeme**: posebna sistemska tabela koja opisuje objekte napravljene u bazi. Ona ne sadrži uobičajene redove poput albuma ili umetnika; sadrži metapodatke o tabelama, indeksima, pogledima i okidačima. Starije ime za isti katalog je `sqlite_master`.
+
+Upit iz priloženog izlaza:
+
+```sql
+SELECT * FROM sqlite_schema;
+```
+
+čita sve kolone i sve objekte koje katalog prikazuje za tu bazu. `*` znači „vrati sve kolone“, a ne „sve redove“ sam po sebi. U tvom rezultatu SQLTools je prikazao:
+
+| Kolona     | Šta predstavlja                                                                                                                                                  | Primer iz izlaza                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `type`     | Vrstu objekta: `table`, `index`, `view` ili `trigger`. To je tekst, a ne SQL tip podatka koji bi se dodelio koloni neke tvoje tabele.                            | `table`, `index`                                                  |
+| `name`     | Ime objekta.                                                                                                                                                     | `albums`, `sqlite_sequence`, `IFK_AlbumArtistId`                  |
+| `tbl_name` | Tabelu sa kojom je objekat povezan. Kod indeksa je to tabela koju indeks ubrzava; kod tabele je to obično njeno ime.                                             | Indeks `IFK_AlbumArtistId` ima `tbl_name = albums`.               |
+| `rootpage` | Broj korenske stranice u SQLite fajlu za tabelu ili indeks. To je detalj fizičkog skladištenja, ne ID reda i ne nešto što obično treba ručno menjati.            | `albums` ima `2`; indeks ima `156`.                               |
+| `sql`      | SQL definicija kojom je objekat napravljen, poput `CREATE TABLE` ili `CREATE INDEX`. Može biti `NULL` za indeks koji SQLite napravi automatski radi ograničenja. | `CREATE TABLE "albums" ...`; automatski indeks može imati `NULL`. |
+
+Zato je u priloženom rezultatu `albums` red tipa `table`, dok je `IFK_AlbumArtistId` tipa `index`. Red `sqlite_autoindex_playlist_track_1` je indeks koji SQLite automatski pravi zbog primarnog/unikatnog ograničenja; njegovo `sql` polje je `NULL`, jer nije nastao iz zasebne korisničke `CREATE INDEX` naredbe.
+
+Katalog je koristan za **pregled** šeme, na primer:
+
+```sql
+SELECT type, name, tbl_name, rootpage, sql
+FROM sqlite_schema
+WHERE name = 'albums';
+```
+
+Za strukturu tabele možeš koristiti i `.schema albums` u SQLite CLI-ju ili `PRAGMA table_info(albums);`. Uobičajen rad je da šemu menjaš sa `CREATE`, `ALTER` i `DROP` naredbama, a ne direktnim `INSERT`, `UPDATE` ili `DELETE` nad `sqlite_schema`.
+
+---
+
+### 2. Šta znači `GLOB`?
+
+`GLOB` je **SQL operator za poređenje teksta sa šablonom**. Nije tabela, tip podatka niti promenljiva. Naziv potiče od `glob`-šablona (patterna sa zvezdicom `*` i drugim specijalnim znakovima) koji se često koriste za pronalaženje naziva fajlova u fajl sistemu, **ali SQLite `GLOB` poredi tekst u upitu i sam po sebi ne pretražuje fajl sistem**.
+
+U upitu:
+
+```sql
+SELECT name, type
+FROM sqlite_schema
+WHERE name GLOB 'sqlite_*'
+ORDER BY name;
+```
+
+- `name` je kolona čija se tekstualna vrednost proverava.
+- `GLOB` je operator za poređenje teksta sa šablonom.
+- `'sqlite_*'` je tekstualni šablon u navodnicima.
+- `sqlite_` mora se pojaviti doslovno na početku; `*` poklapa nula ili više bilo kojih znakova nakon tekstualnog prefiksa. Validni primeri su `sqlite_sequence`, `sqlite_stat1` i `sqlite_autoindex_playlist_track_1` ali i `sqlite_` sam po sebi. Nije validno `xsqlite_` jer prefiks `sqlite_` nije na početku, niti `sqlite` bez `_` posle njega.
+
+Zato se poklapaju nazivi poput `sqlite_sequence`, `sqlite_stat1` i `sqlite_autoindex_playlist_track_1`. U upitu `type` ostaje vrednost vrste objekta (`table` ili `index`). GLOB samo bira redove na osnovu vrednosti `name` u tabeli.
+
+```sql
+╭─────┬─────────────────────────────────┬───────────────┬────────┬────────────────────────────────────────╮
+│type │              name               │   tbl_name    │rootpage│                  sql                   │
+╞═════╪═════════════════════════════════╪═══════════════╪════════╪════════════════════════════════════════╡
+│table│             albums              │    albums     │   2    │CREATE TABLE "albums"                   │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [AlbumId] INTEGER PRIMARY KEY       │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Title] NVARCHAR(160)  NOT NULL,    │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│        sqlite_sequence          │sqlite_sequence│   3    │CREATE TABLE sqlite_sequence(name,seq)  │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│            artists              │    artists    │   7    │CREATE TABLE "artists"                  │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [ArtistId] INTEGER PRIMARY KEY      │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Name] NVARCHAR(120)                │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│           customers             │    customers    │   10   │CREATE TABLE "customers"                │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [CustomerId] INTEGER PRIMARY KEY    │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [FirstName] NVARCHAR(40)  NOT NULL, │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│           employees              │    employees    │   13   │CREATE TABLE "employees"                │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [EmployeeId] INTEGER PRIMARY KEY    │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [LastName] NVARCHAR(20)  NOT NULL,  │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│            genres               │    genres     │   14   │CREATE TABLE "genres"                   │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [GenreId] INTEGER PRIMARY KEY       │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Name] NVARCHAR(120)                │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│            invoices             │    invoices   │   15   │CREATE TABLE "invoices"                 │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [InvoiceId] INTEGER PRIMARY KEY     │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [CustomerId] INTEGER  NOT NULL,     │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│          invoice_items          │ invoice_items │   25   │CREATE TABLE "invoice_items"            │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [InvoiceLineId] INTEGER PRIMARY KEY │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [InvoiceId] INTEGER  NOT NULL,      │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│           media_types           │  media_types  │   39   │CREATE TABLE "media_types"              │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [MediaTypeId] INTEGER PRIMARY KEY   │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Name] NVARCHAR(120)                │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│           playlists             │   playlists   │   40   │CREATE TABLE "playlists"                │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [PlaylistId] INTEGER PRIMARY KEY    │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Name] NVARCHAR(120)                │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│        playlist_track           │playlist_track │   41   │CREATE TABLE "playlist_track"           │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [PlaylistId] INTEGER  NOT NULL,     │
+│     │                                 │               │        │    [TrackId] INTEGER  NOT NULL,        │
+│     │                                 │               │        │    CONSTRAINT [PK_PlaylistTrack]       │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│sqlite_autoindex_playlist_track_1│playlist_track │   42   │NULL                                    │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│           tracks                │    tracks     │   95   │CREATE TABLE "tracks"                   │
+│     │                                 │               │        │(                                       │
+│     │                                 │               │        │    [TrackId] INTEGER PRIMARY KEY       │
+│     │                                 │               │        │AUTOINCREMENT NOT NULL,                 │
+│     │                                 │               │        │    [Name] NVARCHAR(200)  NOT NULL,     │
+│     │                                 │               │        │...                                     │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│table│       sqlite_stat1              │sqlite_stat1   │   155  │CREATE TABLE sqlite_stat1(tbl,idx,stat) │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_AlbumArtistId            │albums         │   156  │CREATE INDEX [IFK_AlbumArtistId] ON     │
+│     │                                 │               │        │"albums" ([ArtistId])                   │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_CustomerSupportRepId     │customers      │   157  │CREATE INDEX [IFK_CustomerSupportRepId] │
+│     │                                 │               │        │ON "customers" ([SupportRepId])         │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_EmployeeReportsTo        │employees      │   158  │CREATE INDEX [IFK_EmployeeReportsTo] ON │
+│     │                                 │               │        │"employees" ([ReportsTo])               │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_InvoiceCustomerId        │invoices       │   159  │CREATE INDEX [IFK_InvoiceCustomerId] ON │
+│     │                                 │               │        │"invoices" ([CustomerId])               │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_InvoiceLineInvoiceId     │invoice_items  │   160  │CREATE INDEX [IFK_InvoiceLineInvoiceId] │
+│     │                                 │               │        │ON "invoice_items" ([InvoiceId])        │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│    IFK_InvoiceLineTrackId       │invoice_items  │   167  │CREATE INDEX [IFK_InvoiceLineTrackId] ON│
+│     │                                 │               │        │"invoice_items" ([TrackId])             │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│   IFK_PlaylistTrackTrackId      │playlist_track │   174  │CREATE INDEX [IFK_PlaylistTrackTrackId] │
+│     │                                 │               │        │ON "playlist_track" ([TrackId])         │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│       IFK_TrackAlbumId          │   tracks      │   197  │CREATE INDEX [IFK_TrackAlbumId] ON      │
+│     │                                 │               │        │"tracks" ([AlbumId])                    │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│       IFK_TrackGenreId          │    tracks     │   207  │CREATE INDEX [IFK_TrackGenreId] ON      │
+│     │                                 │               │        │"tracks" ([GenreId])                    │
+├─────┼─────────────────────────────────┼───────────────┼────────┼────────────────────────────────────────┤
+│index│     IFK_TrackMediaTypeId        │    tracks     │   216  │CREATE INDEX [IFK_TrackMediaTypeId] ON  │
+│     │                                 │               │        │"tracks" ([MediaTypeId])                │
+╰─────┴─────────────────────────────────┴───────────────┴────────┴────────────────────────────────────────╯
+```
+
+Glavni džokeri za SQLite `GLOB` su:
+
+| Znak u šablonu | Značenje                                 | Primer                                                          |
+| -------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| `*`            | Nula ili više znakova.                   | `'sqlite_*'` poklapa bilo koji tekst koji počinje sa `sqlite_`. |
+| `?`            | Tačno jedan znak.                        | `'track?'` poklapa `track1`, ali ne `track10`.                  |
+| `[abc]`        | Jedan znak iz navedenog skupa.           | `'[at]able'` poklapa `aable` ili `table`.                       |
+| `[a-z]`        | Jedan znak iz opsega.                    | `'[a-z]*'` poklapa tekst koji počinje malim ASCII slovom.       |
+| `[^abc]`       | Jedan znak koji nije iz navedenog skupa. | `'[^a-z]*'` poklapa tekst koji ne počinje malim ASCII slovom.   |
+
+`GLOB` je po pravilu **osetljiv na velika i mala slova**: `sqlite_*` ne poklapa `SQLite_*`. Za poređenje velikih i malih slova ne koristi se isto ponašanje kao kod Python promenljivih; to je osobina tekstualnog poređenja.
+
+`LIKE` takođe poredi tekst sa šablonom, ali koristi druge džokere: `%` znači nula ili više znakova, a `_` tačno jedan znak. Pošto je `_` u `LIKE` džoker, za isti doslovni prefiks `sqlite_` možeš ga escape-ovati:
+
+```sql
+name GLOB 'sqlite_*'
+```
+
+približno odgovara:
+
+```sql
+name LIKE 'sqlite!_%' ESCAPE '!'
+```
+
+Ovde je `_` doslovna podvlaka, a `%` poklapa ostatak. `GLOB` i `LIKE` imaju različite šablone i pravila poređenja. Uvek vodi računa o tome kada biraš koji operator da koristiš, jer se ponašanje džokera i osetljivost na velika i mala slova razlikuju.
+
+**NAPOMENA** UKod MySQL-a i PostgreSQL-a operator `LIKE` je po pravilu **neosetljiv na velika i mala slova**, dok je `GLOB` specifičan za SQLite i osetljiv na velika i mala slova. Ovo je važno imati na umu kada se prebacuješ između različitih SQL sistema!
+
+---
+
+### 3. Koji su tipovi podataka u SQLite-u?
+
+Važno je razlikovati **tip skladištenja konkretne vrednosti** od **tipa/afiniteta kolone**:
+
+1. SQLite vrednost se čuva u jednoj od pet osnovnih storage klasa:
+
+   | Storage klasa | Šta predstavlja                                 | Primer      |
+   | ------------- | ----------------------------------------------- | ----------- |
+   | `NULL`        | Nedostajuću ili nepoznatu vrednost.             | `NULL`      |
+   | `INTEGER`     | Ceo broj.                                       | `42`        |
+   | `REAL`        | Broj sa pokretnim zarezom.                      | `3.14`      |
+   | `TEXT`        | Tekstualni niz.                                 | `'Chinook'` |
+   | `BLOB`        | Bajtove koji se čuvaju bez tumačenja kao tekst. | `X'4142'`   |
+
+2. Deklaracija u `CREATE TABLE`, kao što je `Title NVARCHAR(160)`, daje koloni **afinitet** i opis namere. SQLite je fleksibilan i u običnim tabelama može čuvati različite storage klase u istoj koloni, uz pravila konverzije afiniteta. Zato `NVARCHAR(160)` ne funkcioniše baš kao strogo ograničenje od 160 znakova u nekim drugim bazama.
+
+SQLite ima pet afiniteta kolona: `INTEGER`, `TEXT`, `BLOB`, `REAL` i `NUMERIC`. Afinitet se izvodi iz deklarisanog tipa. Na primer, `NVARCHAR(160)` dobija `TEXT` afinitet, `INTEGER` dobija `INTEGER`, a `DECIMAL(10,2)` dobija `NUMERIC`. Afinitet nije isto što i storage klasa vrednosti koja se trenutno nalazi u ćeliji.
+
+U `sqlite_schema` su, pojednostavljeno, `type`, `name`, `tbl_name` i `sql` tekstualna polja, dok je `rootpage` celobrojno polje; `sql` može biti `NULL`. Ove kolone kataloga imaju tipove, dok tekstualne vrednosti unutar kolone `type` (`table`, `index` itd.) opisuju **vrstu objekta**. To su dve različite upotrebe reči „tip“.
