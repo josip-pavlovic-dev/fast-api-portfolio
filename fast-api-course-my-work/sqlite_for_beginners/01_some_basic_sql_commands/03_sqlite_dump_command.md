@@ -57,6 +57,10 @@ INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
   sqlite3 -cmdline-edit off -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
+`INPUTRC` (engl. **input resource configuration**) je **promenljiva okruženja** koja pokazuje na fajl sa **konfiguracijom** (obično `~/.inputrc`) za `readline` biblioteku koja je povezana sa komandnom linijom (`cmdline interface`), koju `rlwrap` koristi za **napredno uređivanje komandne linije i dopunjavanje komandi**. U ovom slučaju, postavlja se na **korisnički specifičan fajl konfiguracije za SQLite CLI** (`$HOME/.config/sqlite-cli/sqlite3-inputrc`), čime se omogućava prilagođeno ponašanje komandne linije specifično za SQLite interaktivnu sesiju, bez uticaja na globalnu konfiguraciju `readline` biblioteke.
+
+`sqlite3-inputrc` je korisnički specifičan fajl za konfiguraciju `readline` biblioteke u kontekstu SQLite CLI-ja. To je fajl koji definiše kako se ponaša uređivanje komandne linije, dopunjavanje komandi i druge interaktivne funkcionalnosti. Kreiramo ga **mi** lično, kako bismo prilagodili ponašanje komandne linije prema našim potrebama i unapredili interaktivno iskustvo u SQLite CLI-ju.
+
 `rlwrap` predstavlja dodatni sloj (`readline wrapper` za komandnu liniju) koji omogućava napredno uređivanje i dopunjavanje komandne linije na `tab` taster, kao i istoriju komandi i kretanje po liniji uz strelice, ali se `dot-komande` i dalje izvršavaju u `sqlite3 CLI`-ju. `rlwrap` sam po sebi ne menja ponašanje SQLite CLI-ja, već samo poboljšava interaktivno iskustvo u terminalu.
 
 `-cmdline-edit` je opcija SQLite CLI-ja koja kontroliše ponašanje internog editora komandne linije. Kada se postavi na `off`, SQLite-ov interni editor se isključuje u toj sesiji, što omogućava spoljnim alatima kao što je `rlwrap` da preuzmu kontrolu nad uređivanjem komandne linije.
@@ -96,6 +100,19 @@ U otvorenom SQLite CLI-ju preusmeri izlaz u prethodno napravljeni folder, pokren
 `.output` stvara ili može prepisati izlazni fajl: **nov folder je zato važan**. Putanja je relativna prema trenutnom direktorijumu iz kojeg je pokrenut CLI, ne prema Markdown fajlu ili fajlu baze. Ako ponavljaš vežbu, izaberi drugo novo ime umesto da prepišeš prethodni dump. Folder mora postojati. Greške proveri na ekranu; ako se pojave, nemoj smatrati dump završenim.
 
 Ovde koristimo `.output` da bi video kako se preusmeravanje uključuje i isključuje. **Ispravka ranije tvrdnje:** u lokalno proverenom SQLite CLI-ju 3.54.1 i `.once fajl.sql` može preusmeriti sledeći `.dump`; sledeći izlaz se zatim vraća na terminal. `.output` ostaje aktivan dok ga ne vratiš na `stdout` ili zatvoriš CLI. Pri korišćenju drugog CLI-ja ili verzije proveri `.help once` i konkretno ponašanje.
+
+**Šta znači „preusmeriti sledeći dump“?** Po podrazumevanju `.dump` ispisuje SQL tekst na ekran. „Preusmeriti“ znači da isti tekst umesto na ekran ode u fajl. `.once` to važi samo za **prvu sledeću komandu koja nešto ispisuje**; posle nje se izlaz sam vraća na ekran:
+
+```text
+.once "putanja/chinook_dump.sql"
+.dump
+.dump
+```
+
+- Prvi `.dump` ispisuje u fajl (na ekranu nema SQL-a).
+- Drugi `.dump` ide normalno na ekran, bez ikakvog `.output stdout`.
+
+Razlika u odnosu na `.output`: `.output fajl` ostaje uključen za sve komande dok ga ne vratiš sa `.output stdout`; `.once fajl` se „sam isključi“ posle jednog izlaza. Zato je `.once` bezbedniji kada želiš da u fajl snimiš samo jedan rezultat, a `.output` kada ih ima više.
 
 Tok izvoza i vraćanja izgleda ovako:
 
@@ -274,6 +291,7 @@ Dump fajl može biti koristan u testiranju ili za deljenje razvojne baze, ali je
 ### Vežba 1 — Napravi puni Chinook dump
 
 1. Iz korena repozitorijuma otvori `chinook_practice.db` sa `rlwrap`-om i `-readonly`, kao u odeljku pripreme.
+
 2. Proveri putanju komandom `.databases`.
 3. U novom folderu preusmeri izlaz u `chinook_dump.sql`, pokreni `.dump`, pa vrati ispis na terminal komandom `.output stdout`.
 
@@ -285,6 +303,7 @@ Dump fajl može biti koristan u testiranju ili za deljenje razvojne baze, ali je
 ### Vežba 2 — Vrati dump u novu bazu
 
 1. U zasebnoj upisivoj sesiji otvori **novi** `dump_vezba_2026_11_24/chinook_restore.db`, nakon provere da cilj ne postoji.
+
 2. Proveri `.databases` i `.tables`, pa učitaj pregledani `chinook_dump.sql` pomoću `.read`.
 3. Proveri `.tables`, `.schema albums`, broj albuma, `PRAGMA integrity_check` i `PRAGMA foreign_key_check`.
 4. Uporedi broj albuma sa radnom kopijom iz koje si napravio dump.
@@ -294,6 +313,7 @@ Dump fajl može biti koristan u testiranju ili za deljenje razvojne baze, ali je
 ### Vežba 3 — Uporedi SQL dump i fajl-kopiju
 
 1. U CLI konekciji otvorenoj nad radnom kopijom pomoću `.backup` napravi novi `dump_vezba_2026_11_24/chinook_copy.db`.
+
 2. Uporedi u VS Code Explorer-u fajlove `chinook_dump.sql` i `chinook_copy.db`.
 3. Za svaki fajl napiši da li je čitljiv SQL tekst ili SQLite fajl baze i kojim postupkom bi ga koristio.
 
@@ -302,8 +322,11 @@ Dump fajl može biti koristan u testiranju ili za deljenje razvojne baze, ali je
 ### Vežba 4 — Istraži ograničeni dump
 
 1. U poseban novi fajl `dump_vezba_2026_11_24/albums_only.sql` preusmeri izlaz komandom `.output`.
+
 2. Izvrši `.dump albums`, pa vrati izlaz na terminal.
+
 3. Pregledaj skriptu i zapiši koje objekte i podatke sadrži.
+
 4. Uporedi je sa punim dump-om i objasni zašto bi za kompletnu obnovu Chinook baze koristio puni `.dump`.
 
 ---

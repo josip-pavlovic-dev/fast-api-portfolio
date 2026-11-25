@@ -219,3 +219,247 @@ Posmatraj Chinook vezu: `albums.ArtistId` upućuje na `artists.ArtistId`. U izvo
 ## 6. Pitanja i odgovori tokom dana
 
 U ovaj odeljak dodavaćemo tvoja naredna pitanja i odgovore, uz proverene primere kada su potrebni. Već pripremljena uputstva i vežbe ostaju u povezanim lekcijama; ovde nećemo nepotrebno umnožavati isti materijal.
+
+### Pitanje 1 — Šta znači `rc` u `inputrc`?
+
+`rc` se istorijski povezuje sa **„run commands”** — „izvrši komande”. Naziv potiče od starog sistema `RUNCOM` za izvršavanje komandi iz fajla. Danas sufiks `rc` često označava konfiguracioni fajl, kao što su `.bashrc` i `.inputrc`.
+
+U nazivu `inputrc`, `input` se odnosi na unos, a fajl sadrži podešavanja za biblioteku **Readline**, koja upravlja uređivanjem komandne linije. Tvoj `sqlite3-inputrc` je zaseban fajl sa tim podešavanjima; promenljiva `INPUTRC` govori Readline-u koji fajl da učita za tu pokrenutu komandu. To nije SQLite baza niti SQL skripta.
+
+Izvor za istoriju naziva: [What does “rc” mean in dot files?](https://stackoverflow.com/questions/11030552/what-does-rc-mean-in-dot-files).
+
+---
+
+### Pitanje 2 — Čemu pripada biblioteka Readline?
+
+**GNU projekat** je slobodni softverski projekat koji razvija razne alate i biblioteke, uključujući i Readline. Projekat je poznat po svom doprinosu slobodnom softveru i standardizaciji alata koji se koriste u Unix-like okruženjima.
+
+**GNU Readline** je biblioteka u okviru **GNU projekta**. Nije deo SQLite baze niti pripada isključivo Bash-u. **Različiti programi je mogu koristiti za uređivanje unosa u terminalu, istoriju komandi i dovršavanje unosa putem tab-dopunjavanja.**
+
+U tvojoj komandi je koristi **`rlwrap`**. Provera instaliranog `rlwrap`-a pokazuje da je povezan sa bibliotekom `libreadline.so.8`. Pojednostavljeno:
+
+```mermaid
+flowchart TD
+    terminal["VS Code terminal"] -->|"Pokreće komandu i prima unos"| rlwrap["rlwrap"]
+    rlwrap -->|"Prosleđuje uređeni unos"| cli["sqlite3 CLI"]
+    rlwrap -->|"Koristi za uređivanje, istoriju i Tab"| readline["GNU Readline"]
+    inputrc["sqlite3-inputrc"] -->|"INPUTRC: podešavanja"| readline
+    completions["sqlite3-completions"] -->|"-f: lista predloga"| rlwrap
+    cli -->|"Čita otvorenu bazu: -readonly"| baza[("chinook_practice.db")]
+```
+
+**Kako čitati dijagram:** strelice prikazuju pokretanje, prosleđivanje, korišćenje ili čitanje, u zavisnosti od natpisa; ne predstavljaju sve isti tip veze. Izlaz se vraća iz `sqlite3` preko `rlwrap`-a u terminal; radi preglednosti taj smer nije posebno nacrtan. `sqlite3` obrađuje dot-komande unutar CLI-ja, dok SQL naredbe izvršava pomoću SQLite biblioteke. Dot-komande se ne izvršavaju u fajlu baze.
+
+Isto prikazano u tekstualnom obliku:
+
+```text
+terminal → rlwrap → sqlite3 → chinook_practice.db
+              ↓
+         GNU Readline
+```
+
+`rlwrap` koristi Readline za uređivanje unosa, dok `sqlite3` izvršava SQL i dot-komande nad otvorenom bazom. Opcija `-cmdline-edit off` isključuje SQLite-ov interni editor u toj sesiji, a ne Readline koji koristi `rlwrap`.
+
+Promenljiva `INPUTRC` u tvojoj komandi usmerava Readline na `sqlite3-inputrc`, koji uključuje tvoj `~/.inputrc` i podešava `completion-ignore-case on`. Lista predloga je zaseban fajl koji `rlwrap` dobija preko `-f`.
+
+Izvor: [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html).
+
+---
+
+### Pitanje 3 — Kako detaljno da razumem dijagram terminala, `rlwrap`-a i SQLite-a?
+
+U dijagramu iz prethodnog odgovora prikazano je više različitih stvari: **programi**, **biblioteka**, **konfiguracioni fajlovi** i **fajl baze**. Prvo ćemo ih razdvojiti, a zatim pratiti šta se dešava kada ukucaš komandu.
+
+#### 1. Šta predstavlja svaki deo?
+
+| Deo na dijagramu          | Šta je?                                 | Njegova uloga u ovom primeru                                                               |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **VS Code terminal**      | Terminalski interfejs.                  | Prikazuje tekst i prima tvoj unos; u njemu se pokreće komandna ljuska, na primer Bash.     |
+| **`rlwrap`**              | Zaseban program — omotač.               | Pokreće `sqlite3` i omogućava uređivanje njegovog ulaza pomoću Readline-a.                 |
+| **GNU Readline**          | Biblioteka koju program može koristiti. | Pruža funkcije za uređivanje reda, istoriju i dovršavanje; nije samostalni SQLite klijent. |
+| **`sqlite3 CLI`**         | SQLite komandni alat.                   | Prima SQL i dot-komande; za rad sa bazom koristi SQLite biblioteku.                        |
+| **`chinook_practice.db`** | Fajl SQLite baze.                       | Čuva šemu i podatke radne kopije; sam ne prima komande sa tastature.                       |
+| **`sqlite3-inputrc`**     | Tekstualni konfiguracioni fajl.         | Sadrži Readline podešavanja za ovu komandu.                                                |
+| **`sqlite3-completions`** | Tekstualni fajl sa predlozima.          | `rlwrap` ga učitava preko opcije `-f` i koristi pri dovršavanju.                           |
+
+> **Biblioteka nije isto što i program:** program poput `rlwrap`-a može koristiti funkcije biblioteke Readline. Zato je na dijagramu strelica **`rlwrap` → GNU Readline** označena sa „koristi”; to nije putanja SQL upita ka bazi.
+>
+> **Terminal nije isto što i Bash:** terminal je samo interfejs koji prikazuje tekst i prima tvoj unos, dok Bash tumači komande i pokreće programe. Zato strelica sa terminala ide ka Bash-u, a ne direktno ka `rlwrap` ili `sqlite3`.
+>
+> U suštini, terminal je „prozorski okvir“ za interakciju sa komandnom linijom, dok Bash (ili bilo koja druga ljuska/shell) zapravo izvršava komande koje uneseš i pokreće odgovarajuće programe.
+
+---
+
+#### 2. Kako počinje rad?
+
+Tvoja komanda, uneta u **Bash-u iz korena repozitorijuma**, izgleda ovako:
+
+```bash
+INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
+  rlwrap -a -N -c -i -A -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
+  sqlite3 -cmdline-edit off -readonly fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+Prati redom:
+
+1. **Bash** pokreće program `rlwrap` i za tu komandu postavlja promenljivu okruženja `INPUTRC` na putanju do posebnog Readline konfiguracionog fajla. Ovim zapisom ne menjaš trajno konfiguraciju drugih terminalskih sesija.
+
+2. `rlwrap` dobija svoje opcije, između ostalog `-f` sa putanjom do liste predloga. On zatim pokreće navedeni program **`sqlite3`** sa njegovim argumentima.
+
+3. `sqlite3` otvara `chinook_practice.db` kao glavnu bazu te konekcije. `-readonly` znači da je ta glavna baza otvorena samo za čitanje.
+
+4. `-cmdline-edit off` isključuje SQLite-ov interni editor u toj sesiji; uređivanje ulaza koje ti vidiš obezbeđuje `rlwrap` uz Readline.
+
+5. U terminalu se pojavljuje SQLite prompt i možeš da unosiš dot-komande ili SQL.
+
+Prva strelica na dijagramu je pojednostavljena: preciznije, **ti unosiš komandu u Bash koji radi unutar terminala**, a Bash pokreće `rlwrap`. Terminal nije SQLite baza niti sam obrađuje SQL.
+
+---
+
+#### 3. Dva fajla sa različitim zadatkom
+
+Iako oba pomažu pri unosu, ovi fajlovi nisu ista stvar:
+
+| Fajl                                       | Kako se bira?           | Šta radi?                                                                                                                                                   |
+| ------------------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `~/.config/sqlite-cli/sqlite3-inputrc`     | Promenljivom `INPUTRC`. | Zadaje Readline podešavanja. Pri proveri uključuje `~/.inputrc` i postavlja `completion-ignore-case on`, radi dopunjavanja bez razlikovanja veličine slova. |
+| `~/.config/sqlite-cli/sqlite3-completions` | Opcijom `rlwrap -f`.    | Sadrži reči koje mogu biti ponuđene, na primer `.tables`, `SELECT` i `foreign_keys`.                                                                        |
+
+Opcija `rlwrap -i` takođe uključuje dopunjavanje bez razlikovanja velikih i malih slova pri radu sa listom predloga; `-c` uključuje i dovršavanje putanja. Predlozi iz liste nisu automatski ažuriran pregled svih tabela iz baze.
+
+Na dijagramu strelice od fajlova znače da se **koriste njihovi sadržaji**, ne da su to programi koji izvršavaju SQL ili izmene u bazi.
+
+---
+
+#### 4. Šta se dešava kada uneseš `.tab`, Tab, pa Enter?
+
+Pretpostavimo da je SQLite CLI već otvoren sa navedenom komandom:
+
+1. U promptu ukucaš `.tab`. To je još uvek **nezavršen unos**, a ne izvršena naredba.
+
+2. Pritisneš **Tab**. `rlwrap` uz Readline i raspoložive predloge pokušava da dopuni reč; u ovom podešavanju `.tab` može postati `.tables`.
+
+3. Pre pritiska na Enter proveriš da li na liniji zaista piše `.tables`. Ako postoji više mogućnosti, rezultat zavisi od dostupnih predloga; možda je potrebno dopisati još slova.
+
+4. Pritisneš **Enter**. `rlwrap` prosleđuje uneti red `sqlite3` CLI-ju.
+
+5. `sqlite3` prepoznaje `.tables` kao **dot-komandu CLI-ja** i prikazuje tabele otvorene baze.Rezultat se vraća kroz `rlwrap` i vidiš ga u terminalu.
+
+**Tab dopunjava unos; Enter ga šalje na obradu.** Sama lista predloga ne izvršava naredbe. Dot-komanda `.tables` nije SQL naredba zapisana u fajlu baze.
+
+---
+
+#### 5. Šta se dešava sa SQL upitom?
+
+Na primer, u otvorenom SQLite CLI-ju uneseš:
+
+```sql
+SELECT COUNT(*) AS album_count FROM albums;
+```
+
+1. `rlwrap` uz Readline pomaže pri unosu i po potrebi dovršavanju, ali **ne odlučuje** šta SQL upit znači.
+
+2. Nakon što dovršiš upit i pošalješ ga, `sqlite3` CLI koristi SQLite biblioteku da obradi SQL i pročita potrebne podatke iz otvorene baze.
+
+3. CLI prikaže rezultat, koji se kroz `rlwrap` vraća u terminal.
+
+Ako je SQL naredba podeljena u više redova, Enter posle prvog reda ne mora odmah pokrenuti ceo upit: CLI može čekati da naredba bude dovršena. Tačka-zarez `;` u ovom primeru označava kraj SQL naredbe. Dot-komande poput `.tables` unose se drugačije — na zasebnom redu i bez `;`.
+
+---
+
+#### 6. Šta tačno štiti `-readonly`?
+
+U ovoj komandi `-readonly` odnosi se na **otvorenu glavnu bazu**. Na primer, `SELECT` je čita, dok bi pokušaj upisa u tu bazu bio odbijen. To ne znači da je čitav proces bez mogućnosti pisanja u bilo koji fajl.
+
+Na primer, SQLite CLI dot-komanda `.output` može poslati izlaz u **poseban tekstualni fajl**, a `.backup` može upisati zasebnu kopiju. Zato i dalje moraš pažljivo proveriti odredišnu putanju i da li fajl već postoji. Isto tako, izlaz naredbe ne mora uvek završiti na ekranu ako si ga preusmerio.
+
+---
+
+#### 7. Kratka provera razumevanja
+
+Pokušaj prvo sam, pa pogledaj odgovore ispod:
+
+1. Da li Readline izvršava `SELECT` nad bazom?
+
+- Ne; Readline samo pomaže pri unosu i dovršavanju, ali ne izvršava SQL upite. Uloga Readline-a je isključivo u interaktivnom unosu i dopunjavanju teksta, dok stvarno izvršavanje SQL upita obavlja SQLite.
+
+2. Koji fajl sadrži podešavanja, a koji reči za dovršavanje?
+
+- `sqlite3-inputrc` sadrži podešavanja za Readline, kao što su prečice i ponašanje tastera, dok `sqlite3-completions` sadrži listu reči koje Readline koristi za automatsko dovršavanje unosa u SQLite CLI-ju.
+
+3. Da li Tab sam po sebi izvršava `.tables`?
+
+- Ne; Tab samo pokreće automatsko dovršavanje unosa, dok Enter šalje dovršeni red CLI-ju. Dakle, Tab ne izvršava komandu, već samo pomaže pri njenom unosu.
+
+4. Da li `-readonly` sprečava `.output` da napravi zaseban fajl?
+
+- Ne; `-readonly` štiti samo otvorenu glavnu bazu od upisa. Komanda `.output` može i dalje kreirati i upisivati u zaseban fajl, jer to nije deo glavne baze. Dakle, `-readonly` ne blokira sve operacije pisanja u fajl sistemu, već samo upis u glavnu bazu. Ostale operacije pisanja, kao što su kreiranje novih fajlova ili upis u postojeće fajlove van glavne baze, i dalje su moguće.
+
+5. Šta je **aktivna konekcija** u kontekstu SQLite CLI-ja?
+
+- Aktivna konekcija je **instanca SQLite CLI-ja koja je trenutno povezana na određenu bazu podataka**. To znači da sve SQL naredbe koje uneseš u CLI dok je konekcija aktivna, izvršavaju se nad tom bazom. Ako ne postoji aktivna konekcija, SQLite CLI ne može izvršavati SQL naredbe nad bazom.
+
+>**Odgovori:** 1. Ne; SQL obrađuje SQLite. 2. `sqlite3-inputrc` sadrži podešavanja, a `sqlite3-completions` predloge. 3. Ne; Enter šalje dovršeni red CLI-ju. 4. Ne; štiti otvorenu glavnu bazu od upisa, ne sve druge fajlove. 5. Aktivna konekcija je instanca SQLite CLI-ja koja je trenutno povezana na određenu bazu podataka.
+
+---
+
+## Pitanje 4 — Provera vežbe 2 iz `03_how_to_connect_to_sqlite.md`
+
+**Nalaz:** vežba je tražila *tri konekcije ka istom fajlu*, a bila su nacrtana tri odvojena dijagrama. Time se ne vidi da je fajl jedan i zajednički. Strelice su išle od fajla ka konekciji, što sugeriše da fajl pokreće konekciju; ispravno je da program otvara fajl.
+
+**Ispravka:** u lekciji je sada jedan `flowchart LR` sa tri programa (CLI, GUI, FastAPI), tri konekcije i jednim cilindrom `chinook.db`, uz tabelu (fajl / konekcija / program) i objašnjenje kako svaka konekcija nastaje.
+
+**Dodatno razjašnjeno:**
+
+- GUI profil je samo podešavanje, a ne konekcija.
+- SQLAlchemy engine konekcije otvara po potrebi (često iz pula), pa ne moraju trajati celo vreme rada aplikacije.
+- URL `sqlite:///relativna.db` ima tri kose crte, a apsolutna putanja `sqlite:////apsolutna.db` četiri.
+- Više konekcija može istovremeno čitati; piše jedna po jedna, pa druge mogu dobiti `database is locked`.
+
+---
+
+## Pitanje 5 — Šta znači da `.once` „preusmerava sledeći dump“?
+
+`.dump` po podrazumevanju piše SQL tekst na ekran. Preusmeriti znači poslati taj tekst u fajl. `.once fajl.sql` to radi samo za **prvu sledeću komandu koja ispisuje izlaz**, a zatim se izlaz sam vraća na ekran.
+
+```text
+.once "fajl.sql"
+.dump      -> ide u fajl.sql
+.dump      -> ide na ekran
+```
+
+Provereno u izolovanom testu: prvi `.dump` je završio u fajlu, drugi na ekranu.
+
+| Komanda         | Trajanje preusmeravanja                 | Vraćanje na ekran            |
+| --------------- | --------------------------------------- | ---------------------------- |
+| `.output fajl`  | Sve komande dok ga ne isključiš         | Ručno: `.output stdout`      |
+| `.once fajl`    | Samo sledeća komanda sa izlazom         | Automatski                   |
+
+Obe komande mogu prepisati postojeći fajl, pa koristi novo ime.
+
+---
+
+## Pitanje 6 — Kako se otvara zasebna upisiva sesija?
+
+Zasebna upisiva sesija je **drugi SQLite CLI proces**, pokrenut **bez `-readonly`**, koji otvara **novu** bazu. Lekcija: [03_sqlite_dump_command.md](../01_some_basic_sql_commands/03_sqlite_dump_command.md).
+
+1. Prvu sesiju (`-readonly`, `chinook_practice.db`) ostavi otvorenu u jednom terminalu, a otvori **drugi terminal** u VS Code-u (ikonica `+`), ili izađi iz prve sa `.quit`.
+2. Iz korena repozitorijuma proveri da cilj ne postoji:
+
+   ```bash
+   test ! -e fast-api-course-my-work/sqlite_for_beginners/playground/dump_vezba_2026_11_24/chinook_restore.db \
+     && echo "OK: cilj ne postoji"
+   ```
+
+3. Pokreni novu sesiju (bez `-readonly`, druga baza):
+
+   ```bash
+   INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
+     rlwrap -a -N -c -i -A -f "$HOME/.config/sqlite-cli/sqlite3-completions" \
+     sqlite3 -cmdline-edit off fast-api-course-my-work/sqlite_for_beginners/playground/dump_vezba_2026_11_24/chinook_restore.db
+   ```
+
+4. Proveri `.databases` (putanja završava sa `chinook_restore.db`, bez `r/o`) i `.tables` (mora biti prazno).
+5. Tek onda `.read` dump fajla.
+
+**Zašto zasebna sesija:** `-readonly` važi za celu konekciju, pa se u prvoj sesiji dump ne može vratiti. Nova baza se stvara tek pri prvom upisu, a zasebna sesija štiti `chinook_practice.db` od greške.

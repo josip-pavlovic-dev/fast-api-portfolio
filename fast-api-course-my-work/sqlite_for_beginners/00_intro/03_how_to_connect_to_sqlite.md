@@ -178,26 +178,43 @@ U lekciji [02 — Otvaranje i priključivanje Chinook baze](02_attaching_sample_
 
 Koristeći Mermaid dijagram iz lekcije kao primer, nacrtaj ili opiši tri odvojene konekcije ka istom fajlu: jednu iz CLI-ja, jednu iz GUI alata i jednu iz FastAPI aplikacije. Označi koji deo je fajl na disku, a koji su aktivne konekcije.
 
-**Konekcija iz CLI-ja:** Kada se povežeš na bazu iz CLI-ja, otvara se aktivna konekcija koja omogućava izvršavanje SQL komandi direktno u terminalu. Putanja do fajla baze se određuje prilikom otvaranja CLI-ja sa odgovarajućim fajlom ili putem relativne/apsolutne putanje. Aktivna konekcija traje dok se CLI ne zatvori ili dok se eksplicitno ne zatvori konekcija.
+**Rešenje:** Tri odvojena dijagrama ne prikazuju ono što vežba traži — da **isti fajl** ima **tri nezavisne konekcije**. Zato je ispravno nacrtati sve u jednom dijagramu. Strelice idu od programa ka fajlu, jer program otvara fajl i čita ili menja ga (fajl ništa ne pokreće).
 
 ```mermaid
-graph TD
-    A[Fajl na disku: chinook.db] -->|CLI konekcija| B[Aktivna konekcija CLI]
+flowchart LR
+    cli["sqlite3 CLI (program)"] -->|"otvara putanju"| cliConn["Konekcija 1: CLI"]
+    gui["GUI alat (program)"] -->|"otvara putanju"| guiConn["Konekcija 2: GUI"]
+    app["FastAPI + SQLAlchemy (program)"] -->|"URL u kodu"| appConn["Konekcija 3: FastAPI"]
+    cliConn -->|"čita ili menja"| db[("chinook.db — jedini fajl na disku")]
+    guiConn -->|"čita ili menja"| db
+    appConn -->|"čita ili menja"| db
 ```
 
-**Konekcija iz GUI alata:** Kada se povežeš na bazu iz GUI alata, kreira se aktivna konekcija koja omogućava interakciju sa bazom putem grafičkog interfejsa. GUI alat obično koristi profil ili konfiguraciju koja sadrži putanju do fajla baze. Aktivna konekcija traje dok se ne zatvori u okviru GUI alata.
+---
 
-```mermaid
-graph TD
-    A[Fajl na disku: chinook.db] -->|GUI konekcija| C[Aktivna konekcija GUI]
-```
+#### Šta je šta
 
-**Konekcija iz FastAPI aplikacije:** Kada se povežeš na bazu iz FastAPI aplikacije koristeći SQLAlchemy, kreira se aktivna konekcija koja omogućava interakciju sa bazom kroz aplikaciju. Putanja do fajla baze se određuje u SQLite URL-u ili konfiguraciji SQLAlchemy. Aktivna konekcija traje dok aplikacija radi ili dok se eksplicitno ne zatvori.
+| Deo dijagrama           | Vrsta             | Objašnjenje                                                                          |
+| ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `chinook.db` (cilindar) | Fajl na disku     | Postoji samo jednom i ostaje i kada su sve konekcije zatvorene.                      |
+| Konekcija 1, 2 i 3      | Aktivne konekcije | Svaka pripada jednom programu, postoji samo dok je program drži otvorenom.           |
+| CLI, GUI alat, FastAPI  | Programi          | Biblioteka SQLite u svakom od njih otvara fajl; nema zajedničkog serverskog procesa. |
 
-```mermaid
-graph TD
-    A[Fajl na disku: chinook.db] -->|FastAPI konekcija| D[Aktivna konekcija FastAPI]
-```
+---
+
+#### Kako svaka konekcija nastaje
+
+- **CLI:** putanju zadaješ pri pokretanju (`sqlite3 "putanja/chinook.db"`). Relativna putanja važi u odnosu na trenutni direktorijum terminala. Konekcija traje do `.quit`.
+
+- **GUI alat:** putanju biraš u dijalogu ili je čuva sačuvani profil. Profil je samo podešavanje; konekcija postoji tek dok je alat otvori, i zatvara se opcijom Disconnect.
+
+- **FastAPI + SQLAlchemy:** putanja je u URL-u, npr. `sqlite:///relativna/putanja.db` (tri kose crte + relativna putanja) ili `sqlite:////apsolutna/putanja.db` (četiri). Engine konekcije otvara po potrebi (često iz pula) i vraća ih, pa konekcija ne mora trajati celo vreme rada aplikacije.
+
+---
+
+#### Važno
+
+Sva tri programa vide iste podatke samo ako im putanja vodi do **istog fajla**. Ista imena fajlova na različitim putanjama su različite baze. Istovremeno čitanje je bezbedno, ali istovremeno upisivanje jedne baze SQLite serijalizuje: u jednom trenutku piše samo jedna konekcija, a ostale mogu dobiti grešku `database is locked`.
 
 ---
 

@@ -41,3 +41,6 @@ fast-api-course-my-work/PortfolioItemsAPI/models1.py
 /fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite-*
 /fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite3
 /fast-api-course-my-work/sqlite_for_beginners/playground/**/*.sqlite3-*
+
+# Dump folder za vežbe sa SQLite bazom
+fast-api-course-my-work/sqlite_for_beginners/playground/dump_vezba_2026_11_24/
