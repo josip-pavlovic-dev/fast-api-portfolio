@@ -131,6 +131,30 @@ LIMIT 10;
 
 Ovde se najduže numere prikazuju prve, a ako je trajanje isto, prvo ide manji `TrackId`. Ovo je važno za predvidive rezultate, naročito ako ćeš kasnije dodati straničenje pomoću `LIMIT` i `OFFSET`.
 
+### Ivični slučajevi: `NULL` vrednosti i tekst
+
+SQLite u podrazumevanom sortiranju tretira `NULL` kao manji od ostalih vrednosti: zato se `NULL` pojavljuje prvi u `ASC`, a poslednji u `DESC`. Ako želiš da položaj bude eksplicitan, koristi `NULLS FIRST` ili `NULLS LAST` (podržano u SQLite-u 3.30.0 i novijim):
+
+```sql
+SELECT CustomerId, Company
+FROM customers
+ORDER BY Company ASC NULLS LAST, CustomerId ASC
+LIMIT 8;
+```
+
+`NULLS LAST` pomera samo `NULL` vrednosti. Prazan tekst `''` je stvarna tekstualna vrednost, nije `NULL`, pa se sortira među tekstualnim vrednostima.
+
+Kod tekstualnih kolona rezultat zavisi i od kolacije. Podrazumevana `BINARY` kolacija poredi tekst po bajtovima. Ugrađena `NOCASE` kolacija zanemaruje razliku između velikih i malih **ASCII** slova, ali nije lokalizovano sortiranje za srpsku azbuku niti puna Unicode kolacija:
+
+```sql
+SELECT Name
+FROM artists
+ORDER BY Name COLLATE NOCASE, ArtistId
+LIMIT 10;
+```
+
+Ako se kolona za sortiranje ponavlja, dodaj jedinstveni dodatni kriterijum i ovde, jer kolacija može smatrati različito napisana imena jednakim za sortiranje.
+
 ## Redosled klauzula
 
 Kada kombinuješ `WHERE`, `ORDER BY` i `LIMIT`, pišu se ovim redosledom:
@@ -177,6 +201,7 @@ Ovaj primer pretpostavlja da ORM model `Track` ima navedene atribute. `ORDER BY`
 4. Da li kolona iz `ORDER BY` mora biti prikazana u `SELECT` listi?
 5. Zašto dodati jedinstveni ključ kao poslednji kriterijum sortiranja?
 6. Da li `ORDER BY` trajno menja raspored redova u tabeli?
+7. Kako se `NULL` sortira u SQLite-u bez `NULLS FIRST`/`NULLS LAST` i kako se prazan tekst razlikuje od njega?
 
 ## Vežbe
 

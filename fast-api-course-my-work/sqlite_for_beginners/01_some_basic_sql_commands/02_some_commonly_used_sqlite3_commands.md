@@ -181,6 +181,25 @@ Bez ovog koraka, i sledeće komande koje prikazuju izlaz mogu završiti u fajlu.
 
 Izvoz rezultata upita nije isto što i rezervna kopija cele baze. Ova lekcija čuva samo rezultat odabranog upita; kopiranje ili izvoz kompletne baze obrađivaće se posebno.
 
+### Granični slučaj: upit bez rezultata
+
+Upit može vratiti nula redova, a da pritom nije došlo do greške. Na primer:
+
+```sql
+SELECT AlbumId, Title
+FROM albums
+WHERE 0
+ORDER BY Title, AlbumId;
+```
+
+Upit se uspešno izvršava, ali vraća nula redova. U proveri sa SQLite CLI-jem 3.54.1, `.headers on` u interaktivnoj sesiji nije prikazao zaglavlje za ovaj prazan rezultat; `.once` je zato napravio prazan fajl od 0 bajtova. Ponašanje proveri u svojoj verziji. Ako ti je potrebno da i prazan CSV sadrži nazive kolona, koristi CLI opciju `-header` pri pokretanju:
+
+```bash
+sqlite3 -readonly -header -csv "putanja/do/chinook_practice.db" "SELECT AlbumId, Title FROM albums WHERE 0 ORDER BY Title, AlbumId;"
+```
+
+Komanda ispisuje samo red zaglavlja. Ako rezultat preusmeravaš u fajl, prvo izaberi novu putanju i proveri da fajl ne postoji.
+
 ---
 
 ## Izlazak iz SQLite CLI-ja

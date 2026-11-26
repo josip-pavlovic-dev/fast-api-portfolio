@@ -482,6 +482,8 @@ ORDER BY colors.Name;
 
 Upit vraća dva reda: `Apple | Green` i `Apple | Red`. To je **jedan zapis jabuke** povezan sa dve boje, a ne dve različite jabuke.
 
+Primer pokriva i granične kardinalnosti: u [SQL vežbi](../playground/sql/00_intro/04_database_concepts.sql) jabuka ima dve boje, banana jednu, a kruška nijednu. Prazna veza za krušku je namerna: strani ključevi odbacuju nevažeći par, ali ne zahtevaju da svaki roditeljski red ima makar jedan poveznički red. SQL vežba proverava i da `fruit_colors` i `vegetable_colors` mogu da upotrebe isti zapis boje.
+
 **Važno — poslovno pravilo i ograničenja šeme nisu isto:** želimo da svaki zapis voća i povrća ima **najmanje jednu** boju. Ipak, gornji strani ključevi proveravaju postojeće redove povezničkih tabela; sami **ne zahtevaju** da za svaki red u `fruits` ili `vegetables` postoji bar jedna veza. Šema zato tehnički dopušta zapis bez boje i brisanje njegove poslednje veze. To ne znači da je stvarno voće „bez boje“: može značiti da podaci nisu uneti.
 
 Ako je pravilo **„najmanje jedna boja“ obavezno**, aplikacija **mora** u transakciji:

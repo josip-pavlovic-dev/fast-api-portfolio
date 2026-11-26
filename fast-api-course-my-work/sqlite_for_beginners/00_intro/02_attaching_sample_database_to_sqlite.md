@@ -75,10 +75,10 @@ sqlite3 :memory:
 U SQLite CLI-ju izvrši SQL naredbu:
 
 ```sql
-ATTACH DATABASE 'fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db' AS chinook;
+ATTACH DATABASE 'file:fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db?mode=ro' AS chinook;
 ```
 
-Putanja u SQL stringu računa se u odnosu na direktorijum iz kog je pokrenut SQLite proces. Ako si CLI pokrenuo iz drugog foldera, prilagodi putanju ili koristi apsolutnu putanju.
+URI opcija `mode=ro` priključuje postojeći fajl samo za čitanje. Ovo se odnosi na priključenu bazu; nije isto što i `-readonly` opcija za glavnu bazu CLI sesije. Putanja u URI-ju računa se u odnosu na direktorijum iz kog je pokrenut SQLite proces. Ako si CLI pokrenuo iz drugog foldera, prilagodi putanju ili koristi apsolutnu putanju.
 
 Proveri obe baze u konekciji:
 
@@ -124,6 +124,7 @@ Za ovu lekciju koristi Chinook samo za pregled i upite. Nemoj menjati ili brisat
 - **`.tables` ne prikazuje Chinook tabele:** proveri da li si otvorio ili priključio pravi fajl i da li `.databases` prikazuje očekivanu putanju.
 - **CLI kaže da tabela ne postoji:** kod priključene baze koristi prefiks aliasa, na primer `chinook.artists`.
 - **`ATTACH` prijavljuje grešku pri otvaranju fajla:** proveri relativnu putanju, dozvole za čitanje i da li fajl zaista postoji.
+- **Pogrešno ime fajla pri `ATTACH`:** običan `ATTACH DATABASE 'putanja'` može da napravi novu praznu bazu ako fajl ne postoji i direktorijum dozvoljava upis. Za postojeću bazu koju samo pregledaš proveri putanju i koristi URI sa `?mode=ro`; ako fajl nedostaje, otvaranje treba da prijavi grešku umesto da ga napravi.
 - **Ne možeš da pronađeš bazu:** trenutni direktorijum terminala možda nije koren repozitorijuma. Putanje iz primera nisu relativne u odnosu na Markdown fajl.
 - **Pogrešno si otvorio praznu bazu:** izađi iz CLI-ja, vrati se u terminal i ponovi komandu sa tačnom putanjom do `chinook.db`.
 
@@ -184,7 +185,7 @@ sqlite3 fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db
 2. Priključi Chinook bazu pod aliasom `chinook`.
 
 ```sql
-ATTACH DATABASE 'fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db' AS chinook;
+ATTACH DATABASE 'file:fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db?mode=ro' AS chinook;
 .databases
 ```
 
@@ -199,6 +200,19 @@ ATTACH DATABASE 'fast-api-course-my-work/sqlite_for_beginners/chinook/chinook.db
 4. Pokreni `SELECT Name FROM chinook.artists ORDER BY Name LIMIT 5;`.
 
 5. Izvrši `DETACH DATABASE chinook;` i proveri `.databases`.
+
+6. Ispitaj praznu priključenu bazu bez pravljenja fajla:
+
+```sql
+ATTACH DATABASE ':memory:' AS empty_demo;
+PRAGMA database_list;
+SELECT COUNT(*) AS table_count
+FROM empty_demo.sqlite_schema
+WHERE type = 'table';
+DETACH DATABASE empty_demo;
+```
+
+Očekivani broj tabela je `0`. Ovo je bezbedan način da vidiš kako izgleda prazna priključena baza; nemoj koristiti nepostojeću putanju do fajla za ovaj test, jer je običan `ATTACH` može napraviti.
 
 ---
 

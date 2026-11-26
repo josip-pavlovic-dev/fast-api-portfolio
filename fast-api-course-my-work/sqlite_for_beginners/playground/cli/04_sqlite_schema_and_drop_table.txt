@@ -1,0 +1,40 @@
+-- Oblast 03: pregled šeme i bezbedna proba DROP TABLE u SQLite CLI-ju
+-- Pokreni iz root-a repozitorijuma:
+--   sqlite3 :memory:
+-- Zatim u SQLite promptu učitaj ovaj fajl:
+--   .read fast-api-course-my-work/sqlite_for_beginners/playground/cli/04_sqlite_schema_and_drop_table.txt
+-- Ovaj fajl kreira sve podatke u :memory: konekciji; zatvaranjem CLI-ja nestaju.
+-- Ne pokreći iste korake nad Chinook ili bazom aplikacije.
+
+.headers on
+.mode column
+
+-- Učitavanje samostalnog DDL + seed + provernog skripta za CREATE TABLE.
+.read fast-api-course-my-work/sqlite_for_beginners/playground/sql/03_creating_database_tables_updating_data_deleting_records/03_sqlite_create_table_statement_part_2.sql
+
+.print 'Tabele i definicije pre DROP TABLE:'
+.tables
+.schema contacts
+.schema groups
+.schema contact_groups
+
+-- PRAGMA su SQL naredbe; .tables i .schema su SQLite CLI meta-komande.
+PRAGMA foreign_keys;
+PRAGMA table_info(contact_groups);
+PRAGMA foreign_key_list(contact_groups);
+
+.print 'Probno DROP TABLE u transakciji:'
+BEGIN;
+DROP TABLE groups;
+.tables
+.schema groups
+SELECT COUNT(*) AS memberships_during_drop FROM contact_groups;
+ROLLBACK;
+
+.print 'Posle ROLLBACK-a tabela i redovi su vraćeni:'
+.tables
+.schema groups
+SELECT id, name FROM groups ORDER BY id;
+SELECT contact_id, group_id FROM contact_groups ORDER BY contact_id, group_id;
+
+-- Ne zatvaraj CLI dok ne pregledaš izlaz; izađi ručno sa .quit.

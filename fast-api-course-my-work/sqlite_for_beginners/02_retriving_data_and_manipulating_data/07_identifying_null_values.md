@@ -118,6 +118,20 @@ Zato treba pažljivo birati uslov:
 | Prazan tekst                              | `Company = ''`                 |
 | Vrednost koja se tačno poklapa sa tekstom | `Company = 'JetBrains s.r.o.'` |
 
+### `NULL` i agregatne funkcije
+
+`COUNT(*)` broji redove, uključujući redove u kojima je `Company` `NULL`. `COUNT(Company)` broji samo redove gde `Company` nije `NULL`; prazan tekst bi se računao kao vrednost. U trenutnoj Chinook kopiji ovaj upit vraća ukupno 59 kupaca, 10 poznatih vrednosti `Company` i 49 nedostajućih:
+
+```sql
+SELECT
+    COUNT(*) AS all_customers,
+    COUNT(Company) AS customers_with_company,
+    COUNT(*) - COUNT(Company) AS customers_without_company
+FROM customers;
+```
+
+Ova razlika je česta ivica pri radu sa agregatima: filtriranje `WHERE Company IS NULL` broji samo redove bez vrednosti, dok `COUNT(Company)` te redove izostavlja.
+
 ## Veza sa SQLAlchemy 2.0 i FastAPI-jem
 
 U SQLAlchemy 2.0 možeš da filtriraš ORM model po `NULL` vrednosti ovako:
@@ -154,6 +168,7 @@ Kada podatak iz baze postane Python `None`, FastAPI odgovor može ga prikazati k
 4. Da li `IS NOT NULL` automatski odbacuje prazan tekst?
 5. Zašto `Company = NULL` nije odgovarajući uslov?
 6. Koja je razlika između `None` u Python-u i SQL uslova `IS NULL`?
+7. Zašto se `COUNT(*)` i `COUNT(Company)` razlikuju kada `Company` sadrži `NULL`?
 
 ## Vežbe
 

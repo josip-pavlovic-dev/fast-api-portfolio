@@ -45,3 +45,7 @@ LIMIT 5;
 
 -- Proveri podešavanje stranih ključeva u ovoj konekciji (1 = uključeno, 0 = isključeno).
 PRAGMA foreign_keys;
+
+-- Nula redova znači da trenutno nisu pronađene FK povrede.
+-- Ova provera ne menja PRAGMA foreign_keys.
+PRAGMA foreign_key_check;

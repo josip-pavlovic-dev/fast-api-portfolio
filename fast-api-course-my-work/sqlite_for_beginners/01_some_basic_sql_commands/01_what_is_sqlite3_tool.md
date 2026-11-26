@@ -40,6 +40,14 @@ sqlite3 vezbe.db
 
 Ako `vezbe.db` ne postoji, SQLite će ga napraviti. Ako već postoji, otvoriće tu bazu. Putanja se tumači u odnosu na **trenutni direktorijum terminala**, a ne nužno u odnosu na folder u kome se nalazi trenutno otvoren `.md` fajl. Zato, ako ne vidiš očekivani fajl, proveri direktorijum pomoću `pwd` (Linux/macOS) ili `Get-Location` (PowerShell).
 
+**Bezbedna provera pogrešne putanje:** ako želiš da proveriš kako CLI reaguje kada fajl nedostaje, prvo proveri da izabrani naziv ne postoji, pa otvori ga uz `-readonly`:
+
+```bash
+sqlite3 -readonly data/does-not-exist.db
+```
+
+Ako direktorijum `data` postoji, otvaranje treba da prijavi grešku i ne napravi fajl. Bez `-readonly`, ista putanja može da napravi novu praznu bazu — zato proveri `.databases` i nemoj zaključiti da je prazna baza ona koju si tražio.
+
 Možeš da navedeš i putanju do fajla, na primer:
 
 ```bash

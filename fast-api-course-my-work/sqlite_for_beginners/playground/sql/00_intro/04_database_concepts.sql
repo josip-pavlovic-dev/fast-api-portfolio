@@ -53,12 +53,19 @@ CREATE TABLE vegetable_colors (
     FOREIGN KEY (ColorId) REFERENCES colors(ColorId)
 );
 
--- Isti naziv boje se čuva jednom; jedna jabuka može biti vezana
--- za više boja. Transakcija potvrđuje ceo uzorak zajedno.
+-- Isti naziv boje se čuva jednom. Uzorak pokriva nula, jednu i dve
+-- boje po voću, kao i deljenje iste boje između voća i povrća.
+-- Transakcija potvrđuje ceo uzorak zajedno.
 BEGIN;
-INSERT INTO colors (ColorId, Name) VALUES (1, 'Green'), (2, 'Red');
-INSERT INTO fruits (FruitId, Name) VALUES (1, 'Apple');
+INSERT INTO colors (ColorId, Name)
+VALUES (1, 'Green'), (2, 'Red'), (3, 'Yellow');
+INSERT INTO fruits (FruitId, Name)
+VALUES (1, 'Apple'), (2, 'Pear'), (3, 'Banana');
+INSERT INTO vegetables (VegetableId, Name)
+VALUES (1, 'Cucumber');
 INSERT INTO fruit_colors (FruitId, ColorId) VALUES (1, 1), (1, 2);
+INSERT INTO fruit_colors (FruitId, ColorId) VALUES (3, 3);
+INSERT INTO vegetable_colors (VegetableId, ColorId) VALUES (1, 1);
 COMMIT;
 
 -- @block Vežba 2: Prikaži boje povezane sa jabukom
@@ -69,9 +76,17 @@ JOIN colors AS c ON c.ColorId = fc.ColorId
 WHERE f.FruitId = 1
 ORDER BY c.Name;
 
--- Ovaj upit prikazuje da šema dozvoljava voće bez ijedne boje.
--- FK ograničenja proveravaju postojeće veze, ne zahtevaju minimum 1.
--- @block Vežba 2: Voće bez boje (očekivano 0 redova u uzorku)
+-- Rezultat: Pear | 0, Banana | 1, Apple | 2.
+-- @block Granični slučaj: nula, jedna ili više boja
+SELECT f.FruitId, f.Name AS fruit, COUNT(fc.ColorId) AS color_count
+FROM fruits AS f
+LEFT JOIN fruit_colors AS fc ON fc.FruitId = f.FruitId
+GROUP BY f.FruitId, f.Name
+ORDER BY color_count, f.FruitId;
+
+-- Očekivani rezultat: Pear. FK ograničenja proveravaju postojeće veze,
+-- ali ne zahtevaju minimum od jedne boje za svaki red voća.
+-- @block Granični slučaj: voće bez boje
 SELECT f.FruitId, f.Name
 FROM fruits AS f
 WHERE NOT EXISTS (
@@ -79,6 +94,21 @@ WHERE NOT EXISTS (
     FROM fruit_colors AS fc
     WHERE fc.FruitId = f.FruitId
 );
+
+-- Isti zapis boje može biti upotrebljen u obe povezničke tabele.
+-- @block Vežba 2: Boja koja se deli između voća i povrća
+SELECT c.ColorId, c.Name AS shared_color
+FROM colors AS c
+WHERE EXISTS (
+    SELECT 1 FROM fruit_colors AS fc WHERE fc.ColorId = c.ColorId
+)
+AND EXISTS (
+    SELECT 1 FROM vegetable_colors AS vc WHERE vc.ColorId = c.ColorId
+)
+ORDER BY c.ColorId;
+
+-- @block Vežba 2: Provera referencijalnog integriteta
+PRAGMA foreign_key_check;
 
 -- VEŽBA 3: relacije u Chinook proveri u CLI-ju sa .schema albums,
 -- .schema tracks i .schema playlist_track, dok je otvorena Chinook

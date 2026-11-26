@@ -142,6 +142,8 @@ FROM strict_demo;
 
 Vrednost `42.0` može bez gubitka podataka da se pretvori u ceo broj `42`, pa je upis dozvoljen i `typeof(value)` vraća `integer`. Nekompatibilan tekst kao `'not a number'` bio bi odbijen za ovu kolonu.
 
+`STRICT` reguliše dozvoljene tipove, ali sam po sebi ne dodaje `NOT NULL`, `UNIQUE` ni `CHECK` ograničenja. Kolona `value INTEGER` i dalje može da primi `NULL`; obaveznost se navodi posebno kao `value INTEGER NOT NULL`. Konverzija u `INTEGER` mora biti bez gubitka: `42.0` može postati `42`, dok `42.5` ne može i biće odbijeno.
+
 U `STRICT` tabelama mogu se deklarisati tipovi `INT`, `INTEGER`, `REAL`, `TEXT`, `BLOB` i `ANY`. Tipovi poput `VARCHAR(50)`, `BOOLEAN` i `DATE` nisu dozvoljeni kao deklaracije kolona u `STRICT` tabeli. `ANY` dozvoljava bilo koju klasu skladištenja bez uobičajenih konverzija afiniteta.
 
 Proveri verziju SQLite-a pre nego što koristiš ovu funkciju u projektu:
@@ -228,6 +230,7 @@ Ove anotacije i SQLAlchemy tipovi opisuju očekivani oblik podataka u aplikaciji
 6. Kako se u SQLite-u obično predstavljaju boolean vrednosti?
 7. Koje su tri uobičajene predstave datuma i vremena u SQLite-u?
 8. Zašto `NUMERIC(10,2)` ne treba automatski smatrati garancijom tačnih novčanih proračuna?
+9. Da li `STRICT` automatski znači `NOT NULL` i zašto `42.0` može u `INTEGER`, a `42.5` ne može?
 
 ## Vežbe
 

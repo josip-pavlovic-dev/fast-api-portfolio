@@ -124,6 +124,27 @@ WHERE (AlbumId = 1 OR AlbumId = 2)
 
 Zagrade određuju kako se grupišu uslovi. Bez zagrada `AND` ima jači prioritet od `OR`, što može dovesti do rezultata koji nisi očekivao.
 
+Na primer:
+
+```sql
+WHERE AlbumId = 1 OR AlbumId = 2 AND Milliseconds > 240000
+```
+
+SQLite ovo tumači kao `AlbumId = 1 OR (AlbumId = 2 AND Milliseconds > 240000)`, a ne kao `(AlbumId = 1 OR AlbumId = 2) AND Milliseconds > 240000`. Ako je dužina uslov za oba albuma, zagrade su neophodne.
+
+## Tekstualni obrasci: `LIKE` nije `GLOB`
+
+Za tačno poređenje teksta koristi `=`, na primer `Country = 'Brazil'`. Za tekstualni obrazac možeš koristiti `LIKE`: `%` odgovara nula ili više znakova, a `_` odgovara tačno jednom znaku:
+
+```sql
+SELECT CustomerId, FirstName, LastName
+FROM customers
+WHERE FirstName LIKE 'A%'
+ORDER BY LastName, CustomerId;
+```
+
+Ugrađeni SQLite `LIKE` podrazumevano zanemaruje razliku velikih i malih ASCII slova, ali ne pruža potpuno lokalizovano poređenje Unicode teksta. `LIKE` obrasci nisu `GLOB` obrasci: `GLOB` koristi `*` i `?` i podrazumevano je osetljiv na velika i mala slova.
+
 ## Filtriranje po `NULL`
 
 `NULL` označava vrednost koja nedostaje ili nije poznata. Nemoj proveravati takvu vrednost pomoću `= NULL` ili `<> NULL`; poređenje sa `NULL` ne daje običan rezultat „tačno“ ili „netačno“.
@@ -143,6 +164,22 @@ WHERE Composer IS NOT NULL;
 ```
 
 Tabeli `tracks` nedostaju vrednosti u koloni `Composer`. Više o tome zašto `NULL` zahteva posebnu proveru nalazi se u lekciji [Identifikovanje NULL vrednosti](07_identifying_null_values.md).
+
+SQL logika zato ima i treću mogućnost pored `TRUE` i `FALSE`: `UNKNOWN`. `WHERE` zadržava samo redove za koje je uslov `TRUE`; i `FALSE` i `UNKNOWN` se izostavljaju. Na primer, `Composer <> 'neki kompozitor'` ne uključuje redove u kojima je `Composer` `NULL`, jer poređenje nije `TRUE`. Isto važi za `NOT (Composer = 'neki kompozitor')`.
+
+Prazan tekst i `NULL` takođe zahtevaju različite uslove:
+
+```sql
+WHERE Company IS NULL
+```
+
+pronalazi nepoznatu/nedostajuću vrednost, dok:
+
+```sql
+WHERE Company = ''
+```
+
+traži poznatu tekstualnu vrednost dužine nula. Ne zamenjuj jedno drugim.
 
 ## Gde se `WHERE` nalazi u upitu
 
@@ -196,6 +233,8 @@ Vrednosti koje dolaze od korisnika treba proslediti kroz SQLAlchemy izraze ili v
 5. Zašto se uslovi sa `AND` i `OR` često grupišu zagradama?
 6. Kako se pravilno proverava da li je `Composer` nepoznat?
 7. Da li `WHERE` menja ili briše podatke u tabeli?
+8. Zašto `Composer <> 'X'` ne uključuje redove sa `Composer IS NULL`?
+9. Koji su džokeri za `LIKE`, a koji za `GLOB`?
 
 ## Vežbe
 

@@ -104,3 +104,8 @@ SELECT sqlite_version() AS sqlite_verzija;
 
 -- @block Vežba 3: Provera stranih ključeva
 PRAGMA foreign_keys;
+
+-- @block Vežba 3: Provera postojećih FK veza
+-- Nula redova znači da ova baza trenutno nema prijavljene FK povrede.
+-- Ovo ne uključuje foreign_keys za buduće upise; ta postavka je po konekciji.
+PRAGMA foreign_key_check;

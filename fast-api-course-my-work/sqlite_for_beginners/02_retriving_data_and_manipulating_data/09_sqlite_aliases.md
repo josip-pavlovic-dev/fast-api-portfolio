@@ -138,6 +138,28 @@ Alias tabele skraćuje reference u upitu. To je naročito korisno kada upit kori
 
 Alias važi samo u okviru upita u kojem je definisan. Ne menja strukturu baze, ne menja nazive kolona u tabeli i ne stvara novu trajnu tabelu.
 
+### Ivični slučajevi: opseg i upotreba aliasa
+
+Alias kolone je ime izlazne vrednosti, pa ga je bezbedno koristiti u `ORDER BY`:
+
+```sql
+SELECT CustomerId AS id, LastName AS last_name
+FROM customers
+ORDER BY last_name, id;
+```
+
+Za `WHERE` uslov koristi stvarnu kolonu ili izraz, ne alias iz `SELECT` liste. SQLite u nekim upitima prihvata alias u `WHERE` kao nestandardno proširenje, ali drugi sistemi to mogu odbiti; ponašanje može biti zbunjujuće ako se alias poklapa sa imenom stvarne kolone. Ako treba filtrirati izračunati alias, obavij upit u CTE ili podupit pa filtriraj njegov rezultat.
+
+Kada tabeli dodeliš alias, koristi ga za njene kolone kroz ostatak tog upita:
+
+```sql
+SELECT c.FirstName, c.City
+FROM customers AS c
+WHERE c.City LIKE 'A%';
+```
+
+U ovom upitu referenciraj `c.City`, ne `customers.City`: alias `c` je ime izvora u okviru upita. Alias ne važi u sledećem zasebnom upitu.
+
 ## Veza sa SQLAlchemy 2.0 i FastAPI-jem
 
 U SQLAlchemy 2.0, alias kolone pravi se pomoću `.label()`, a alias ORM tabele/modela pomoću `aliased()`:
@@ -175,6 +197,7 @@ Alias rezultata baze ne preimenuje automatski polje u FastAPI response modelu. A
 4. Šta označava `c.City` u upitu sa `customers AS c`?
 5. Zašto se aliasi tabela koriste u složenijim upitima?
 6. Da li SQL alias automatski preimenuje polje FastAPI response modela?
+7. Zašto je `ORDER BY` aliasa prenosiviji od korišćenja aliasa u `WHERE`?
 
 ## Vežbe
 

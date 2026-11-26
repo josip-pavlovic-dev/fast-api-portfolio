@@ -283,7 +283,7 @@ FROM albums
 WHERE ArtistId > 0
 GROUP BY ArtistId
 HAVING COUNT(*) > 1
-ORDER BY album_count DESC
+ORDER BY album_count DESC, ArtistId ASC
 LIMIT 5;
 ```
 
@@ -295,7 +295,7 @@ Ne moraš još da znaš svaku funkciju napamet. Važno je da prepoznaš koji deo
 - `WHERE ArtistId > 0` filtrira redove pre grupisanja, zadržavajući samo one sa `ArtistId` većim od 0.
 - `GROUP BY ArtistId` grupiše redove po `ArtistId`.
 - `HAVING COUNT(*) > 1` filtrira grupe, zadržavajući samo one sa više od jednog albuma.
-- `ORDER BY album_count DESC` sortira rezultat po broju albuma u opadajućem redosledu.
+- `ORDER BY album_count DESC, ArtistId ASC` sortira po broju albuma opadajuće, a pri izjednačenju po ID-ju umetnika rastuće. Drugi kriterijum daje predvidiv redosled grupa.
 - `LIMIT 5` ograničava broj redova u rezultatu na 5.
 
 ---

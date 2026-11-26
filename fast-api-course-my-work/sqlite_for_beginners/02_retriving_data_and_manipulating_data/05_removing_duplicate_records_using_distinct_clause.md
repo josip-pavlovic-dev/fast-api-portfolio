@@ -96,6 +96,34 @@ Ako izabrana kolona sadrži više vrednosti `NULL`, SQLite ih pri primeni `DISTI
 
 `NULL` nije isto što i prazan tekst. Detaljnije ćeš ga obrađivati u lekciji [Identifikovanje NULL vrednosti](07_identifying_null_values.md).
 
+### Ivični slučajevi: kolacija, `NULL` i prazan tekst
+
+`DISTINCT` koristi pravila poređenja (kolaciju) izraza. Sa podrazumevanom `BINARY` kolacijom, `Paris` i `PARIS` su različite tekstualne vrednosti. Ako izabrani izraz koristi ugrađenu `NOCASE` kolaciju, ASCII velika i mala slova se pri poređenju ne razlikuju. Ugrađeni `NOCASE` nije lokalizovano poređenje srpskog teksta niti puna Unicode provera jednakosti bez obzira na veličinu slova.
+
+Više `NULL` vrednosti se u rezultatu `SELECT DISTINCT` svodi na jednu vrednost. Prazan tekst `''`, međutim, ostaje posebna vrednost i nije jednak `NULL`. Ispod je samostalna proba koja ne menja Chinook bazu:
+
+```sql
+WITH sample(city) AS (
+    VALUES ('Paris'), ('PARIS'), ('Paris'), (NULL), (NULL), ('')
+)
+SELECT DISTINCT city
+FROM sample
+ORDER BY city;
+```
+
+Prvi upit zadržava jedan `NULL`, jedan prazan tekst i po jedan zapis za `Paris` i `PARIS`. Ako promeniš izraz u `city COLLATE NOCASE`, `Paris` i `PARIS` se svode na jednu vrednost:
+
+```sql
+WITH sample(city) AS (
+    VALUES ('Paris'), ('PARIS'), ('Paris'), (NULL), (NULL), ('')
+)
+SELECT DISTINCT city COLLATE NOCASE AS city
+FROM sample
+ORDER BY city COLLATE NOCASE;
+```
+
+Ovo i dalje menja samo rezultat upita. Ne dodaje `UNIQUE` ograničenje i ne uklanja slične vrednosti iz stvarne tabele.
+
 ## Veza sa SQLAlchemy 2.0 i FastAPI-jem
 
 U SQLAlchemy 2.0 možeš da zatražiš jedinstvene vrednosti grada ovako:
@@ -122,6 +150,7 @@ Takav upit je koristan, na primer, kada API treba da ponudi listu gradova za izb
 4. Da li `DISTINCT` briše ponovljene redove iz tabele?
 5. Zašto `SELECT DISTINCT * FROM customers` i dalje vraća sve kupce?
 6. Da li `DISTINCT` određuje redosled redova?
+7. Zašto `NULL` i `''` nisu ista vrednost u rezultatu `DISTINCT`?
 
 ## Vežbe
 

@@ -1,2 +1,44 @@
 -- Lekcija: ../../01_some_basic_sql_commands/02_some_commonly_used_sqlite3_commands.md
--- Beleži i pokreći SQLite CLI komande i njihove rezultate ispod.
+-- Pokreni nad playground/databases/chinook_practice.db, po mogućnosti
+-- otvorenom sa -readonly. Iz root-a učitaj ovaj fajl pomoću .read.
+--
+-- Ove dot-komande menjaju samo prikaz u trenutnoj CLI sesiji.
+.headers on
+.mode column
+.databases
+.tables
+.schema albums
+
+-- Pozitivan slučaj: najviše 5 albuma u stabilnom redosledu.
+SELECT AlbumId, Title
+FROM albums
+ORDER BY Title, AlbumId
+LIMIT 5;
+
+-- Granični slučaj: uspešan upit sa nula redova (WHERE 0 je uvek false).
+SELECT AlbumId, Title
+FROM albums
+WHERE 0
+ORDER BY Title, AlbumId;
+
+-- Isti prazan rezultat u CSV režimu ne daje redove podataka.
+-- U proveri sa SQLite CLI-jem 3.54.1, interaktivni .headers on ne
+-- prikazuje zaglavlje za prazan rezultat; izlaz je prazan.
+.mode csv
+SELECT AlbumId, Title
+FROM albums
+WHERE 0
+ORDER BY Title, AlbumId;
+.mode column
+
+-- Vežba za .once (pokreni ručno, ne kao deo ovog .read):
+-- 1. Izaberi novo ime fajla i proveri u terminalu da ne postoji.
+-- 2. U SQLite promptu pokreni:
+--    .headers on
+--    .mode csv
+--    .once /tmp/replace-with-a-new-filename.csv
+--    SELECT AlbumId, Title FROM albums WHERE 0 ORDER BY Title, AlbumId;
+-- 3. U SQLite CLI-ju 3.54.1 fajl je prazan (0 bajtova) za ovaj upit.
+-- .once preusmerava samo sledeći izlaz; ne koristi ponovo postojeći fajl.
+-- Za CSV zaglavlje i nula redova koristi se -header pri pokretanju iz
+-- terminala, kao u teorijskoj lekciji.

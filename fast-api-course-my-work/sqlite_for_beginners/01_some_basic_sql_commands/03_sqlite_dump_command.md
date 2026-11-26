@@ -231,6 +231,28 @@ flowchart TD
     backup --> open["Otvori kopirani .db fajl"]
 ```
 
+### Granični slučaj: prazna tabela
+
+`.dump` izvozi i šemu tabele koja nema nijedan red. Ovo možeš proveriti bez pristupa Chinook fajlu ili pravljenja izlaznog fajla: pokreni zasebnu SQLite sesiju nad memorijskom bazom, napravi praznu tabelu, pa izvezi samo nju:
+
+```text
+sqlite3 :memory:
+```
+
+U SQLite CLI-ju:
+
+```sql
+CREATE TABLE empty_sample (id INTEGER PRIMARY KEY);
+```
+
+Zatim pokreni dot-komandu:
+
+```text
+.dump empty_sample
+```
+
+Izlaz sadrži `CREATE TABLE empty_sample ...`, ali nema `INSERT` naredbi. Prazna tabela zato nije isto što i tabela koja nedostaje: prva ima šemu koju dump može da rekonstruiše, a druga nije objekat baze.
+
 ---
 
 ## Veza sa SQLAlchemy-jem i FastAPI-jem

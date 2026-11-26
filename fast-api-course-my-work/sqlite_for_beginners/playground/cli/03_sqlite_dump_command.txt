@@ -1,2 +1,19 @@
 -- Lekcija: ../../01_some_basic_sql_commands/03_sqlite_dump_command.md
--- Beleži i pokreći SQLite CLI komande i njihove rezultate ispod.
+-- Bezbedna provera nad Chinook kopijom. Učitaj fajl iz root-a pomoću
+-- .read dok je SQLite CLI otvorio chinook_practice.db sa -readonly.
+.databases
+.tables
+SELECT COUNT(*) AS album_count FROM albums;
+PRAGMA integrity_check;
+
+-- Granični slučaj za .dump:
+-- pokreni zasebnu sesiju, ne menjajući Chinook:
+--   sqlite3 :memory:
+-- U toj memorijskoj sesiji unesi:
+--   CREATE TABLE empty_sample (id INTEGER PRIMARY KEY);
+--   .dump empty_sample
+-- Očekuj CREATE TABLE, ali bez INSERT naredbi.
+--
+-- Za dump radne Chinook baze u fajl, prati korake iz teorijske lekcije.
+-- Pre .output/.once proveri da izabrani izlazni fajl ne postoji; te
+-- komande pišu odvojeni fajl čak i kada je glavna baza otvorena r/o.
