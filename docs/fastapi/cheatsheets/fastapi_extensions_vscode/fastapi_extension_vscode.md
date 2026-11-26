@@ -7,8 +7,10 @@ Ovaj vodič objašnjava kako da instaliraš i koristiš namensku FastAPI ekstenz
 Ekstenzija **FastAPI** (`FastAPILabs.fastapi-vscode`) dodaje alate za snalaženje u FastAPI kodu:
 
 - **Path Operation Explorer** prikazuje pronađene rute i grupiše ih po router-ima. Klik na rutu vodi do njene definicije, a preko router-a možeš otvoriti mesto na kom je definisan.
+
 - **Pretraga ruta** pronalazi rute po putanji, HTTP metodi ili imenu.
 - **CodeLens** prikazuje veze između poziva test klijenta, kao što je `client.get("/items")`, i odgovarajuće rute. Kod ruta može prikazati i testove koji ih pozivaju.
+
 - **FastAPI Cloud integracija** omogućava komande za objavljivanje aplikacije i pregled njenih logova. To je opcionalna funkcionalnost i nije potrebna za lokalni razvoj.
 
 Ekstenzija ne zamenjuje Python ekstenziju, Pylance, pokretanje aplikacije ili testove. Ona olakšava navigaciju kroz FastAPI aplikaciju.
@@ -37,6 +39,7 @@ Instalaciju pokreni iz Extensions panela prozora u kom ćeš raditi:
 
 1. Proveri da je prozor povezan sa **WSL: Ubuntu-24.04** i da je izabran profil koji koristiš.
 2. Na stranici FastAPI ekstenzije klikni **Install** ili **Install in WSL: Ubuntu-24.04**, u zavisnosti od toga šta VS Code prikazuje.
+
 3. Posle instalacije proveri da je ekstenzija navedena u odeljku **WSL: Ubuntu-24.04 - Installed**. Na Marketplace stranici dugme više ne bi trebalo da prikazuje **Install**.
 
 Važno: uspešna CLI poruka za instalaciju nije dovoljna ako u aktivnom prozoru ekstenzija i dalje prikazuje **Install**. Profili i lokalni/udaljeni extension host mogu imati različite instalacije. U tom slučaju instaliraj je kroz Extensions panel upravo tog prozora.
@@ -46,9 +49,11 @@ Važno: uspešna CLI poruka za instalaciju nije dovoljna ako u aktivnom prozoru 
 ## 3. Trenutno stanje u tvom setup-u
 
 - U tvom aktivnom VS Code prozoru Marketplace trenutno prikazuje **Install** za FastAPI ekstenziju. To znači da je još treba instalirati u tom prozoru/profilu; prethodna CLI instalacija nije bila dostupna u prikazanom kontekstu.
+
 - U tvom aktivnom VS Code profilu dodato je `fastapi.cloud.enabled: false`, pa su Cloud komande isključene.
 - Dodato je i `fastapi.telemetry.enabled: false`, tako da je isključena telemetrija ekstenzije.
 - Nije postavljen globalni `fastapi.entryPoint`; ekstenzija koristi automatsko otkrivanje aplikacije. U ovom repozitorijumu glavna aplikacija je `app.main:app`.
+
 - CodeLens je podrazumevano uključen. Nije potrebno posebno podešavanje.
 - Tvoja Python, Pylance i Ruff podešavanja ostaju u Windows profilu koji koristiš uz WSL; nisu menjana.
 
@@ -154,7 +159,9 @@ Cloud komande i telemetrija su isključene. Ostale mogućnosti za lokalni rad, k
 ## 8. Korak po korak: korišćenje u fast-api-portfolio
 
 1. **Otvori repo u WSL prozoru.** U statusnoj traci proveri da piše `WSL: Ubuntu-24.04`, a da je otvoren root folder `fast-api-portfolio`.
+
 2. **Otvori Path Operation Explorer.** Pronađi njegovu ikonu u Activity Bar-u. Ekstenzija treba da otkrije aplikaciju napravljenu u `app/main.py`.
+
 3. **Pregledaj rute po router-u.** U ovom projektu `main.py` uključuje health i items router-e. Očekivane rute su:
 
    | Metoda   | Putanja            | Šta možeš otvoriti     |
@@ -167,8 +174,12 @@ Cloud komande i telemetrija su isključene. Ostale mogućnosti za lokalni rad, k
    | `DELETE` | `/items/{item_id}` | Brisanje item-a        |
 
 4. **Pređi od rute do koda.** Klikni, na primer, na `GET /health` da otvoriš handler u `app/api/routes/health.py`. Proširi items router i klikni na `GET /items/{item_id}` da odeš do odgovarajuće funkcije u `app/api/routes/items.py`.
+
 5. **Pronađi rutu po imenu ili putanji.** U Path Operation Explorer-u klikni na pretragu ili pokreni `FastAPI: Search Path Operations...` iz Command Palette-a. Probaj `GET /items/{item_id}` ili `/health`.
+
 6. **Prati vezu između testa i rute.** U `tests/test_health.py` poziv `client.get("/health")` proverava health handler. U `tests/test_items.py` pozivi poput `client.post("/items/")` i `client.get("/items/")` vode do odgovarajućih items ruta preko CodeLens-a. Klik na vezu služi za navigaciju; test i dalje pokrećeš odvojeno.
+
+---
 
 ### U čemu ti sada konkretno pomaže
 
@@ -207,11 +218,11 @@ Proveri da test koristi prepoznatljiv poziv test klijenta i da URL/metoda odgova
 
 ## 10. Brza lista za početak
 
-- [ ] VS Code prozor je povezan sa **WSL: Ubuntu-24.04**.
-- [ ] `FastAPILabs.fastapi-vscode` je instaliran u WSL-u.
-- [ ] Otvoren je pravi root folder FastAPI projekta.
-- [ ] Path Operation Explorer prikazuje aplikaciju i njene rute.
-- [ ] Ako je potrebno, podešen je `fastapi.entryPoint`.
-- [ ] Proverena su podešavanja telemetrije i FastAPI Cloud integracije.
+- [x] VS Code prozor je povezan sa **WSL: Ubuntu-24.04**.
+- [x] `FastAPILabs.fastapi-vscode` je instaliran u WSL-u.
+- [x] Otvoren je pravi root folder FastAPI projekta.
+- [x] Path Operation Explorer prikazuje aplikaciju i njene rute.
+- [x] Ako je potrebno, podešen je `fastapi.entryPoint`.
+- [x] Proverena su podešavanja telemetrije i FastAPI Cloud integracije.
 
 ---
