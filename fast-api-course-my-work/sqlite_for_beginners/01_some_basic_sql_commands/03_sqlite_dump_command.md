@@ -99,7 +99,13 @@ U otvorenom SQLite CLI-ju preusmeri izlaz u prethodno napravljeni folder, pokren
 
 `.output` stvara ili može prepisati izlazni fajl: **nov folder je zato važan**. Putanja je relativna prema trenutnom direktorijumu iz kojeg je pokrenut CLI, ne prema Markdown fajlu ili fajlu baze. Ako ponavljaš vežbu, izaberi drugo novo ime umesto da prepišeš prethodni dump. Folder mora postojati. Greške proveri na ekranu; ako se pojave, nemoj smatrati dump završenim.
 
-Ovde koristimo `.output` da bi video kako se preusmeravanje uključuje i isključuje. **Ispravka ranije tvrdnje:** u lokalno proverenom SQLite CLI-ju 3.54.1 i `.once fajl.sql` može preusmeriti sledeći `.dump`; sledeći izlaz se zatim vraća na terminal. `.output` ostaje aktivan dok ga ne vratiš na `stdout` ili zatvoriš CLI. Pri korišćenju drugog CLI-ja ili verzije proveri `.help once` i konkretno ponašanje.
+Ovde koristimo `.output` da bi video kako se preusmeravanje uključuje i isključuje.
+
+**VAŽNO:** U SQLite CLI-ju 3.54.1 i `.once fajl.sql` preusmerava sql naredbe koje slede odmah nakon nje u navedeni fajl. Nakon toga pokrenemo `.dump` koja generiše SQL tekst, i on se upisuje u odabrani `fajl.sql`. Nakon toga izlaz se vraća na terminal. Sledeći `.dump` će ići normalno na terminal, bez preusmeravanja u fajl.
+
+Za razliku od `.once`, `.output` ostaje aktivan sve dok ga ne vratiš na `stdout` ili zatvoriš CLI. Kada želiš da prestane preusmeravanje, moraš eksplicitno da pozoveš `.output stdout` ili da zatvoriš CLI.
+
+Pri korišćenju drugog CLI-ja ili verzije proveri `.help once` i konkretno ponašanje.
 
 **Šta znači „preusmeriti sledeći dump“?** Po podrazumevanju `.dump` ispisuje SQL tekst na ekran. „Preusmeriti“ znači da isti tekst umesto na ekran ode u fajl. `.once` to važi samo za **prvu sledeću komandu koja nešto ispisuje**; posle nje se izlaz sam vraća na ekran:
 

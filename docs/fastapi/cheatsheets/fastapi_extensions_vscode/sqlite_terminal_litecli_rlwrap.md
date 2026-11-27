@@ -107,14 +107,12 @@ INPUTRC="$HOME/.config/sqlite-cli/sqlite3-inputrc" \
 Ovo je i dalje zvanični `sqlite3`. `-readonly` je opcija za `sqlite3`, a prethodne opcije pripadaju `rlwrap`-u:
 
 - `-a` omogućava `rlwrap`-ovo uređivanje ulaza i kada pokrenuti program sam uređuje linije.
-
 - `-N` pomaže da `rlwrap` ne ometa programe poput pozvanog editora ili pagera.
-- `-c` uključuje dovršavanje putanja i omogućava da tačka bude deo reči za dovršavanje.
+- `-c` uključuje dovršavanje putanja i omogućava da tačka bude deo reči za dovršavanje, što je korisno kada se radi sa fajlovima koji imaju ekstenzije ili kada se koristi SQLite-ova sintaksa koja uključuje tačku.
 
 - `-i` omogućava dovršavanje bez razlikovanja velikih i malih slova; mora da stoji pre `-f`. Ne preoblikuje nužno već uneta slova.
 
 - `-A` je opcija za `rlwrap`: pomaže mu da pravilno računa širinu obojenog prompta koji sadrži ANSI sekvence.
-
 - `-f` učitava našu listu reči; to **nije** automatski spisak svih SQLite komandi ili naziva tabela.
 
 - `-cmdline-edit off` je opcija za **SQLite CLI 3.54.1**, ne za `rlwrap`: isključuje SQLite-ov interni editor linije, dok uređivanje i Tab dovršavanje preuzima `rlwrap`. U izolovanom terminalskom testu to sprečava stepenasto ispisivanje liste predloga. Proveri `sqlite3 --help` ako koristiš drugu verziju, jer možda nema ovu opciju.
@@ -134,7 +132,9 @@ Isprobaj u otvorenom SQLite CLI-ju:
 5. Ukucaj `PRAGMA table_inf`, pa **Tab** za `table_info`. Dodaj `('albums');` i pritisni **Enter**.
 6. Pokreni `.schema albums`, a zatim `.quit`.
 
-Tačan naziv je **`.databases`**, sa završnim `s`. `rlwrap` dovršava pojedinačne reči: `INSERT` i `INTO`, kao i `PRAGMA` i `table_info`, unose se odvojeno. Lista uključuje PRAGMA nazive prijavljene u SQLite CLI verziji proveravanoj pri ažuriranju; dostupnost u drugim klijentima može biti drugačija. Neki PRAGMA-i menjaju bazu ili podešavanja: predlog nije potvrda da je naredba bezbedna. Ako postoji više mogućih dopuna, pritisni Tab ponovo da ih vidiš i dopuni još slova. `rlwrap` koristi i istoriju; strelice gore/dole služe za prolazak kroz prethodne unose.
+Tačan naziv je **`.databases`**, sa završnim `s`. `rlwrap` dovršava pojedinačne reči: `INSERT` i `INTO`, kao i `PRAGMA` i `table_info`, unose se odvojeno. Lista uključuje PRAGMA nazive prijavljene u SQLite CLI verziji proveravanoj pri ažuriranju.
+
+Dostupnost prethodno navedenih PRAGMA komandi u drugim klijentima može biti drugačija. Neke PRAGMA komande menjaju bazu ili podešavanja. Zbog toga, predlog koji `rlwrap` daje nije potvrda da je naredba bezbedna. Ako postoji više mogućih dopuna, pritisni Tab ponovo da ih vidiš i dopuni još slova. `rlwrap` koristi i istoriju. Uz pomoć `strelica gore/dole` možemo prolaziti kroz prethodne unose.
 
 Na primer, `PRA` + Tab daje `PRAGMA`, a `PRAGMA fore` + Tab daje `PRAGMA foreign`. Kako postoji više mogućih nastavaka, nije automatski izabrana jedna naredba niti je dodat razmak posle `PRAGMA`: unesi ga ručno, a dodatnim pritiscima na Tab prikaži moguće nastavke. Kada prvi Tab proširi reč, u ovom podešavanju mogu biti potrebna još dva pritiska za prikaz liste.
 
@@ -164,7 +164,7 @@ Prvi način pokretanja `litecli` je `.venv/bin/litecli`, što osigurava da se ko
 .venv/bin/litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
-Drugi način je pokretanje `litecli` direktno iz aktiviranog `.venv` koristeći samo komandu `litecli`. Ovaj pristup je praktičan kada već radiš u aktiviranom virtuelnom okruženju i želiš da izbegneš navođenje pune putanje do izvršnog fajla. Važno je napomenuti da oba načina pokreću isti klijent, ali prvi način eksplicitno koristi izvršni fajl iz projektnog `.venv`, dok drugi zavisi od aktivnog okruženja. Primer je dat u nastavku.
+Drugi način je pokretanje `litecli` direktno iz aktiviranog `.venv` koristeći samo komandu `litecli`. Ovaj pristup je praktičan kada već radiš u aktiviranom virtuelnom okruženju i želiš da izbegneš navođenje pune putanje do izvršnog fajla. Važno je napomenuti da oba načina pokreću isti klijent (`litecli`), ali prvi način eksplicitno koristi izvršni fajl iz projektnog `.venv`, dok drugi zavisi od aktivnog okruženja. Primer je dat u nastavku.
 
 Prilikom pokretanja iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
 
@@ -172,9 +172,47 @@ Prilikom pokretanja iz korena repozitorijuma, uz aktiviran `.venv`, pokreni:
 litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
 ```
 
-Pokrenut je **poseban klijent `litecli`**, koji otvara sopstvenu konekciju sa bazom, nezavisnu od SQLTools konekcije. U ovoj instalaciji `litecli` koristi Pythonov modul `sqlite3` unutar svog procesa; ne pokreće zaseban `sqlite3` CLI proces. U SQLTools-u pišeš upite u editoru, a ekstenzija ih izvršava preko svog drajvera i konekcije. Oba klijenta mogu pristupati istom fajlu baze preko odvojenih konekcija.
+Pokrenut je **poseban klijent `litecli`**, koji otvara **sopstvenu konekciju sa bazom**, nezavisnu od SQLTools konekcije. U ovoj instalaciji `litecli` **koristi Pythonov modul `sqlite3` unutar svog procesa**. To znači da ne pokreće zaseban `sqlite3` CLI proces.
 
-`litecli` u ovom primeru otvara bazu za **čitanje i pisanje** (read-write): za bezbedan pregled koristi samo `SELECT` i `PRAGMA` (PRAGMA znači podešavanje ili proveru SQLite konfiguracije.) upite prikazane ispod.
+U SQLTools-u pišeš upite u editoru, a ekstenzija ih izvršava preko svog drajvera i konekcije. Oba klijenta (`litecli` i `SQLTools` ili bilo koji drugi klijent) mogu pristupati istom fajlu baze preko odvojenih konekcija. Primer:
+
+U prvom terminalu pokrećeš `litecli` koristeći putanju do izvršnog fajla u `.venv`:
+
+```bash
+.venv/bin/litecli fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+Zatim možeš izvršavati SQL upite i PRAGMA komande unutar `litecli` prompta. Na primer:
+
+```sql
+-- Primer SQL upita koji se može izvršiti u `litecli` nakon otvaranja baze
+SELECT Name FROM artists LIMIT 1;
+
+-- Primer PRAGMA upita koji se može izvršiti u `litecli`
+PRAGMA foreign_keys;
+```
+
+U drugom terminalu koristimo drugu konekciju preko SQLTools ekstenzije u VS Code-u ili bilo kog drugog klijenta koji pristupa istoj SQLite bazi npr. `sqlite3` CLI:
+
+```bash
+# Otvori SQLTools konekciju ili drugi klijent u drugom terminalu
+# Na primer, za `sqlite3` CLI:
+sqlite3 fast-api-course-my-work/sqlite_for_beginners/playground/databases/chinook_practice.db
+```
+
+```sql
+-- Primer SQL upita koji se može izvršiti u `sqlite3` CLI nakon otvaranja baze
+SELECT Name FROM artists LIMIT 1;
+
+-- Primer PRAGMA upita koji se može izvršiti u `sqlite3` CLI
+PRAGMA foreign_keys;
+```
+
+Ove konekcije omogućavaju istovremeni rad sa istom SQLite bazom iz različitih klijenata, ali svaka konekcija ima svoje postavke i stanje. U slučaju konflikta, poslednja izvršena promena u jednoj konekciji može uticati na druge konekcije, ali promene se ne sinhronizuju automatski.
+
+`litecli` u ovom primeru otvara bazu za **čitanje i pisanje** (read-write): za bezbedan pregled koristi samo `SELECT` i `PRAGMA` upite prikazane ispod.
+
+`PRAGMA` znači podešavanje ili proveru SQLite konfiguracije. Ove komande omogućavaju pregled i modifikaciju različitih aspekata ponašanja baze, kao što su spoljni ključevi, keširanje, journal mode i drugi parametri specifični za SQLite.
 
 **Napomena:** Pažljivo proveri putanju: pogrešna putanja može dovesti do otvaranja ili stvaranja pogrešne, prazne baze.
 

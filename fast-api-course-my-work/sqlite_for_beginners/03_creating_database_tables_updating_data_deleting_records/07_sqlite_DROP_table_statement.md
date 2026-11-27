@@ -114,10 +114,10 @@ Ostale nepovezane tabele i sama SQLite datoteka baze ostaju. `DROP TABLE groups`
 
 Za poređenje:
 
-| Naredba | Efekat |
-|---|---|
-| `DELETE FROM groups;` | Briše sve redove iz `groups`, ali tabela i njena definicija ostaju. |
-| `DROP TABLE groups;` | Briše tabelu `groups`, njene podatke, indekse i okidače (triggers) vezane za nju. |
+| Naredba               | Efekat                                                                            |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `DELETE FROM groups;` | Briše sve redove iz `groups`, ali tabela i njena definicija ostaju.               |
+| `DROP TABLE groups;`  | Briše tabelu `groups`, njene podatke, indekse i okidače (triggers) vezane za nju. |
 
 `DROP TABLE` nema `WHERE` uslov. Ako želiš da ukloniš samo jedan ili nekoliko redova, koristi `DELETE` sa pažljivo proverenim `WHERE` uslovom, kao u [prethodnoj lekciji](./06_sqlite_DELETE_statement.md).
 
@@ -156,34 +156,112 @@ Ako `groups` postoji, biće uklonjena. Ako ne postoji, SQLite neće prijaviti gr
 
 ## Može li transakcija da poništi `DROP TABLE`?
 
-SQLite podržava transakcije oko ove operacije. U probnoj bazi možeš proveriti da `ROLLBACK` vraća i šemu i podatke:
+Da. SQLite može da izvrši `DROP TABLE` unutar eksplicitne transakcije. Dok je transakcija otvorena, možeš pregledati posledice i zatim odlučiti da promene potvrdiš pomoću `COMMIT` ili poništiš pomoću `ROLLBACK`.
+
+### Šta je transakcija?
+
+**Transakcija** je logička celina jedne ili više operacija nad bazom. Pomaže da povezane promene budu potvrđene zajedno ili da se ponište zajedno. Na primer, pri prebacivanju novca između dva računa ne želiš da se potvrdi samo umanjenje jednog stanja, a da uvećanje drugog ne uspe.
+
+Važni pojmovi koji se često povezuju sa transakcijama su **ACID**:
+
+- **Atomicity — atomarnost:** uspešno potvrđuješ celinu promena ili ih poništavaš, umesto da namerno ostaviš samo deo logičke operacije.
+- **Consistency — konzistentnost:** transakcija treba da sačuva pravila podataka; SQLite proverava definisana ograničenja, ali sama transakcija ne može garantovati ispravnost svih poslovnih pravila koja nisu izražena u bazi ili aplikaciji.
+- **Isolation — izolacija:** druge konekcije ne vide neophodno svaku međukorak-promenu kao deo svoje redovne obrade; detalji vidljivosti i konkurentnog pristupa zavise od konekcija i režima baze.
+- **Durability — trajnost:** uspešno potvrđene promene treba da opstanu. Stvarna otpornost na prekide zavisi i od SQLite podešavanja, fajl-sistema i hardvera. Baza `:memory:` nestaje kada se konekcija zatvori, čak i ako je transakcija potvrđena.
+
+Transakcije nisu namenjene samo za `DROP TABLE`: koriste se i za više povezanih `INSERT`, `UPDATE` ili `DELETE` naredbi, kao i kada želiš da pregledaš probnu promenu pre potvrde.
+
+### Šta rade `BEGIN`, `COMMIT` i `ROLLBACK`?
+
+| Naredba     | Značenje                                                    |
+| ----------- | ----------------------------------------------------------- |
+| `BEGIN;`    | Započinje eksplicitnu transakciju na trenutnoj konekciji.   |
+| `COMMIT;`   | Pokušava da potvrdi promene i završi aktivnu transakciju.   |
+| `ROLLBACK;` | Poništava nepotvrđene promene te transakcije i završava je. |
+
+`BEGIN TRANSACTION;` je čitljivija varijanta `BEGIN;`. `END TRANSACTION;` je u SQLite-u alternativa za `COMMIT;`. U primerima ćemo koristiti kraće oblike.
+
+Završavaš transakciju sa **jednom** od dve alternative: `COMMIT` ili `ROLLBACK`. Ne izvršavaj oba kao dva koraka za istu transakciju. Na primer:
+
+```text
+BEGIN
+  ├─ SQL promene i provera
+  ├─ COMMIT   → prihvati promene
+  └─ ROLLBACK → poništi promene
+```
+
+Između `BEGIN` i završetka transakcije tvoja trenutna konekcija vidi sopstvene promene, pa možeš da ih proveriš upitom ili komandom `.tables`. To što ih vidiš ne znači da su potvrđene.
+
+### Primer: poništi uklanjanje tabele
+
+Za ovaj primer otvori **novu** `sqlite3 :memory:` konekciju i ponovi [pripremu probne baze](#priprema-probne-baze), uključujući `PRAGMA foreign_keys = ON` pre transakcije. To je važno jer su raniji primeri možda već obrisali `groups`; očekuju se dve grupe i tri reda u `contact_groups`.
 
 ```sql
 BEGIN;
-
 DROP TABLE groups;
+SELECT COUNT(*) AS remaining_memberships FROM contact_groups;
+```
 
+Rezultat za članstva je `0`, jer se uz uključene strane ključeve primenjuje `ON DELETE CASCADE`. U SQLite CLI-ju proveri i tabele:
+
+```text
 .tables
 ```
 
-`.tables` će tokom transakcije pokazati da `groups` više nije dostupna. Sada poništi transakciju:
+Na trenutnoj konekciji `groups` se tokom transakcije više ne prikazuje. Zatim **poništi** transakciju:
 
 ```sql
 ROLLBACK;
 ```
 
-Proveri da li su tabela i podaci vraćeni:
+Sada proveri šemu i podatke:
 
 ```text
 .tables
 ```
 
 ```sql
-SELECT id, name FROM groups;
-SELECT contact_id, group_id FROM contact_groups;
+SELECT COUNT(*) AS restored_groups FROM groups;
+SELECT COUNT(*) AS restored_memberships FROM contact_groups;
 ```
 
-U ovom primeru se očekuju obe grupe i sva tri reda članstva. Ako umesto `ROLLBACK` izvršiš `COMMIT`, uklanjanje postaje potvrđena promena baze. Transakcija nije zamena za rezervnu kopiju: radi samo dok je transakcija aktivna i ne štiti od kasnijeg gubitka ili oštećenja datoteke.
+Rezultati su `2` i `3`: `ROLLBACK` je vratio tabelu `groups`, njene redove i redove članstva uklonjene kaskadom u toj transakciji. Ne vraća se samo ime tabele već i stanje izmenjeno tom transakcijom.
+
+### Primer: potvrdi uklanjanje tabele
+
+U drugoj novoj `:memory:` konekciji ponovo pripremi iste tabele i podatke. Ovaj put umesto `ROLLBACK` izaberi `COMMIT`:
+
+```sql
+BEGIN;
+DROP TABLE groups;
+SELECT COUNT(*) AS remaining_memberships FROM contact_groups;
+COMMIT;
+```
+
+Broj članstava pre potvrde je `0`. Posle `COMMIT`, `.tables` ne prikazuje `groups`, dok `SELECT COUNT(*) FROM contact_groups;` vraća `0`, a `SELECT COUNT(*) FROM contacts;` vraća `2`. `contacts` i `contact_groups` ostaju, ali kaskadno obrisani redovi članstva su deo potvrđene promene.
+
+Posle uspešnog `COMMIT`-a `ROLLBACK` ne može da vrati tu prethodno potvrđenu transakciju. Za povratak nakon potvrde potrebna je odgovarajuća rezervna kopija ili drugi unapred pripremljen način oporavka.
+
+### Šta ako ne napišem `BEGIN`?
+
+SQLite i dalje koristi transakcije: kada nema aktivne eksplicitne transakcije, naredba kojoj je transakcija potrebna pokreće implicitnu transakciju. Ona se automatski završava kada se završi poslednja aktivna naredba koja je koristi. Zato u uobičajenoj CLI upotrebi samostalni uspešni `DROP TABLE` postaje potvrđena promena bez posebnog `COMMIT`-a.
+
+Ako želiš mogućnost da proveriš rezultat **pre odluke** i više izmena potvrdiš ili poništiš zajedno, pokreni eksplicitni `BEGIN` **pre** promena. Naknadni `ROLLBACK` ne može poništiti prethodnu automatski potvrđenu naredbu.
+
+### Greške, zatvaranje konekcije i granice zaštite
+
+- **Greška ne mora poništiti celu transakciju.** SQLite u mnogim uobičajenim slučajevima, uključujući podrazumevano `ABORT` ponašanje za ograničenja, poništava neuspelu naredbu, dok ranije uspešne promene u transakciji ostaju nepotvrđene. Neke vrste grešaka ili konfliktne politike mogu poništiti i celu transakciju. Pročitaj grešku i proveri stanje; ako transakcija još traje i ne želiš njene promene, koristi `ROLLBACK`.
+- **`COMMIT` može da ne uspe**, na primer zbog odloženog ograničenja stranog ključa ili zaključavanja. Nemoj pretpostaviti da je promena potvrđena ako je prijavljena greška. U tim slučajevima transakcija može ostati aktivna: reši problem i pokušaj ponovo ili izvrši `ROLLBACK`.
+- **Zatvaranje konekcije sa nepotvrđenom transakcijom** dovodi do poništavanja te transakcije. Nemoj koristiti zatvaranje CLI-ja kao zamenu za jasnu odluku o `COMMIT` ili `ROLLBACK`.
+- **Transakcija nije rezervna kopija.** Posle potvrde ne možeš poništiti tu transakciju sa `ROLLBACK`, a transakcija sama ne štiti od kasnijeg gubitka ili oštećenja datoteke.
+- **Strani ključevi i konekcija:** proveri `PRAGMA foreign_keys;` i po potrebi ga uključi pre `BEGIN`. Promena te postavke unutar aktivne transakcije nema efekta. `ROLLBACK` poništava i kaskadne promene nastale u istoj transakciji.
+- **Nema ugnježđenog `BEGIN`-a:** drugi `BEGIN` dok je transakcija aktivna prijavljuje grešku. Za delimično poništavanje unutar transakcije SQLite podržava `SAVEPOINT` i `ROLLBACK TO`; završetak spoljne transakcije je i dalje zasebna odluka.
+
+### Kratko o konkurentnom radu
+
+Transakcija pripada konekciji koja ju je otvorila; druga CLI ili SQLAlchemy konekcija ne deli automatski istu transakciju. SQLite dozvoljava više čitalaca, ali samo jednu transakciju za pisanje u istom trenutku. Dugo otvorena transakcija, naročito ona koja menja podatke, može otežati rad drugim konekcijama, zato je završi čim je provera gotova.
+
+`BEGIN` bez dodatka koristi podrazumevani `DEFERRED` režim. SQLite podržava i `BEGIN IMMEDIATE` i `BEGIN EXCLUSIVE`, koji drugačije upravljaju početkom transakcije za pisanje i zaključavanjem; za osnovne vežbe dovoljan je `BEGIN`. Pri prelasku na drugi DBMS proveri njegovo ponašanje, posebno oko transakcija i DDL naredbi.
 
 ## SQLAlchemy 2: uklanjanje tabele iz šeme
 
@@ -236,6 +314,9 @@ Sve vežbe radi u novoj `:memory:` bazi sa šemom i početnim podacima iz ove le
 6. Pre uklanjanja neke druge roditeljske tabele razmotri strane ključeve koji na nju upućuju. Objasni koje pravilo (`CASCADE`, `RESTRICT`/`NO ACTION` ili neko drugo) važi u tvojoj šemi.
 7. U SQLAlchemy probnoj bazi ukloni samo `Group.__table__`, pa proveri da li su `contacts` i `contact_groups` i dalje prisutne.
 8. Objasni zašto `Base.metadata.drop_all(engine)` ne treba koristiti nad bazom sa važnim podacima.
+9. U novoj probnoj bazi započni transakciju, dodaj jednu grupu i promeni naziv druge. Proveri obe promene, pa izvrši `ROLLBACK` i potvrdi da su obe poništene.
+10. U novoj probnoj bazi ponovi prethodnu vežbu, ali potvrdi promene sa `COMMIT`. Objasni zašto naknadni `ROLLBACK` ne može da ih vrati.
+11. Tokom transakcije pokušaj unos grupe čiji `name` već postoji. Pročitaj grešku i proveri da li su ranije uspešne promene u transakciji i dalje vidljive; zatim ih poništi pomoću `ROLLBACK`.
 
 ## Provera razumevanja
 
@@ -246,6 +327,12 @@ Sve vežbe radi u novoj `:memory:` bazi sa šemom i početnim podacima iz ove le
 5. Koja je razlika između SQLAlchemy `Session.delete()` i `Group.__table__.drop()`?
 6. Kada je prihvatljivo koristiti `Base.metadata.drop_all(engine)`?
 7. Kako `ROLLBACK` može pomoći tokom kontrolisane vežbe `DROP TABLE`?
+8. Šta je transakcija i zašto je korisna kada se više izmena odnosi na jednu logičku operaciju?
+9. Zašto se `COMMIT` i `ROLLBACK` ne koriste jedan za drugim kao završeci iste transakcije?
+10. Šta se dešava ako izvršiš `DROP TABLE` bez eksplicitnog `BEGIN`?
+11. Da li greška u jednoj naredbi uvek poništava celu transakciju? Šta treba proveriti pre nastavka?
+12. Zašto transakcija nije zamena za rezervnu kopiju?
+13. Kada se podešava `PRAGMA foreign_keys` u odnosu na `BEGIN`?
 
 ## Izvori za dalje čitanje
 
