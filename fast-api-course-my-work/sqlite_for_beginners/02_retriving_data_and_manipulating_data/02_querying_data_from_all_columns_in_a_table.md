@@ -206,9 +206,9 @@ U `FastAPI` aplikaciji je važno da **upit, model i odgovor `API`-ja imaju smisl
 
 ### Vežba 1 — Prikaži sve kolone
 
-1. Izvrši `SELECT * FROM albums;` nad Chinook bazom.
+**1. Izvrši `SELECT * FROM albums;` nad Chinook bazom.**
 
-2. Zabeleži nazive i redosled kolona.
+**2. Zabeleži nazive i redosled kolona.**
 
 - Prva kolona u rezultatu je `AlbumId`, što odgovara redosledu kolona u tabeli `albums` u ERD dijagramu.
 - Druga kolona je `Title`, što takođe odgovara redosledu kolona u tabeli `albums`.
@@ -220,7 +220,7 @@ U `FastAPI` aplikaciji je važno da **upit, model i odgovor `API`-ja imaju smisl
 
 - U kontekstu FastAPI aplikacije, eksplicitno navođenje kolona može pomoći u smanjenju prenosa nepotrebnih podataka i poboljšanju performansi API-ja. Na primer, ako aplikacija prikazuje samo naziv albuma i ID umetnika, nije potrebno vraćati sve kolone iz tabele `albums`, što smanjuje opterećenje na mrežu i ubrzava obradu podataka na klijentskoj strani.
 
-3. Proveri ukupan broj vraćenih redova.
+**3. Proveri ukupan broj vraćenih redova.**
 
 - Broj vraćenih redova odgovara ukupnom broju albuma u tabeli `albums`.
 
@@ -237,13 +237,13 @@ SELECT * FROM albums;
 SELECT COUNT(*) FROM albums;
 ```
 
-4. Uporedi kolone iz rezultata sa tabelom `albums` u ERD dijagramu.
+**4. Uporedi kolone iz rezultata sa tabelom `albums` u ERD dijagramu.**
 
 ---
 
 ### Vežba 2 — Ograniči pregled
 
-1. Napiši upit koji vraća sve kolone iz `albums`, sortira ih po `AlbumId` i prikazuje prvih pet redova.
+**1. Napiši upit koji vraća sve kolone iz `albums`, sortira ih po `AlbumId` i prikazuje prvih pet redova.**
 
 ```sql
 SELECT * FROM albums
@@ -251,26 +251,30 @@ ORDER BY AlbumId
 LIMIT 5;
 ```
 
-2. Uporedi rezultat sa upitom bez `LIMIT`.
+**2. Uporedi rezultat sa upitom bez `LIMIT`.**
 
 ```sql
 SELECT * FROM albums;
 ```
 
-3. Objasni šta se promenilo, a šta je ostalo isto u rezultatima upita sa i bez `LIMIT`.
+**3. Objasni šta se promenilo, a šta je ostalo isto u rezultatima upita sa i bez `LIMIT`.**
 
 - U rezultatima sa `LIMIT` vidimo samo prvih pet redova, dok upit bez `LIMIT` vraća sve redove iz tabele `albums`.
+
 - Broj i nazivi kolona ostaju isti u oba rezultata, jer `LIMIT` utiče samo na broj redova, a ne na strukturu kolona.
+
 - Redosled kolona takođe ostaje nepromenjen, što omogućava konzistentno rukovanje podacima u aplikaciji.
 - Korišćenje `LIMIT` je posebno korisno kada se radi sa velikim tabelama, jer smanjuje količinu podataka koja se prenosi i obrađuje, čime se poboljšava performansa aplikacije.
+
 - U kontekstu FastAPI aplikacije, `LIMIT` može pomoći u optimizaciji odgovora API-ja tako što se klijentu šalje samo potreban broj redova, što smanjuje opterećenje servera i ubrzava vreme odziva.
+
 - Ovo je posebno korisno kada se radi sa paginacijom, gde klijent može zahtevati podatke u manjim segmentima, čime se poboljšava korisničko iskustvo i efikasnost aplikacije.
 
 ---
 
 ### Vežba 3 — Uporedi širok i uzak rezultat
 
-1. Izvrši `SELECT * FROM albums ORDER BY AlbumId LIMIT 5;`.
+**1. Izvrši -> SELECT \* FROM albums ORDER BY AlbumId LIMIT 5;**
 
 ```text
 AlbumId | Title | ArtistId
@@ -282,7 +286,7 @@ AlbumId | Title | ArtistId
 5       | Big Ones | 3
 ```
 
-2. Izvrši `SELECT AlbumId, Title FROM albums ORDER BY AlbumId LIMIT 5;`.
+**2. Izvrši -> SELECT AlbumId, Title FROM albums ORDER BY AlbumId LIMIT 5;**
 
 ```text
 AlbumId | Title
@@ -294,16 +298,17 @@ AlbumId | Title
 5       | Big Ones
 ```
 
-3. Uporedi broj i nazive kolona u rezultatima.
+**3. Uporedi broj i nazive kolona u rezultatima.**
 
 - U prvom rezultatu imamo tri kolone: `AlbumId`, `Title` i `ArtistId`.
 - U drugom rezultatu imamo samo dve kolone: `AlbumId` i `Title`.
 - Nazivi kolona koje su prisutne u oba rezultata ostaju isti, ali broj kolona se smanjuje kada izaberemo samo određene kolone.
+
 - Ovo pokazuje kako možemo kontrolisati koje kolone želimo da dobijemo u rezultatu, što može biti korisno za optimizaciju performansi i smanjenje količine podataka koji se prenose.
 
-4. Navedi primer situacije u kojoj bi uži rezultat bio bolji izbor u FastAPI aplikaciji.
+**4. Navedi primer situacije u kojoj bi uži rezultat bio bolji izbor u FastAPI aplikaciji.**
 
-- U užem rezultatu dobijamo samo kolone koje su nam zaista potrebne, što smanjuje količinu podataka koja se prenosi između baze i aplikacije.
+- U užem rezultatu dobijamo samo kolone koje su nam zaista po`trebne, što smanjuje količinu podataka koja se prenosi između baze i aplikacije.
 
 - Ovo može biti korisno u FastAPI aplikaciji kada želimo da optimizujemo performanse API-ja i smanjimo opterećenje servera.
 
@@ -346,7 +351,7 @@ LIMIT 5;
 
 U ovoj vežbi ćemo primeniti koncept preciziranja izvora kolona na drugu tabelu iz Chinook baze. Cilj je da se uverimo kako se koristi sintaksa `tabela.*` i kako možemo selektivno birati kolone iz različitih tabela, što je posebno korisno u složenijim upitima koji uključuju više tabela.
 
-1. Izaberi neku drugu Chinook tabelu koja je prikazana na ERD-u.
+**1. Izaberi neku drugu Chinook tabelu koja je prikazana na ERD-u.**
 
 Na primer, možemo izabrati tabelu `artists` koja je takođe prikazana na ERD-u.
 
@@ -376,7 +381,7 @@ LIMIT 5;
 
 - U praksi, kada radimo sa više tabela i složenim upitima, korišćenje `tabela.*` u kombinaciji sa selektivnim biranjem kolona omogućava nam da balansiramo između čitljivosti koda i efikasnosti upita, čime se postiže optimalna kontrola nad podacima koji se vraćaju iz baze.
 
-2. Prikaži do pet redova sa svim kolonama koristeći sintaksu `tabela.*`.
+**2. Prikaži do pet redova sa svim kolonama koristeći sintaksu `tabela.*`.**
 
 ```sql
 SELECT artists.*
@@ -385,7 +390,7 @@ ORDER BY ArtistId
 LIMIT 5;
 ```
 
-3. Zatim napiši drugi upit koji bira samo dve kolone iz te tabele.
+**3. Zatim napiši drugi upit koji bira samo dve kolone iz te tabele.**
 
 ```sql
 SELECT ArtistId, Name
@@ -394,7 +399,7 @@ ORDER BY ArtistId
 LIMIT 5;
 ```
 
-4. Uporedi rezultate i objasni zašto bi u aplikaciji mogao da izabereš drugi upit koji bira samo potrebne kolone umesto svih kolona.
+**4. Uporedi rezultate i objasni zašto bi u aplikaciji mogao da izabereš drugi upit koji bira samo potrebne kolone umesto svih kolona.**
 
 - Kada biramo samo potrebne kolone, smanjujemo količinu podataka koji se prenose između baze i aplikacije, što može poboljšati performanse, posebno kod velikih tabela.
 

@@ -148,7 +148,7 @@ Ovaj dijagram je mentalni model za razumevanje rezultata; nije opis tačnog unut
 
 `DISTINCT` uklanja ponovljene **redove rezultata na osnovu svih izabranih izraza zajedno**. Ako izabereš samo `ArtistId`, uklanjaju se ponovljeni `ArtistId` rezultati. Ako izabereš i `ArtistId` i `Title`, proverava se jedinstvenost para `(ArtistId, Title)`, a ne samo naslova.
 
-Primer koji vraća jedinstvene identifikatore izvođača iz albuma:
+**Primer:** koji vraća jedinstvene identifikatore izvođača iz albuma:
 
 ```sql
 SELECT DISTINCT ArtistId
@@ -165,8 +165,8 @@ FROM albums;
 flowchart TB
     sql["SELECT AlbumId, Title<br/>FROM albums<br/>ORDER BY AlbumId<br/>LIMIT 3"]
     sql --> sqlite["SQLite izvršava upit"]
-    table[("Tabela albums")] --> sqlite
-    sqlite --> result["Result set<br/>3 reda × 2 kolone"]
+    table[("Tabela albums (ulazni podaci sa svim kolonama)")] --> sqlite
+    sqlite["SQLite izvršava upit"] --> result["Result set<br/>3 reda × 2 kolone"]
 ```
 
 | Ulaz                    | Upit traži                           | Rezultat                       |
@@ -241,6 +241,14 @@ U SQLite CLI-ju izvrši sledeće upite i zabeleži kolone i vrednosti rezultata:
 3. `SELECT 5 / 2 AS celobrojno, 5.0 / 2 AS decimalno;`
 4. Dodaj smislene aliase izrazima pomoću `AS`.
 
+**NAPOMENA:**
+
+- U ovoj vežbi se radi sa izrazima koji ne zavise od tabela, pa rezultat upita može biti direktno izračunat bez pristupa podacima u bazi.
+
+- `Alias` se može definisati kao `AS ime_aliasa` kada je ime kolone jedna reč ili `AS "ime_aliasa"` kada želiš da koristiš ime sa **razmacima, specijalnim karakterima ili rezervisanim rečima**. `AS "ime_aliasa"` radi i kada ime ne sadrži razmake ili rezervisane reči.
+
+- **Kada kolona ne zavisi od baze podataka, već je rezultat izraza ili konstante, nema potrebe da se oslanjaš na podatke u tabelama**. Takve kolone se mogu direktno izračunati i prikazati u rezultatu upita, nezavisno od sadržaja baze. `sqlite3` komanda u CLI-ju će pokrenuti sqlite i povezati ga automatski sa `:memory:` bazom. Zbog toga **nema potrebe za komandom `sqlite3 :memory:` jer će se to uraditi automatski**. Ova funkcionalnost omogućava brzo testiranje izraza i upita bez potrebe za kreiranjem stvarnih tabela u bazi.
+
 ---
 
 ### Vežba 2 — Pročitaj Chinook tabelu
@@ -265,7 +273,22 @@ LIMIT 5;
 1. Uporedi `SELECT ArtistId FROM albums;` i `SELECT DISTINCT ArtistId FROM albums;`.
 2. Objasni zašto se rezultat drugog upita može sastojati od manje redova.
 
-- Rezultat drugog upita može imati manje redova jer `DISTINCT` uklanja duplikate, pa se svaka vrednost `ArtistId` pojavljuje samo jednom u rezultatu. Ovo je korisno kada želiš da vidiš jedinstvene vrednosti u koloni bez ponavljanja.
+- Rezultat drugog upita ima manje redova kada se vrednost `ArtistId` ponavlja u više redova tabele `albums`. `DISTINCT` uklanja ponovljene vrednosti iz rezultata, ali ne menja podatke u tabeli.
+
+  U našoj Chinook kopiji upiti **ne vraćaju isti broj redova**:
+  - `SELECT ArtistId FROM albums;` vraća 347 redova — po jedan za svaki album.
+  - `SELECT DISTINCT ArtistId FROM albums;` vraća 204 reda — po jedan za svakog različitog izvođača koji ima album.
+
+  Razlog je veza jedan-prema-više: jedan izvođač može imati više albuma, pa se njegov `ArtistId` pojavljuje više puta u prvoj listi. Proveri broj redova i različitih vrednosti:
+
+  ```sql
+  SELECT
+      COUNT(*) AS album_rows,
+      COUNT(DISTINCT ArtistId) AS distinct_artist_ids
+  FROM albums;
+  ```
+
+  Rezultat je `347 | 204`. U ovoj kopiji nijedan `ArtistId` nije `NULL`, pa je broj iz `COUNT(DISTINCT ArtistId)` isti kao broj redova koji vraća `SELECT DISTINCT ArtistId`. U opštem slučaju `SELECT DISTINCT` zadržava jedan `NULL`, dok `COUNT(DISTINCT kolona)` `NULL` ne broji.
 
 3. Isprobaj `SELECT DISTINCT ArtistId, Title FROM albums;` i objasni zašto rezultat nije isto što i jedinstveni `ArtistId`-ovi.
 
